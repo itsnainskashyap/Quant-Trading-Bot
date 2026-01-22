@@ -1,6 +1,7 @@
-import { Activity, Shield, Bell } from "lucide-react";
+import { Shield, Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import logoImage from "@assets/IMAGE_2026-01-22_19:24:15_1769090056092.jpg";
 
 interface HeaderProps {
   isDataFeedHealthy: boolean;
@@ -12,19 +13,12 @@ export function Header({ isDataFeedHealthy }: HeaderProps) {
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
-                <Activity className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <div className="flex flex-col">
-                <h1 className="text-lg font-bold tracking-tight gradient-text" data-testid="text-app-title">
-                  TradeX AI
-                </h1>
-                <span className="text-[10px] text-muted-foreground -mt-1">
-                  AI Trading Assistant
-                </span>
-              </div>
-            </div>
+            <img 
+              src={logoImage} 
+              alt="TradeX AI" 
+              className="h-8 w-auto"
+              data-testid="img-logo"
+            />
           </div>
           
           <div className="flex items-center gap-3">
