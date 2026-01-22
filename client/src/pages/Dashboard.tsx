@@ -415,7 +415,7 @@ export default function Dashboard() {
                     <CandleTimer />
                   </div>
                 </div>
-                <div className="h-[500px]">
+                <div className="h-[300px] md:h-[500px]">
                   <TradingViewChart 
                     pair={selectedPair} 
                     entryPrice={analysis?.entryPrice}
@@ -475,7 +475,7 @@ export default function Dashboard() {
                   <Loader2 className="w-10 h-10 mx-auto mb-3 text-cyan-400 animate-spin" />
                   <h3 className="text-base font-semibold mb-2">Analyzing Market...</h3>
                   <div className="flex flex-wrap justify-center gap-2 text-xs">
-                    <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-400 animate-pulse">OpenAI GPT-5.1</span>
+                    <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-400 animate-pulse">GPT-4o</span>
                     <span className="px-2.5 py-1 rounded-lg bg-orange-500/10 text-orange-400 animate-pulse">Claude</span>
                     <span className="px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-400 animate-pulse">Gemini</span>
                   </div>
@@ -551,7 +551,7 @@ export default function Dashboard() {
 
                   {analysis.tradeRecommendation && analysis.signal !== 'SKIP' && (
                     <div className="p-3 border-b border-white/5 bg-[#0a0a0f]/50">
-                      <div className="grid grid-cols-4 gap-2">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                         <div className="p-2 rounded-lg bg-[#12121a] border border-white/5 text-center">
                           <div className="flex items-center justify-center gap-1 text-[10px] text-gray-500 mb-0.5">
                             <DollarSign className="w-3 h-3" />
@@ -592,7 +592,7 @@ export default function Dashboard() {
                     </div>
                   )}
                   
-                  <div className="p-3">
+                  <div className="p-3 max-h-[200px] md:max-h-[300px] overflow-y-auto">
                     <p className="text-xs text-gray-300 leading-relaxed whitespace-pre-line">
                       {analysis.reasoning}
                     </p>

@@ -326,23 +326,26 @@ function calculateConsensus(results: AIAnalysisResult[]): ConsensusResult {
     warnings.push("AI providers disagree - avoiding risky position");
   }
 
-  if (avgConfidence < 75 && finalSignal !== "NO_TRADE") {
+  // Require 60%+ average confidence for actionable signals
+  if (avgConfidence < 60 && finalSignal !== "NO_TRADE") {
     finalSignal = "NO_TRADE";
     hasConsensus = false;
-    warnings.push("Average confidence below 75% - insufficient certainty for trade");
+    warnings.push("Average confidence below 60% - insufficient certainty for trade");
   }
 
-  if (highRiskCount >= 1) {
+  // Only block if majority (2+) flag HIGH risk
+  if (highRiskCount >= 2) {
     finalSignal = "NO_TRADE";
     hasConsensus = false;
-    warnings.push("At least one provider flagged high risk - capital protection engaged");
+    warnings.push("Majority of providers flagged high risk - capital protection engaged");
   }
   
+  // Require at least 50% confidence from every provider
   const minConfidence = Math.min(...successfulResults.map(r => r.confidence));
-  if (minConfidence < 65 && finalSignal !== "NO_TRADE") {
+  if (minConfidence < 50 && finalSignal !== "NO_TRADE") {
     finalSignal = "NO_TRADE";
     hasConsensus = false;
-    warnings.push("One provider has low confidence - waiting for better setup");
+    warnings.push("One provider has very low confidence - waiting for better setup");
   }
 
   const signalMismatch = successfulResults.some(r => 
