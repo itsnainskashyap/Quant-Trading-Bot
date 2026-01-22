@@ -39,7 +39,7 @@ import { BacktestStats } from "@/components/BacktestStats";
 import { TechnicalIndicators } from "@/components/TechnicalIndicators";
 import { NotificationBanner, NotificationButton } from "@/components/NotificationBanner";
 import type { TradingPair, ConsensusResult, MarketMetrics } from "@shared/schema";
-import logoImage from "@assets/IMAGE_2026-01-22_19:24:15_1769090056092.jpg";
+import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 
 const CRYPTO_ICONS: Record<string, { color: string; symbol: string }> = {
   'BTC': { color: '#F7931A', symbol: '₿' },
@@ -370,7 +370,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className="font-mono text-xs font-semibold">
-                    ${price.price < 1 ? price.price.toFixed(6) : price.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ${price.price != null ? (price.price < 1 ? price.price.toFixed(6) : price.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) : '---'}
                   </div>
                 </button>
               );

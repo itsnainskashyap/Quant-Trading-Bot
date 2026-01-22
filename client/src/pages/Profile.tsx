@@ -11,7 +11,7 @@ import {
   User,
   AlertTriangle
 } from "lucide-react";
-import logoImage from "@assets/IMAGE_2026-01-22_19:24:15_1769090056092.jpg";
+import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 
 interface PredictionData {
   predictions: Array<{

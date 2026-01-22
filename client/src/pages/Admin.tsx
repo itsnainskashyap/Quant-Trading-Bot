@@ -12,7 +12,7 @@ import {
   Activity,
   Shield
 } from "lucide-react";
-import logoImage from "@assets/image_1769090256764.png";
+import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 
 interface AdminStats {
   totalUsers: number;

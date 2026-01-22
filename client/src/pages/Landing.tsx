@@ -9,7 +9,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import logoImage from "@assets/tradex-logo.png";
+import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 
 function AnimatedPrice({ symbol, basePrice }: { symbol: string; basePrice: number }) {
   const [price, setPrice] = useState(basePrice);

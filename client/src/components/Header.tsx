@@ -12,7 +12,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
-import logoImage from "@assets/tradex-logo.png";
+import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 
 interface SubscriptionData {
   subscription: { plan: string; status: string } | null;
