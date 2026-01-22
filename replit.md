@@ -1,9 +1,11 @@
 # TradeX AI - AI-Assisted Trading Decision Platform
 
 ## Overview
-TradeX AI is a probability-based trading decision platform that helps users decide whether to BUY, SELL, or SKIP trades on cryptocurrency pairs (BTC-USDT, ETH-USDT). The system focuses on capital protection over profit maximization, preferring to skip trades over low-quality signals.
+TradeX AI is a probability-based trading decision platform that helps users decide whether to BUY, SELL, or SKIP trades on 15 cryptocurrency pairs. The system focuses on capital protection over profit maximization with strict risk management (2% risk per trade, 10% max position size).
 
 **Multi-AI Consensus System** - Uses 3 world-class AI providers (OpenAI GPT-5.1, Anthropic Claude, Google Gemini) voting together for maximum signal quality and reduced false signals.
+
+**Supported Pairs**: BTC, ETH, SOL, XRP, DOGE, BNB, ADA, AVAX, DOT, MATIC, LINK, LTC, SHIB, ATOM, UNI
 
 ## Tech Stack
 - **Frontend**: React + TypeScript + Vite
@@ -90,11 +92,19 @@ shared/
 - Pro plan: ₹1999/month for unlimited signals
 - Real-time remaining signals display in header
 
-### 4. TradingView Integration
-- Live charts for BTC-USDT and ETH-USDT
-- Professional trading interface
+### 4. Capital Management & Risk Protection
+- User sets their trading capital amount
+- AI calculates exact trade size (10% of capital)
+- Stop-loss at 2% risk per trade
+- Take-profit targets with 1:1.5 risk-reward ratio
+- Floating AI help bubble for trading assistance
 
-### 5. Authentication
+### 5. TradingView Integration
+- Live charts for all 15 trading pairs
+- Professional trading interface
+- Candle timer showing next 1-minute candle close
+
+### 6. Authentication
 - Replit Auth for secure login
 - User profile with trading statistics
 - Admin panel for system monitoring

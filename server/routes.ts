@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import OpenAI from "openai";
-import type { TradingPair } from "@shared/schema";
+import { tradingPairs, type TradingPair } from "@shared/schema";
 import { getMultiAIConsensus, generateConsensusExplanation } from "./consensus";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 
@@ -56,10 +56,10 @@ export async function registerRoutes(
 
   app.get("/api/dashboard/:pair", async (req, res) => {
     const pair = req.params.pair as TradingPair;
-    const validPairs: TradingPair[] = ["BTC-USDT", "ETH-USDT"];
+    const validPairs = tradingPairs;
     
     if (!validPairs.includes(pair)) {
-      res.status(400).json({ error: "Invalid trading pair. Valid pairs: BTC-USDT, ETH-USDT" });
+      res.status(400).json({ error: `Invalid trading pair. Valid pairs: ${validPairs.join(', ')}` });
       return;
     }
       
@@ -143,9 +143,8 @@ export async function registerRoutes(
   app.post("/api/consensus", async (req, res) => {
     try {
       const { pair } = req.body as { pair: TradingPair };
-      const validPairs: TradingPair[] = ["BTC-USDT", "ETH-USDT"];
       
-      if (!validPairs.includes(pair)) {
+      if (!tradingPairs.includes(pair)) {
         res.status(400).json({ error: "Invalid trading pair" });
         return;
       }
@@ -193,9 +192,8 @@ export async function registerRoutes(
       }
       
       const { pair } = req.body as { pair: TradingPair };
-      const validPairs: TradingPair[] = ["BTC-USDT", "ETH-USDT"];
       
-      if (!validPairs.includes(pair)) {
+      if (!tradingPairs.includes(pair)) {
         res.status(400).json({ error: "Invalid trading pair" });
         return;
       }
