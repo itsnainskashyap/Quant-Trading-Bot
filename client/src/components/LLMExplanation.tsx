@@ -27,9 +27,9 @@ export function LLMExplanation({ reasoning, warnings, isLoading, onRefresh }: LL
             <MessageSquare className="w-4 h-4 text-primary" />
           </div>
           <div className="flex flex-col items-start">
-            <span className="text-sm font-medium">AI Analysis</span>
+            <span className="text-sm font-medium">Signal Analysis</span>
             <span className="text-[10px] text-muted-foreground">
-              Powered by GPT
+              Multi-AI Consensus Summary
             </span>
           </div>
         </div>

@@ -10,13 +10,13 @@ interface AIConsensusProps {
 }
 
 const providerIcons: Record<string, React.ElementType> = {
-  "OpenAI GPT-5.1": Sparkles,
+  "OpenAI GPT-4o": Sparkles,
   "Anthropic Claude": Brain,
   "Google Gemini": Zap,
 };
 
 const providerColors: Record<string, string> = {
-  "OpenAI GPT-5.1": "text-emerald-400",
+  "OpenAI GPT-4o": "text-emerald-400",
   "Anthropic Claude": "text-orange-400",
   "Google Gemini": "text-blue-400",
 };
@@ -58,7 +58,7 @@ function ProviderCard({ analysis }: { analysis: AIProviderAnalysis }) {
         </span>
       </div>
       
-      <p className="text-[10px] text-muted-foreground line-clamp-2">
+      <p className="text-[10px] text-muted-foreground leading-relaxed">
         {analysis.reasoning}
       </p>
     </motion.div>

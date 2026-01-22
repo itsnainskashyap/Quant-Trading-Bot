@@ -128,7 +128,7 @@ Respond in EXACT JSON:
   "sentimentScore": 0-100,
   "indicatorsAligned": number of indicators that agree (0-8),
   "psychology": "1 line market psychology",
-  "reasoning": "Explain which indicators aligned and why this is a high-probability setup (or why NO_TRADE)"
+  "reasoning": "Write 2-3 short sentences: 1) Key indicator readings (RSI=X, MACD=Y), 2) Why signal given or why NO_TRADE. Be specific with numbers."
 }`;
 }
 
