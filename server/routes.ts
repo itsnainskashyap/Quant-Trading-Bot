@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import OpenAI from "openai";
 import type { TradingPair } from "@shared/schema";
 import { getMultiAIConsensus, generateConsensusExplanation } from "./consensus";
+import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -14,6 +15,9 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  
+  await setupAuth(app);
+  registerAuthRoutes(app);
   
   const handleDashboard = async (pair: TradingPair, res: any) => {
     try {

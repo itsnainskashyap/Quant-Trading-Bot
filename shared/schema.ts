@@ -96,10 +96,5 @@ export const consensusResultSchema = z.object({
 });
 export type ConsensusResult = z.infer<typeof consensusResultSchema>;
 
-export const users = null;
-export const insertUserSchema = z.object({
-  username: z.string(),
-  password: z.string(),
-});
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = { id: string; username: string; password: string };
+export * from "./models/auth";
+export * from "./models/trading";

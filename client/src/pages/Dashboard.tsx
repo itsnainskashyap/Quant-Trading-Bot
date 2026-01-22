@@ -10,6 +10,7 @@ import { CapitalProtection } from "@/components/CapitalProtection";
 import { SignalHistory } from "@/components/SignalHistory";
 import { Disclaimer } from "@/components/Disclaimer";
 import { AIConsensus } from "@/components/AIConsensus";
+import { TradingViewChart } from "@/components/TradingViewChart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -172,6 +173,8 @@ export default function Dashboard() {
                 />
               ))}
             </div>
+            
+            <TradingViewChart pair={selectedPair} />
             
             <SignalCard 
               signal={data?.signal ?? null} 
