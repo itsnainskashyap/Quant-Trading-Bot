@@ -111,10 +111,10 @@ Respond in this EXACT JSON format:
 async function analyzeWithOpenAI(pair: TradingPair, metrics: MarketMetrics, price: number): Promise<AIAnalysisResult> {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-5.1",
+      model: "gpt-4o",
       messages: [{ role: "user", content: buildAnalysisPrompt(pair, metrics, price) }],
       temperature: 0.1,
-      max_tokens: 800,
+      max_completion_tokens: 800,
     });
 
     const content = response.choices[0]?.message?.content || "";
@@ -123,7 +123,7 @@ async function analyzeWithOpenAI(pair: TradingPair, metrics: MarketMetrics, pric
     
     const parsed = JSON.parse(jsonMatch[0]);
     return {
-      provider: "OpenAI GPT-5.1",
+      provider: "OpenAI GPT-4o",
       signal: parsed.signal as SignalType,
       confidence: Math.min(100, Math.max(0, parsed.confidence)),
       reasoning: parsed.reasoning,
@@ -137,7 +137,7 @@ async function analyzeWithOpenAI(pair: TradingPair, metrics: MarketMetrics, pric
   } catch (error) {
     console.error("OpenAI analysis failed:", error);
     return {
-      provider: "OpenAI GPT-5.1",
+      provider: "OpenAI GPT-4o",
       signal: "NO_TRADE",
       confidence: 0,
       reasoning: "Analysis failed - defaulting to safe position",
