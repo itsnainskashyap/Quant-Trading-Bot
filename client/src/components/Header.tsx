@@ -18,7 +18,7 @@ export function Header({ isDataFeedHealthy }: HeaderProps) {
               </div>
               <div className="flex flex-col">
                 <h1 className="text-lg font-bold tracking-tight gradient-text" data-testid="text-app-title">
-                  Ek XBT
+                  TradeX AI
                 </h1>
                 <span className="text-[10px] text-muted-foreground -mt-1">
                   AI Trading Assistant

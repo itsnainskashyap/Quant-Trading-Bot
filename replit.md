@@ -1,7 +1,7 @@
-# Ek XBT - AI-Assisted Trading Decision Platform
+# TradeX AI - AI-Assisted Trading Decision Platform
 
 ## Overview
-Ek XBT is a probability-based trading decision platform that helps users decide whether to BUY, SELL, or SKIP trades on cryptocurrency pairs (BTC-USDT, ETH-USDT). The system focuses on capital protection over profit maximization, preferring to skip trades over low-quality signals.
+TradeX AI is a probability-based trading decision platform that helps users decide whether to BUY, SELL, or SKIP trades on cryptocurrency pairs (BTC-USDT, ETH-USDT). The system focuses on capital protection over profit maximization, preferring to skip trades over low-quality signals.
 
 **NEW: Multi-AI Consensus System** - Uses 3 world-class AI providers (OpenAI GPT-5.1, Anthropic Claude, Google Gemini) voting together for maximum signal quality and reduced false signals.
 

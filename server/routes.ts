@@ -179,7 +179,7 @@ async function generateExplanation(
   metrics: Awaited<ReturnType<typeof storage.getMarketMetrics>>
 ): Promise<string> {
   try {
-    const prompt = `You are an AI trading assistant for Ek XBT, a crypto trading decision platform. Provide a clear, concise explanation of the current trading signal.
+    const prompt = `You are an AI trading assistant for TradeX AI, a crypto trading decision platform. Provide a clear, concise explanation of the current trading signal.
 
 Current Market Data:
 - Pair: ${signal.pair}
