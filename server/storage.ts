@@ -456,38 +456,8 @@ export class MemStorage implements IStorage {
   }
 
   async canUserTrade(userId: string): Promise<{ allowed: boolean; reason?: string; remaining?: number; isEarlyAdopter?: boolean }> {
-    const FREE_DAILY_LIMIT = 10;
-    
-    const subscription = await this.getUserSubscription(userId);
-    
-    if (subscription?.plan === "pro" && subscription.status === "active") {
-      return { allowed: true, remaining: -1, isEarlyAdopter: false };
-    }
-    
-    const isEarlyAdopter = await this.isUserEarlyAdopter(userId);
-    
-    if (isEarlyAdopter) {
-      const dailyCount = await this.getUserDailyPredictionCount(userId);
-      const remaining = Math.max(0, FREE_DAILY_LIMIT - dailyCount);
-      
-      if (dailyCount >= FREE_DAILY_LIMIT) {
-        return { 
-          allowed: false, 
-          reason: "Daily limit reached. Free users get 10 signals per day. Upgrade to Pro for unlimited signals.",
-          remaining: 0,
-          isEarlyAdopter: true
-        };
-      }
-      
-      return { allowed: true, remaining, isEarlyAdopter: true };
-    }
-    
-    return { 
-      allowed: false, 
-      reason: "Free access is no longer available. Please subscribe to Pro (₹1999/month) for unlimited trading signals.",
-      remaining: 0,
-      isEarlyAdopter: false
-    };
+    // Platform is now 100% FREE - no limits, no Pro plan required
+    return { allowed: true, remaining: -1, isEarlyAdopter: true };
   }
 }
 

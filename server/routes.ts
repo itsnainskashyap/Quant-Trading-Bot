@@ -295,20 +295,13 @@ export async function registerRoutes(
         return;
       }
       
-      const subscription = await storage.getUserSubscription(user.id);
-      const canTrade = await storage.canUserTrade(user.id);
-      const totalUsers = await storage.getTotalUserCount();
-      const dailyCount = await storage.getUserDailyPredictionCount(user.id);
-      
+      // Platform is now 100% FREE - unlimited signals for everyone
       res.json({
-        subscription,
-        canTrade: canTrade.allowed,
-        remaining: canTrade.remaining,
-        reason: canTrade.reason,
-        dailyUsed: dailyCount,
-        dailyLimit: 10,
-        totalUsers,
-        isEarlyAdopter: canTrade.isEarlyAdopter ?? false,
+        plan: "free",
+        canTrade: true,
+        remaining: -1, // Unlimited
+        dailyLimit: -1, // Unlimited
+        isEarlyAdopter: true,
       });
     } catch (error) {
       console.error("Subscription error:", error);
