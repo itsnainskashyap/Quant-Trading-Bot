@@ -87,10 +87,10 @@ shared/
 - Calculate and display profit/loss percentage
 - Store outcome with AI-generated reasoning
 
-### 3. Subscription System
-- First 1000 users get FREE access (10 signals/day)
-- Pro plan: ₹1999/month for unlimited signals
-- Real-time remaining signals display in header
+### 3. 100% FREE Platform
+- Completely free access for all users
+- Unlimited trading signals with no daily limits
+- No subscription plans or Pro tiers required
 
 ### 4. Capital Management & Risk Protection
 - User sets their trading capital amount
@@ -135,7 +135,7 @@ shared/
 The app runs on port 5000 with `npm run dev`. Frontend and backend are served together.
 
 ## Important Notes
-- This is an educational tool, not financial advice
+- TRADE AT YOUR OWN RISK - This is not financial advice
 - No profit guarantees are made - system cannot guarantee "lossless" trades
 - Uses simulated market data for demonstration
 - LLM never generates predictions independently
