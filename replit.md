@@ -37,6 +37,9 @@ client/
       CapitalProtection.tsx   # Capital protection status
       SignalHistory.tsx       # Recent signal history
       Disclaimer.tsx          # Legal disclaimer
+      BacktestStats.tsx       # Backtesting performance statistics
+      TechnicalIndicators.tsx # Real-time technical indicators display
+      NotificationBanner.tsx  # Signal notifications with browser alerts
     pages/
       Landing.tsx             # Public landing page
       Dashboard.tsx           # Main trading dashboard (auth required)
@@ -50,6 +53,8 @@ server/
   routes.ts                   # API endpoints
   storage.ts                  # Data storage and business logic
   consensus.ts                # Multi-AI consensus logic
+  priceService.ts             # Real-time price fetching from CoinGecko API
+  technicalIndicators.ts      # Technical indicator calculations (RSI, MACD, Bollinger)
   db.ts                       # Database connection
   replit_integrations/
     auth.ts                   # Replit Auth integration
@@ -72,6 +77,8 @@ shared/
 - `GET /api/signal/:pair` - Get signal for specific pair
 - `GET /api/metrics/:pair` - Get market metrics for pair
 - `GET /api/history` - Get signal history
+- `GET /api/backtest-stats` - Get backtesting performance statistics
+- `GET /api/indicators/:pair` - Get technical indicators for a specific pair
 
 ## Key Features
 
@@ -109,11 +116,38 @@ shared/
 - User profile with trading statistics
 - Admin panel for system monitoring
 
-### 6. Signal Generation
+### 7. Signal Generation
 - BUY/SELL/NO_TRADE based on aggregate confidence threshold (≥65%)
 - Risk grading: LOW/MEDIUM/HIGH based on confidence and volatility
 - Exit window: Time-based exit recommendations (5-25 minutes)
 - Capital protection: Trade frequency limiter, volatility suppression
+
+### 8. Real-Time Market Data
+- CoinGecko API integration for live cryptocurrency prices
+- 15-second price refresh with rate limit compliance
+- Fallback to cached data if API is unavailable
+- 24h price change, high/low, and volume tracking
+
+### 9. Technical Indicators
+- RSI (14-period) with oversold/overbought signals
+- MACD (12, 26, 9) with trend direction and histogram
+- Bollinger Bands (20-period, 2 std) with price position
+- SMA 20/50 crossover analysis
+- ATR for volatility measurement
+- Momentum indicator for trend strength
+
+### 10. Backtesting Statistics
+- Historical win rate tracking (target: 72%+)
+- Profit factor calculation
+- Sharpe ratio analysis
+- Maximum drawdown monitoring
+- Average trade duration
+
+### 11. Signal Notifications
+- Browser push notifications for new BUY/SELL signals
+- Permission request on first interaction
+- Notification history in dashboard
+- Real-time signal change detection
 
 ## Design System
 - **Theme**: Dark mode by default (professional trading aesthetic)
@@ -137,6 +171,8 @@ The app runs on port 5000 with `npm run dev`. Frontend and backend are served to
 ## Important Notes
 - TRADE AT YOUR OWN RISK - This is not financial advice
 - No profit guarantees are made - system cannot guarantee "lossless" trades
-- Uses simulated market data for demonstration
+- Uses real-time market data from CoinGecko API (free tier, 15-second refresh)
 - LLM never generates predictions independently
 - Multi-AI consensus significantly reduces false signals but cannot eliminate all losses
+- Technical indicators are calculated from real price history stored in memory
+- Backtesting statistics are calculated from actual prediction records when available
