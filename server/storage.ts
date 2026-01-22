@@ -15,7 +15,7 @@ import type {
   ModelScore,
   BacktestStats
 } from "@shared/schema";
-import { fetchRealPrices, getHistoricalPrices, fetchOHLCVData } from "./priceService";
+import { fetchRealPrices, getHistoricalPrices, fetchOHLCVData, initializePriceService, hasRealData } from "./priceService";
 import { calculateAllIndicators, type TechnicalIndicators } from "./technicalIndicators";
 
 export interface IStorage {
@@ -66,21 +66,22 @@ export class MemStorage implements IStorage {
     this.lastPriceUpdate = 0;
     this.currentSignal = null;
     this.backtestStats = {
-      totalSignals: 847,
-      winningSignals: 612,
-      losingSignals: 235,
-      winRate: 72.3,
-      avgProfit: 2.8,
-      avgLoss: 1.9,
-      profitFactor: 2.1,
-      maxDrawdown: 8.5,
-      sharpeRatio: 1.85,
+      totalSignals: 0,
+      winningSignals: 0,
+      losingSignals: 0,
+      winRate: 0,
+      avgProfit: 0,
+      avgLoss: 0,
+      profitFactor: 0,
+      maxDrawdown: 0,
+      sharpeRatio: 0,
       lastUpdated: Date.now(),
     };
     this.initializeRealPrices();
   }
 
   private async initializeRealPrices() {
+    await initializePriceService();
     await this.updatePrices();
   }
 
@@ -136,15 +137,16 @@ export class MemStorage implements IStorage {
     };
 
     for (const [pair, config] of Object.entries(cryptoPrices) as [TradingPair, typeof cryptoPrices["BTC-USDT"]][]) {
-      const price = config.base + (Math.random() - 0.5) * config.volatility;
+      const price = config.base;
       this.prices.set(pair, {
         pair,
         price,
-        change24h: (Math.random() - 0.5) * 8,
-        high24h: price * 1.02,
-        low24h: price * 0.98,
-        volume24h: config.volume + Math.random() * config.volume * 0.2,
+        change24h: 0,
+        high24h: price * 1.01,
+        low24h: price * 0.99,
+        volume24h: config.volume,
         timestamp: Date.now(),
+        isLiveData: false,
       });
       this.metrics.set(pair, this.generateMetrics(pair));
     }
@@ -206,6 +208,7 @@ export class MemStorage implements IStorage {
         low24h: 0,
         volume24h: 0,
         timestamp: Date.now(),
+        isLiveData: false,
       };
     }
     return priceData;
@@ -236,30 +239,73 @@ export class MemStorage implements IStorage {
       const allPredictions = await db.select().from(predictions).limit(1000);
       const completed = allPredictions.filter(p => p.outcome && p.outcome !== 'PENDING');
       
-      if (completed.length > 10) {
-        const wins = completed.filter(p => p.outcome === 'WIN');
-        const losses = completed.filter(p => p.outcome === 'LOSS');
-        
-        const avgProfit = wins.length > 0 
-          ? wins.reduce((sum, p) => sum + (p.profitLoss || 0), 0) / wins.length 
-          : 2.8;
-        const avgLoss = losses.length > 0 
-          ? Math.abs(losses.reduce((sum, p) => sum + (p.profitLoss || 0), 0) / losses.length)
-          : 1.9;
-        
+      if (completed.length === 0) {
+        // No completed trades - return zeros
         this.backtestStats = {
-          totalSignals: completed.length,
-          winningSignals: wins.length,
-          losingSignals: losses.length,
-          winRate: completed.length > 0 ? (wins.length / completed.length) * 100 : 72.3,
-          avgProfit,
-          avgLoss,
-          profitFactor: avgLoss > 0 ? (wins.length * avgProfit) / (losses.length * avgLoss) : 2.1,
-          maxDrawdown: 8.5,
-          sharpeRatio: 1.85,
+          totalSignals: 0,
+          winningSignals: 0,
+          losingSignals: 0,
+          winRate: 0,
+          avgProfit: 0,
+          avgLoss: 0,
+          profitFactor: 0,
+          maxDrawdown: 0,
+          sharpeRatio: 0,
           lastUpdated: Date.now(),
         };
+        return;
       }
+      
+      const wins = completed.filter(p => p.outcome === 'WIN');
+      const losses = completed.filter(p => p.outcome === 'LOSS');
+      
+      const avgProfit = wins.length > 0 
+        ? wins.reduce((sum, p) => sum + (p.profitLoss || 0), 0) / wins.length 
+        : 0;
+      const avgLoss = losses.length > 0 
+        ? Math.abs(losses.reduce((sum, p) => sum + (p.profitLoss || 0), 0) / losses.length)
+        : 0;
+      
+      // Calculate real profit factor only if we have both wins and losses
+      let profitFactor = 0;
+      if (wins.length > 0 && losses.length > 0 && avgLoss > 0) {
+        const totalProfit = wins.reduce((sum, p) => sum + Math.max(0, p.profitLoss || 0), 0);
+        const totalLoss = Math.abs(losses.reduce((sum, p) => sum + Math.min(0, p.profitLoss || 0), 0));
+        profitFactor = totalLoss > 0 ? totalProfit / totalLoss : 0;
+      }
+      
+      // Calculate real max drawdown from P/L history
+      let maxDrawdown = 0;
+      let peak = 0;
+      let runningPnL = 0;
+      for (const pred of completed.sort((a, b) => 
+        new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
+      )) {
+        runningPnL += pred.profitLoss || 0;
+        if (runningPnL > peak) peak = runningPnL;
+        const drawdown = peak - runningPnL;
+        if (drawdown > maxDrawdown) maxDrawdown = drawdown;
+      }
+      
+      // Simple Sharpe ratio approximation (returns / volatility)
+      const returns = completed.map(p => p.profitLoss || 0);
+      const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
+      const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length;
+      const stdDev = Math.sqrt(variance);
+      const sharpeRatio = stdDev > 0 ? avgReturn / stdDev : 0;
+      
+      this.backtestStats = {
+        totalSignals: completed.length,
+        winningSignals: wins.length,
+        losingSignals: losses.length,
+        winRate: (wins.length / completed.length) * 100,
+        avgProfit,
+        avgLoss,
+        profitFactor,
+        maxDrawdown,
+        sharpeRatio,
+        lastUpdated: Date.now(),
+      };
     } catch (error) {
       console.error("Error updating backtest stats:", error);
     }

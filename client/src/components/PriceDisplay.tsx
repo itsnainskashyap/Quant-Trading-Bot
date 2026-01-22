@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Wifi, WifiOff } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import type { PriceData } from "@shared/schema";
 
@@ -11,6 +11,7 @@ interface PriceDisplayProps {
 export function PriceDisplay({ data, isSelected, onClick }: PriceDisplayProps) {
   const isPositive = data.change24h > 0;
   const isNeutral = data.change24h === 0;
+  const isLive = data.isLiveData !== false;
   
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -43,6 +44,11 @@ export function PriceDisplay({ data, isSelected, onClick }: PriceDisplayProps) {
             <span className="font-semibold text-sm" data-testid={`text-pair-${data.pair}`}>
               {data.pair}
             </span>
+            {isLive ? (
+              <Wifi className="w-3 h-3 text-success" />
+            ) : (
+              <WifiOff className="w-3 h-3 text-muted-foreground" />
+            )}
             {isSelected && (
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-glow" />
             )}

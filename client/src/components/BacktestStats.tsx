@@ -30,15 +30,25 @@ export function BacktestStats() {
 
   if (!stats) return null;
 
+  const hasData = stats.totalSignals > 0;
+
   return (
     <Card data-testid="card-backtest-stats">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium flex items-center gap-2">
           <BarChart3 className="w-4 h-4 text-primary" />
-          Historical Performance
+          Your Trading Performance
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        {!hasData ? (
+          <div className="text-center py-4 text-muted-foreground text-sm">
+            <Activity className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <p>No trades recorded yet</p>
+            <p className="text-xs mt-1">Take your first trade to start tracking performance</p>
+          </div>
+        ) : (
+        <>
         <div className="grid grid-cols-2 gap-2">
           <div className="p-2 rounded bg-muted/50">
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -103,6 +113,8 @@ export function BacktestStats() {
             <span className="text-primary font-medium">{stats.sharpeRatio.toFixed(2)}</span>
           </div>
         </div>
+        </>
+        )}
       </CardContent>
     </Card>
   );

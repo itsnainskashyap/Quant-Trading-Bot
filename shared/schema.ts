@@ -24,6 +24,7 @@ export const priceDataSchema = z.object({
   low24h: z.number(),
   volume24h: z.number(),
   timestamp: z.number(),
+  isLiveData: z.boolean().optional(),
 });
 export type PriceData = z.infer<typeof priceDataSchema>;
 
