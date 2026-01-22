@@ -593,7 +593,7 @@ export default function Dashboard() {
                   )}
                   
                   <div className="p-3">
-                    <p className="text-xs text-gray-300 leading-relaxed line-clamp-3">
+                    <p className="text-xs text-gray-300 leading-relaxed whitespace-pre-line">
                       {analysis.reasoning}
                     </p>
                   </div>

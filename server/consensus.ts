@@ -433,42 +433,43 @@ export async function getMultiAIConsensus(
 }
 
 export function generateConsensusExplanation(consensus: ConsensusResult): string {
-  const providerSummary = consensus.providers
-    .filter(p => p.success)
-    .map(p => `**${p.provider}**: ${p.signal} (${p.confidence}% confidence, Hold: ${p.holdDuration} min)`)
-    .join("\n");
-
-  let explanation = `## Multi-AI Consensus Analysis\n\n`;
-  explanation += `**Signal**: ${consensus.consensusSignal}\n`;
-  explanation += `**Confidence**: ${consensus.consensusConfidence}%\n`;
-  explanation += `**Hold Duration**: ${consensus.holdDuration} minutes\n`;
-  explanation += `**Risk Level**: ${consensus.consensusRisk}\n\n`;
+  const successfulProviders = consensus.providers.filter(p => p.success);
   
-  explanation += `### Technical Analysis\n`;
-  explanation += `- Trend: ${consensus.technicalAnalysis.trend}\n`;
-  explanation += `- Momentum: ${consensus.technicalAnalysis.momentum}\n\n`;
+  // Build concise analysis summary
+  let explanation = `Signal: ${consensus.consensusSignal} | Confidence: ${consensus.consensusConfidence}% | Risk: ${consensus.consensusRisk}`;
   
-  explanation += `### Sentiment Analysis\n`;
-  explanation += `- Buyer Strength: ${consensus.sentimentAnalysis.buyerStrength}%\n`;
-  explanation += `- Seller Strength: ${consensus.sentimentAnalysis.sellerStrength}%\n`;
-  explanation += `- Dominant Side: ${consensus.sentimentAnalysis.dominantSide}\n\n`;
-  
-  explanation += `### Market Psychology\n`;
-  explanation += `${consensus.sentimentAnalysis.psychologyNote}\n\n`;
-
-  explanation += `### AI Provider Breakdown:\n${providerSummary}\n\n`;
-  
-  if (consensus.warnings.length > 0) {
-    explanation += `### Safety Warnings:\n`;
-    consensus.warnings.forEach(w => {
-      explanation += `- ${w}\n`;
-    });
-    explanation += "\n";
+  if (consensus.holdDuration > 0) {
+    explanation += ` | Hold: ${consensus.holdDuration} min`;
   }
-
-  explanation += `### Reasoning:\n${consensus.reasoning}\n\n`;
   
-  explanation += `*Analysis from OpenAI GPT-5.1, Anthropic Claude, and Google Gemini consensus.*`;
+  explanation += `\n\nTechnical: ${consensus.technicalAnalysis.trend} trend, ${consensus.technicalAnalysis.momentum} momentum`;
+  explanation += `\nSentiment: ${consensus.sentimentAnalysis.dominantSide} (Buyers ${consensus.sentimentAnalysis.buyerStrength}% vs Sellers ${consensus.sentimentAnalysis.sellerStrength}%)`;
+  
+  if (consensus.sentimentAnalysis.psychologyNote) {
+    explanation += `\n\n${consensus.sentimentAnalysis.psychologyNote}`;
+  }
+  
+  // Add provider votes
+  if (successfulProviders.length > 0) {
+    explanation += `\n\nAI Votes: `;
+    explanation += successfulProviders
+      .map(p => {
+        const shortName = p.provider.includes("OpenAI") ? "GPT-4o" : 
+                          p.provider.includes("Anthropic") ? "Claude" : "Gemini";
+        return `${shortName}=${p.signal}(${p.confidence}%)`;
+      })
+      .join(" | ");
+  }
+  
+  // Add warnings if any
+  if (consensus.warnings.length > 0) {
+    explanation += `\n\nWarnings: ${consensus.warnings.join(", ")}`;
+  }
+  
+  // Add main reasoning
+  if (consensus.reasoning && consensus.reasoning !== "No clear consensus - protecting capital") {
+    explanation += `\n\nAnalysis: ${consensus.reasoning}`;
+  }
 
   return explanation;
 }
