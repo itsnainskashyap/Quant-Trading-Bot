@@ -9,7 +9,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import logoImage from "@assets/IMAGE_2026-01-22_19:24:15_1769090056092.jpg";
+import logoImage from "@assets/tradex-logo.png";
 
 function AnimatedPrice({ symbol, basePrice }: { symbol: string; basePrice: number }) {
   const [price, setPrice] = useState(basePrice);
@@ -195,7 +195,7 @@ export function Landing() {
               </div>
               <h3 className="text-xl font-semibold mb-3">Get AI Analysis</h3>
               <p className="text-gray-400 text-sm leading-relaxed">
-                3 AI models (GPT-5.1, Claude, Gemini) analyze together for maximum accuracy.
+                3 AI models (GPT-4o, Claude, Gemini) analyze together for maximum accuracy.
               </p>
             </div>
             
@@ -241,7 +241,7 @@ export function Landing() {
                 </div>
               </div>
               <p className="text-gray-400 text-sm leading-relaxed">
-                OpenAI GPT-5.1, Claude, and Gemini analyze simultaneously for highest accuracy signals.
+                OpenAI GPT-4o, Claude, and Gemini analyze simultaneously for highest accuracy signals.
               </p>
             </Card>
             
