@@ -1,0 +1,82 @@
+You are acting as a Quantitative Trading Expert, Machine Learning Engineer, FinTech Product Architect, Security Specialist, and UX Designer.
+Design and specify a single-page AI-assisted trading decision platform named “Ek XBT” that focuses on probability-based trade guidance and capital protection, not profit guarantees.
+1. Product Vision
+Build a clean, minimal, high-trust platform that helps users decide:
+Whether to BUY / SELL / SKIP
+When to exit (in minutes)
+How risky the trade is
+The system must prefer skipping trades over low-quality signals to reduce losses and drawdowns.
+2. Market Scope (Phase-wise)
+Phase 1
+Crypto XBT pairs (BTC-USDT, ETH-USDT)
+Short-term trading (1–30 minute horizon)
+Phase 2
+Forex & indices
+Multi-timeframe confirmation
+3. Data Layer (Real-Time Mandatory)
+Integrate and normalize:
+Live price & OHLCV
+Volume delta
+Order-book imbalance
+Volatility & ATR
+Funding rate & open interest
+Market regime classification (trend / range / chaos)
+Data quality validation must block signals if feeds degrade.
+4. AI & Decision Engine
+Use a multi-model ensemble, not a single predictor:
+Trend detection model
+Momentum confirmation model
+Volatility filter
+Fake breakout & liquidity trap detector
+Each model outputs a probability score.
+Final signal is generated only if aggregate confidence > threshold.
+Signal Output Rules
+BUY / SELL / NO TRADE
+Confidence % (calibrated)
+Suggested exit window (minutes)
+Risk grade (Low / Medium / High)
+5. Exit Timing Logic (Critical)
+Exit recommendation must consider:
+Time decay
+Volatility expansion
+Momentum exhaustion
+Mean reversion probability
+Exit logic must override entry logic if risk increases.
+6. Capital Protection & Loss Control
+Implement:
+Trade frequency limiter
+Volatility-based trade suppression
+Drawdown-aware signal reduction
+No-trade zones during news spikes
+Capital survival > trade frequency.
+7. LLM (ChatGPT API) Responsibilities
+Translate AI signals into clear human language
+Provide context-aware warnings
+Explain “why no trade” decisions
+Detect emotional trading patterns (over-clicking)
+LLM must never generate predictions independently.
+8. UI / UX Principles
+Single-page layout
+Dark mode default
+One primary signal card
+Live exit countdown
+Confidence & risk visualization
+Mobile-first, distraction-free design.
+9. Security & Reliability
+Read-only API connections
+Rate limiting & DDoS protection
+Encrypted model outputs
+Audit logs for all signals
+10. Legal & Compliance Guardrails
+No profit promises
+No “sure / guaranteed” wording
+Clear disclaimer: “AI-assisted probability analysis for educational purposes.”
+11. Output Required
+Provide:
+Full system architecture diagram
+AI logic flowchart
+Model selection reasoning
+Tech stack (frontend, backend, data, AI)
+Monetization model (subscription / freemium)
+Scalability roadmap
+Design the platform so that it feels near no-loss due to discipline, filtering, and risk suppression, not due to prediction claims.
