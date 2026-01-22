@@ -310,7 +310,7 @@ export async function registerRoutes(
         dailyUsed: dailyCount,
         dailyLimit: 10,
         totalUsers,
-        isEarlyAdopter: totalUsers <= 1000,
+        isEarlyAdopter: canTrade.isEarlyAdopter ?? false,
       });
     } catch (error) {
       console.error("Subscription error:", error);

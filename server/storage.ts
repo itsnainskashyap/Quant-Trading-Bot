@@ -107,7 +107,7 @@ export class MemStorage implements IStorage {
   private updatePrices() {
     const now = Date.now();
     if (now - this.lastPriceUpdate > 3000) {
-      for (const [pair, data] of this.prices) {
+      for (const [pair, data] of Array.from(this.prices.entries())) {
         const changePercent = (Math.random() - 0.5) * 0.5;
         const newPrice = data.price * (1 + changePercent / 100);
         this.prices.set(pair, {
