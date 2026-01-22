@@ -9,7 +9,11 @@ export type RiskGrade = typeof riskGrades[number];
 export const marketRegimes = ["TREND", "RANGE", "CHAOS"] as const;
 export type MarketRegime = typeof marketRegimes[number];
 
-export const tradingPairs = ["BTC-USDT", "ETH-USDT"] as const;
+export const tradingPairs = [
+  "BTC-USDT", "ETH-USDT", "SOL-USDT", "XRP-USDT", "DOGE-USDT", 
+  "BNB-USDT", "ADA-USDT", "AVAX-USDT", "DOT-USDT", "MATIC-USDT",
+  "LINK-USDT", "LTC-USDT", "SHIB-USDT", "ATOM-USDT", "UNI-USDT"
+] as const;
 export type TradingPair = typeof tradingPairs[number];
 
 export const priceDataSchema = z.object({

@@ -63,31 +63,37 @@ export class MemStorage implements IStorage {
   }
 
   private initializeMockData() {
-    const btcBasePrice = 67000 + (Math.random() - 0.5) * 2000;
-    const ethBasePrice = 3400 + (Math.random() - 0.5) * 200;
+    const cryptoPrices: Record<TradingPair, { base: number; volatility: number; volume: number }> = {
+      "BTC-USDT": { base: 97000, volatility: 2000, volume: 25000000000 },
+      "ETH-USDT": { base: 3400, volatility: 200, volume: 12000000000 },
+      "SOL-USDT": { base: 185, volatility: 15, volume: 3000000000 },
+      "XRP-USDT": { base: 2.35, volatility: 0.15, volume: 2000000000 },
+      "DOGE-USDT": { base: 0.32, volatility: 0.03, volume: 1500000000 },
+      "BNB-USDT": { base: 680, volatility: 30, volume: 1800000000 },
+      "ADA-USDT": { base: 0.95, volatility: 0.08, volume: 800000000 },
+      "AVAX-USDT": { base: 38, volatility: 3, volume: 600000000 },
+      "DOT-USDT": { base: 7.5, volatility: 0.5, volume: 400000000 },
+      "MATIC-USDT": { base: 0.52, volatility: 0.04, volume: 350000000 },
+      "LINK-USDT": { base: 22, volatility: 2, volume: 500000000 },
+      "LTC-USDT": { base: 105, volatility: 8, volume: 400000000 },
+      "SHIB-USDT": { base: 0.000022, volatility: 0.000002, volume: 300000000 },
+      "ATOM-USDT": { base: 9.5, volatility: 0.8, volume: 200000000 },
+      "UNI-USDT": { base: 13, volatility: 1, volume: 250000000 },
+    };
 
-    this.prices.set("BTC-USDT", {
-      pair: "BTC-USDT",
-      price: btcBasePrice,
-      change24h: (Math.random() - 0.5) * 6,
-      high24h: btcBasePrice * 1.02,
-      low24h: btcBasePrice * 0.98,
-      volume24h: 25000000000 + Math.random() * 5000000000,
-      timestamp: Date.now(),
-    });
-
-    this.prices.set("ETH-USDT", {
-      pair: "ETH-USDT",
-      price: ethBasePrice,
-      change24h: (Math.random() - 0.5) * 8,
-      high24h: ethBasePrice * 1.025,
-      low24h: ethBasePrice * 0.975,
-      volume24h: 12000000000 + Math.random() * 3000000000,
-      timestamp: Date.now(),
-    });
-
-    this.metrics.set("BTC-USDT", this.generateMetrics("BTC-USDT"));
-    this.metrics.set("ETH-USDT", this.generateMetrics("ETH-USDT"));
+    for (const [pair, config] of Object.entries(cryptoPrices) as [TradingPair, typeof cryptoPrices["BTC-USDT"]][]) {
+      const price = config.base + (Math.random() - 0.5) * config.volatility;
+      this.prices.set(pair, {
+        pair,
+        price,
+        change24h: (Math.random() - 0.5) * 8,
+        high24h: price * 1.02,
+        low24h: price * 0.98,
+        volume24h: config.volume + Math.random() * config.volume * 0.2,
+        timestamp: Date.now(),
+      });
+      this.metrics.set(pair, this.generateMetrics(pair));
+    }
   }
 
   private generateMetrics(pair: TradingPair): MarketMetrics {
