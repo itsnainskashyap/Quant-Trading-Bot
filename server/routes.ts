@@ -309,6 +309,49 @@ export async function registerRoutes(
     }
   });
 
+  // Backtest statistics endpoint
+  app.get("/api/backtest-stats", async (req, res) => {
+    try {
+      const stats = storage.getBacktestStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Backtest stats error:", error);
+      res.status(500).json({ error: "Failed to fetch backtest stats" });
+    }
+  });
+
+  // Technical indicators endpoint
+  app.get("/api/indicators/:pair", async (req, res) => {
+    try {
+      const pair = req.params.pair as TradingPair;
+      const validPairs = tradingPairs;
+      
+      if (!validPairs.includes(pair)) {
+        res.status(400).json({ error: "Invalid trading pair" });
+        return;
+      }
+      
+      const metrics = await storage.getMarketMetrics(pair);
+      
+      res.json({
+        pair,
+        rsi: metrics.rsi,
+        rsiSignal: metrics.rsiSignal,
+        macdTrend: metrics.macdTrend,
+        macdHistogram: metrics.macdHistogram,
+        bollingerPosition: metrics.bollingerPosition,
+        sma20: metrics.sma20,
+        sma50: metrics.sma50,
+        momentum: metrics.momentum,
+        overallSignal: metrics.overallTechnicalSignal,
+        strength: metrics.technicalStrength,
+      });
+    } catch (error) {
+      console.error("Indicators error:", error);
+      res.status(500).json({ error: "Failed to fetch indicators" });
+    }
+  });
+
   return httpServer;
 }
 

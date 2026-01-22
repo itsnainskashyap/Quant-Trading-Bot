@@ -58,8 +58,33 @@ export const marketMetricsSchema = z.object({
   atr: z.number(),
   fundingRate: z.number(),
   openInterest: z.number(),
+  // Technical Indicators
+  rsi: z.number().optional(),
+  rsiSignal: z.enum(['OVERSOLD', 'OVERBOUGHT', 'NEUTRAL']).optional(),
+  macdTrend: z.enum(['BULLISH', 'BEARISH', 'NEUTRAL']).optional(),
+  macdHistogram: z.number().optional(),
+  bollingerPosition: z.enum(['ABOVE_UPPER', 'ABOVE_MIDDLE', 'BELOW_MIDDLE', 'BELOW_LOWER']).optional(),
+  sma20: z.number().optional(),
+  sma50: z.number().optional(),
+  momentum: z.number().optional(),
+  overallTechnicalSignal: z.enum(['STRONG_BUY', 'BUY', 'NEUTRAL', 'SELL', 'STRONG_SELL']).optional(),
+  technicalStrength: z.number().optional(),
 });
 export type MarketMetrics = z.infer<typeof marketMetricsSchema>;
+
+export const backtestStatsSchema = z.object({
+  totalSignals: z.number(),
+  winningSignals: z.number(),
+  losingSignals: z.number(),
+  winRate: z.number(),
+  avgProfit: z.number(),
+  avgLoss: z.number(),
+  profitFactor: z.number(),
+  maxDrawdown: z.number(),
+  sharpeRatio: z.number(),
+  lastUpdated: z.number(),
+});
+export type BacktestStats = z.infer<typeof backtestStatsSchema>;
 
 export const signalHistorySchema = z.object({
   id: z.string(),

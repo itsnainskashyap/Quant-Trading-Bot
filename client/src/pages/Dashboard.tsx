@@ -35,7 +35,10 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { TradingViewChart } from "@/components/TradingViewChart";
-import type { TradingPair, ConsensusResult } from "@shared/schema";
+import { BacktestStats } from "@/components/BacktestStats";
+import { TechnicalIndicators } from "@/components/TechnicalIndicators";
+import { NotificationBanner, NotificationButton } from "@/components/NotificationBanner";
+import type { TradingPair, ConsensusResult, MarketMetrics } from "@shared/schema";
 import logoImage from "@assets/IMAGE_2026-01-22_19:24:15_1769090056092.jpg";
 
 const CRYPTO_ICONS: Record<string, { color: string; symbol: string }> = {
@@ -80,6 +83,26 @@ interface PriceData {
 interface DashboardData {
   prices: PriceData[];
   isDataFeedHealthy: boolean;
+  signal?: {
+    id: string;
+    pair: TradingPair;
+    signal: 'BUY' | 'SELL' | 'NO_TRADE';
+    confidence: number;
+    riskGrade: string;
+    exitWindowMinutes: number;
+  };
+  metrics?: {
+    rsi?: number;
+    rsiSignal?: 'OVERSOLD' | 'OVERBOUGHT' | 'NEUTRAL';
+    macdTrend?: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
+    macdHistogram?: number;
+    bollingerPosition?: 'ABOVE_UPPER' | 'ABOVE_MIDDLE' | 'BELOW_MIDDLE' | 'BELOW_LOWER';
+    sma20?: number;
+    sma50?: number;
+    momentum?: number;
+    overallTechnicalSignal?: 'STRONG_BUY' | 'BUY' | 'NEUTRAL' | 'SELL' | 'STRONG_SELL';
+    technicalStrength?: number;
+  };
 }
 
 interface TradeRecommendation {
@@ -614,6 +637,28 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
+            <BacktestStats />
+
+            <TechnicalIndicators pair={selectedPair} metrics={data?.signal ? {
+              pair: selectedPair,
+              volumeDelta: 0,
+              orderBookImbalance: 0,
+              volatility: 0,
+              atr: 0,
+              fundingRate: 0,
+              openInterest: 0,
+              rsi: data?.metrics?.rsi,
+              rsiSignal: data?.metrics?.rsiSignal,
+              macdTrend: data?.metrics?.macdTrend,
+              macdHistogram: data?.metrics?.macdHistogram,
+              bollingerPosition: data?.metrics?.bollingerPosition,
+              sma20: data?.metrics?.sma20,
+              sma50: data?.metrics?.sma50,
+              momentum: data?.metrics?.momentum,
+              overallTechnicalSignal: data?.metrics?.overallTechnicalSignal,
+              technicalStrength: data?.metrics?.technicalStrength,
+            } as MarketMetrics : undefined} />
+
             <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/5 to-cyan-500/5 border border-emerald-500/10">
               <div className="flex items-start gap-2">
                 <Shield className="w-4 h-4 text-emerald-400 mt-0.5" />
@@ -640,6 +685,8 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+
+      <NotificationBanner signal={data?.signal} pair={selectedPair} />
 
       <button
         onClick={() => setShowHelpChat(!showHelpChat)}
