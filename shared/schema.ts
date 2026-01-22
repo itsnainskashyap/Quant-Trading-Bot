@@ -1,18 +1,83 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-});
+export const signalTypes = ["BUY", "SELL", "NO_TRADE"] as const;
+export type SignalType = typeof signalTypes[number];
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
+export const riskGrades = ["LOW", "MEDIUM", "HIGH"] as const;
+export type RiskGrade = typeof riskGrades[number];
 
+export const marketRegimes = ["TREND", "RANGE", "CHAOS"] as const;
+export type MarketRegime = typeof marketRegimes[number];
+
+export const tradingPairs = ["BTC-USDT", "ETH-USDT"] as const;
+export type TradingPair = typeof tradingPairs[number];
+
+export const priceDataSchema = z.object({
+  pair: z.enum(tradingPairs),
+  price: z.number(),
+  change24h: z.number(),
+  high24h: z.number(),
+  low24h: z.number(),
+  volume24h: z.number(),
+  timestamp: z.number(),
+});
+export type PriceData = z.infer<typeof priceDataSchema>;
+
+export const modelScoreSchema = z.object({
+  name: z.string(),
+  score: z.number().min(0).max(100),
+  description: z.string(),
+});
+export type ModelScore = z.infer<typeof modelScoreSchema>;
+
+export const tradingSignalSchema = z.object({
+  id: z.string(),
+  pair: z.enum(tradingPairs),
+  signal: z.enum(signalTypes),
+  confidence: z.number().min(0).max(100),
+  riskGrade: z.enum(riskGrades),
+  exitWindowMinutes: z.number(),
+  exitTimestamp: z.number(),
+  marketRegime: z.enum(marketRegimes),
+  modelScores: z.array(modelScoreSchema),
+  reasoning: z.string(),
+  warnings: z.array(z.string()),
+  timestamp: z.number(),
+});
+export type TradingSignal = z.infer<typeof tradingSignalSchema>;
+
+export const marketMetricsSchema = z.object({
+  pair: z.enum(tradingPairs),
+  volumeDelta: z.number(),
+  orderBookImbalance: z.number(),
+  volatility: z.number(),
+  atr: z.number(),
+  fundingRate: z.number(),
+  openInterest: z.number(),
+});
+export type MarketMetrics = z.infer<typeof marketMetricsSchema>;
+
+export const signalHistorySchema = z.object({
+  id: z.string(),
+  pair: z.enum(tradingPairs),
+  signal: z.enum(signalTypes),
+  confidence: z.number(),
+  timestamp: z.number(),
+  outcome: z.enum(["WIN", "LOSS", "PENDING", "SKIPPED"]).optional(),
+});
+export type SignalHistory = z.infer<typeof signalHistorySchema>;
+
+export const llmExplanationRequestSchema = z.object({
+  signal: tradingSignalSchema,
+  priceData: priceDataSchema,
+  metrics: marketMetricsSchema,
+});
+export type LLMExplanationRequest = z.infer<typeof llmExplanationRequestSchema>;
+
+export const users = null;
+export const insertUserSchema = z.object({
+  username: z.string(),
+  password: z.string(),
+});
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+export type User = { id: string; username: string; password: string };
