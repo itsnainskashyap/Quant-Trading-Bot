@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,7 +14,11 @@ import {
   Loader2,
   LogOut,
   User,
-  History
+  History,
+  Timer,
+  BarChart3,
+  Brain,
+  Users
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -62,6 +66,16 @@ interface AnalysisResult {
   holdTime: number;
   entryPrice: number;
   consensus?: ConsensusResult;
+  technicalAnalysis?: {
+    trend: string;
+    momentum: string;
+  };
+  sentimentAnalysis?: {
+    buyerStrength: number;
+    sellerStrength: number;
+    dominantSide: string;
+    psychologyNote: string;
+  };
 }
 
 interface SubscriptionData {
@@ -99,9 +113,11 @@ export default function Dashboard() {
         signal: consensus.consensusSignal === 'NO_TRADE' ? 'SKIP' : consensus.consensusSignal,
         confidence: consensus.consensusConfidence,
         reasoning: result.explanation,
-        holdTime: 15,
+        holdTime: (consensus as any).holdDuration || 5,
         entryPrice: data?.prices.find(p => p.pair === selectedPair)?.price || 0,
         consensus,
+        technicalAnalysis: (consensus as any).technicalAnalysis,
+        sentimentAnalysis: (consensus as any).sentimentAnalysis,
       });
       setIsAnalyzing(false);
     },
@@ -284,11 +300,17 @@ export default function Dashboard() {
             {!analysis && !isAnalyzing && (
               <Card className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-500/20">
                 <CardContent className="p-6 text-center">
+                  <CandleTimer />
                   <Sparkles className="w-12 h-12 mx-auto mb-4 text-blue-400" />
                   <h3 className="text-xl font-semibold mb-2">Get AI Analysis</h3>
-                  <p className="text-gray-400 text-sm mb-6 max-w-md mx-auto">
-                    Our AI will analyze the {selectedPair} chart and tell you whether to BUY, SELL, or SKIP this trade.
+                  <p className="text-gray-400 text-sm mb-4 max-w-md mx-auto">
+                    Wait for candle close, then get analysis with <strong>Technical</strong>, <strong>Sentiment</strong> & <strong>Psychology</strong> breakdown.
                   </p>
+                  <div className="flex flex-wrap justify-center gap-2 mb-6 text-xs">
+                    <span className="px-2 py-1 rounded-full bg-blue-500/20 text-blue-400">Technical Analysis</span>
+                    <span className="px-2 py-1 rounded-full bg-cyan-500/20 text-cyan-400">Volume & Order Flow</span>
+                    <span className="px-2 py-1 rounded-full bg-purple-500/20 text-purple-400">Buyer/Seller Psychology</span>
+                  </div>
                   <Button
                     size="lg"
                     onClick={handleAnalyze}
@@ -296,7 +318,7 @@ export default function Dashboard() {
                     data-testid="button-analyze"
                   >
                     <Sparkles className="w-5 h-5 mr-2" />
-                    Analyze Now
+                    Analyze After Candle Close
                   </Button>
                 </CardContent>
               </Card>
@@ -306,8 +328,13 @@ export default function Dashboard() {
               <Card className="bg-[#12121a] border-white/10">
                 <CardContent className="p-8 text-center">
                   <Loader2 className="w-12 h-12 mx-auto mb-4 text-blue-400 animate-spin" />
-                  <h3 className="text-lg font-semibold mb-2">Analyzing Chart...</h3>
-                  <p className="text-gray-400 text-sm">AI is reading market patterns</p>
+                  <h3 className="text-lg font-semibold mb-2">Analyzing Last Candle...</h3>
+                  <p className="text-gray-400 text-sm mb-4">3 AI models analyzing simultaneously</p>
+                  <div className="flex flex-wrap justify-center gap-2 text-xs">
+                    <span className="px-2 py-1 rounded-full bg-blue-500/20 text-blue-400 animate-pulse">Technical Analysis</span>
+                    <span className="px-2 py-1 rounded-full bg-cyan-500/20 text-cyan-400 animate-pulse">Volume & Order Flow</span>
+                    <span className="px-2 py-1 rounded-full bg-purple-500/20 text-purple-400 animate-pulse">Psychology Check</span>
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -338,21 +365,59 @@ export default function Dashboard() {
                     </div>
                     
                     {analysis.signal !== 'SKIP' && (
-                      <div className="flex items-center gap-4 text-sm text-gray-400">
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          Hold for {analysis.holdTime} minutes
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
+                        <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/5">
+                          <Timer className="w-4 h-4 text-blue-400" />
+                          <span>Hold: <strong className="text-white">{analysis.holdTime} min</strong></span>
                         </div>
-                        <div>
-                          Entry: ${analysis.entryPrice.toLocaleString()}
+                        <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/5">
+                          <span>Entry: <strong className="text-white">${analysis.entryPrice.toLocaleString()}</strong></span>
                         </div>
                       </div>
                     )}
                   </div>
+
+                  {analysis.technicalAnalysis && analysis.sentimentAnalysis && (
+                    <div className="p-4 border-b border-white/5 grid grid-cols-3 gap-4">
+                      <div className="text-center p-3 rounded-xl bg-white/5">
+                        <BarChart3 className="w-5 h-5 mx-auto mb-1 text-blue-400" />
+                        <div className="text-xs text-gray-500 mb-1">Technical</div>
+                        <div className={`text-sm font-semibold ${
+                          analysis.technicalAnalysis.trend === 'BULLISH' ? 'text-emerald-400' :
+                          analysis.technicalAnalysis.trend === 'BEARISH' ? 'text-red-400' :
+                          'text-yellow-400'
+                        }`}>
+                          {analysis.technicalAnalysis.trend}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-0.5">{analysis.technicalAnalysis.momentum}</div>
+                      </div>
+                      <div className="text-center p-3 rounded-xl bg-white/5">
+                        <Users className="w-5 h-5 mx-auto mb-1 text-cyan-400" />
+                        <div className="text-xs text-gray-500 mb-1">Sentiment</div>
+                        <div className={`text-sm font-semibold ${
+                          analysis.sentimentAnalysis.dominantSide === 'BUYERS' ? 'text-emerald-400' :
+                          analysis.sentimentAnalysis.dominantSide === 'SELLERS' ? 'text-red-400' :
+                          'text-yellow-400'
+                        }`}>
+                          {analysis.sentimentAnalysis.dominantSide}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-0.5">
+                          B:{analysis.sentimentAnalysis.buyerStrength}% / S:{analysis.sentimentAnalysis.sellerStrength}%
+                        </div>
+                      </div>
+                      <div className="text-center p-3 rounded-xl bg-white/5">
+                        <Brain className="w-5 h-5 mx-auto mb-1 text-purple-400" />
+                        <div className="text-xs text-gray-500 mb-1">Psychology</div>
+                        <div className="text-xs text-gray-300 leading-tight">
+                          {analysis.sentimentAnalysis.psychologyNote.slice(0, 50)}{analysis.sentimentAnalysis.psychologyNote.length > 50 ? '...' : ''}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="p-6">
                     <h4 className="text-sm font-semibold mb-3 text-gray-300">AI Analysis</h4>
-                    <p className="text-sm text-gray-400 leading-relaxed mb-6">
+                    <p className="text-sm text-gray-400 leading-relaxed mb-6 whitespace-pre-line">
                       {analysis.reasoning}
                     </p>
                     
@@ -444,19 +509,23 @@ export default function Dashboard() {
                 <ol className="space-y-2 text-sm text-gray-500">
                   <li className="flex gap-2">
                     <span className="text-blue-400 font-semibold">1.</span>
-                    Select Bitcoin or Ethereum above
+                    Select BTC or ETH coin above
                   </li>
                   <li className="flex gap-2">
                     <span className="text-blue-400 font-semibold">2.</span>
-                    Click "Analyze Now" for AI signal
+                    Wait for 1-min candle to close
                   </li>
                   <li className="flex gap-2">
                     <span className="text-blue-400 font-semibold">3.</span>
-                    Follow the recommendation or skip
+                    Click "Analyze" for AI signal
                   </li>
                   <li className="flex gap-2">
                     <span className="text-blue-400 font-semibold">4.</span>
-                    Track your results in Your Trades
+                    Hold for recommended minutes
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-blue-400 font-semibold">5.</span>
+                    Track P/L in Your Trades
                   </li>
                 </ol>
               </CardContent>
@@ -471,6 +540,31 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+    </div>
+  );
+}
+
+function CandleTimer() {
+  const [secondsLeft, setSecondsLeft] = useState(60 - new Date().getSeconds());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      const seconds = 60 - now.getSeconds();
+      setSecondsLeft(seconds === 60 ? 0 : seconds);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-4 rounded-full bg-white/5 border border-white/10 text-xs">
+      <div className={`w-2 h-2 rounded-full ${secondsLeft <= 5 ? 'bg-emerald-500 animate-pulse' : 'bg-yellow-500'}`} />
+      <span className="text-gray-400">
+        Next 1-min candle closes in: 
+        <span className={`ml-1 font-mono font-semibold ${secondsLeft <= 5 ? 'text-emerald-400' : 'text-white'}`}>
+          {secondsLeft}s
+        </span>
+      </span>
     </div>
   );
 }

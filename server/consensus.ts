@@ -28,6 +28,10 @@ export interface AIAnalysisResult {
   reasoning: string;
   riskLevel: RiskGrade;
   success: boolean;
+  holdDuration: number;
+  technicalScore: number;
+  sentimentScore: number;
+  psychologyInsight: string;
 }
 
 export interface ConsensusResult {
@@ -39,34 +43,68 @@ export interface ConsensusResult {
   hasConsensus: boolean;
   reasoning: string;
   warnings: string[];
+  holdDuration: number;
+  technicalAnalysis: {
+    trend: string;
+    momentum: string;
+    support: number;
+    resistance: number;
+  };
+  sentimentAnalysis: {
+    buyerStrength: number;
+    sellerStrength: number;
+    dominantSide: string;
+    psychologyNote: string;
+  };
 }
 
 function buildAnalysisPrompt(pair: TradingPair, metrics: MarketMetrics, price: number): string {
-  return `You are an expert cryptocurrency trading analyst. Analyze the following market data and provide a trading recommendation.
+  const volumeTrend = metrics.volumeDelta > 0 ? "BUYING PRESSURE" : "SELLING PRESSURE";
+  const orderBookSide = metrics.orderBookImbalance > 0 ? "BUYERS DOMINATING" : "SELLERS DOMINATING";
+  const fundingBias = metrics.fundingRate > 0 ? "LONGS PAYING (bullish crowded)" : "SHORTS PAYING (bearish crowded)";
+  
+  return `You are an elite cryptocurrency trading analyst specializing in 1-MINUTE SCALPING. The last 1-minute candle just closed. Analyze ALL factors for the NEXT candle prediction.
 
-TRADING PAIR: ${pair}
-CURRENT PRICE: $${price.toLocaleString()}
+=== CURRENT MARKET STATE ===
+PAIR: ${pair}
+PRICE AT CANDLE CLOSE: $${price.toLocaleString()}
 
-MARKET METRICS:
-- Volume Delta: ${(metrics.volumeDelta * 100).toFixed(2)}% (positive = buying pressure, negative = selling pressure)
-- Order Book Imbalance: ${(metrics.orderBookImbalance * 100).toFixed(2)}% (positive = more bids, negative = more asks)
-- Volatility Index: ${metrics.volatility.toFixed(2)} (0-100, higher = more volatile)
-- Average True Range: $${metrics.atr.toFixed(2)}
-- Funding Rate: ${(metrics.fundingRate * 100).toFixed(4)}%
-- Open Interest: $${metrics.openInterest.toLocaleString()}
+=== TECHNICAL ANALYSIS DATA ===
+- ATR (Volatility): $${metrics.atr.toFixed(2)} (${metrics.volatility < 2 ? "LOW" : metrics.volatility < 4 ? "MEDIUM" : "HIGH"} volatility)
+- Volatility Index: ${metrics.volatility.toFixed(2)}/10
 
-IMPORTANT RULES:
-1. CAPITAL PROTECTION IS PRIORITY #1 - prefer NO_TRADE over uncertain signals
-2. Only recommend BUY/SELL with high confidence (>75%)
-3. If volatility is HIGH or signals are mixed, recommend NO_TRADE
-4. Consider market regime carefully
+=== VOLUME & ORDER FLOW ANALYSIS ===
+- Volume Delta: ${metrics.volumeDelta.toFixed(2)}% → ${volumeTrend}
+- Order Book Imbalance: ${metrics.orderBookImbalance.toFixed(2)}% → ${orderBookSide}
+- Open Interest: $${(metrics.openInterest / 1e9).toFixed(2)}B (${metrics.openInterest > 15e9 ? "HIGH leverage" : "NORMAL leverage"})
 
-Respond in this EXACT JSON format only:
+=== SENTIMENT & PSYCHOLOGY ANALYSIS ===
+- Funding Rate: ${(metrics.fundingRate * 100).toFixed(4)}% → ${fundingBias}
+- Last Volume Aggression: ${Math.abs(metrics.volumeDelta) > 10 ? "AGGRESSIVE" : Math.abs(metrics.volumeDelta) > 5 ? "MODERATE" : "PASSIVE"} ${metrics.volumeDelta > 0 ? "buyers" : "sellers"}
+- Crowd Psychology: ${metrics.fundingRate > 0.0005 ? "Over-leveraged longs (squeeze risk)" : metrics.fundingRate < -0.0005 ? "Over-leveraged shorts (squeeze risk)" : "Balanced positioning"}
+
+=== YOUR ANALYSIS TASKS ===
+1. TECHNICAL: Analyze price action, support/resistance from ATR
+2. SENTIMENT: Who won the last candle? Buyers or sellers? What's their next move?
+3. PSYCHOLOGY: Retail traders ka behavior dekho - are they chasing? Are they scared?
+4. TIMING: Kitne minutes tak trade hold karna chahiye? (1-15 mins based on volatility)
+
+=== CRITICAL RULES ===
+- CAPITAL PROTECTION FIRST - prefer NO_TRADE over 50/50 trades
+- Only BUY/SELL with >70% confidence
+- If volatility HIGH or signals conflict → NO_TRADE
+- Consider stop-loss hunting by market makers
+
+Respond in this EXACT JSON format:
 {
   "signal": "BUY" | "SELL" | "NO_TRADE",
   "confidence": 0-100,
   "risk": "LOW" | "MEDIUM" | "HIGH",
-  "reasoning": "brief explanation (max 100 words)"
+  "holdMinutes": 1-15,
+  "technicalScore": 0-100,
+  "sentimentScore": 0-100,
+  "psychology": "1 line - what retail traders are thinking/feeling right now",
+  "reasoning": "2-3 lines explaining your signal with technical + sentiment factors"
 }`;
 }
 
@@ -76,7 +114,7 @@ async function analyzeWithOpenAI(pair: TradingPair, metrics: MarketMetrics, pric
       model: "gpt-5.1",
       messages: [{ role: "user", content: buildAnalysisPrompt(pair, metrics, price) }],
       temperature: 0.1,
-      max_tokens: 500,
+      max_tokens: 800,
     });
 
     const content = response.choices[0]?.message?.content || "";
@@ -90,6 +128,10 @@ async function analyzeWithOpenAI(pair: TradingPair, metrics: MarketMetrics, pric
       confidence: Math.min(100, Math.max(0, parsed.confidence)),
       reasoning: parsed.reasoning,
       riskLevel: parsed.risk as RiskGrade,
+      holdDuration: Math.min(15, Math.max(1, parsed.holdMinutes || 5)),
+      technicalScore: Math.min(100, Math.max(0, parsed.technicalScore || 50)),
+      sentimentScore: Math.min(100, Math.max(0, parsed.sentimentScore || 50)),
+      psychologyInsight: parsed.psychology || "Market participants are cautious",
       success: true,
     };
   } catch (error) {
@@ -100,6 +142,10 @@ async function analyzeWithOpenAI(pair: TradingPair, metrics: MarketMetrics, pric
       confidence: 0,
       reasoning: "Analysis failed - defaulting to safe position",
       riskLevel: "HIGH",
+      holdDuration: 0,
+      technicalScore: 0,
+      sentimentScore: 0,
+      psychologyInsight: "Unable to analyze market sentiment",
       success: false,
     };
   }
@@ -109,7 +155,7 @@ async function analyzeWithAnthropic(pair: TradingPair, metrics: MarketMetrics, p
   try {
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-5",
-      max_tokens: 500,
+      max_tokens: 800,
       messages: [{ role: "user", content: buildAnalysisPrompt(pair, metrics, price) }],
     });
 
@@ -125,6 +171,10 @@ async function analyzeWithAnthropic(pair: TradingPair, metrics: MarketMetrics, p
       confidence: Math.min(100, Math.max(0, parsed.confidence)),
       reasoning: parsed.reasoning,
       riskLevel: parsed.risk as RiskGrade,
+      holdDuration: Math.min(15, Math.max(1, parsed.holdMinutes || 5)),
+      technicalScore: Math.min(100, Math.max(0, parsed.technicalScore || 50)),
+      sentimentScore: Math.min(100, Math.max(0, parsed.sentimentScore || 50)),
+      psychologyInsight: parsed.psychology || "Market participants are cautious",
       success: true,
     };
   } catch (error) {
@@ -135,6 +185,10 @@ async function analyzeWithAnthropic(pair: TradingPair, metrics: MarketMetrics, p
       confidence: 0,
       reasoning: "Analysis failed - defaulting to safe position",
       riskLevel: "HIGH",
+      holdDuration: 0,
+      technicalScore: 0,
+      sentimentScore: 0,
+      psychologyInsight: "Unable to analyze market sentiment",
       success: false,
     };
   }
@@ -158,6 +212,10 @@ async function analyzeWithGemini(pair: TradingPair, metrics: MarketMetrics, pric
       confidence: Math.min(100, Math.max(0, parsed.confidence)),
       reasoning: parsed.reasoning,
       riskLevel: parsed.risk as RiskGrade,
+      holdDuration: Math.min(15, Math.max(1, parsed.holdMinutes || 5)),
+      technicalScore: Math.min(100, Math.max(0, parsed.technicalScore || 50)),
+      sentimentScore: Math.min(100, Math.max(0, parsed.sentimentScore || 50)),
+      psychologyInsight: parsed.psychology || "Market participants are cautious",
       success: true,
     };
   } catch (error) {
@@ -168,6 +226,10 @@ async function analyzeWithGemini(pair: TradingPair, metrics: MarketMetrics, pric
       confidence: 0,
       reasoning: "Analysis failed - defaulting to safe position",
       riskLevel: "HIGH",
+      holdDuration: 0,
+      technicalScore: 0,
+      sentimentScore: 0,
+      psychologyInsight: "Unable to analyze market sentiment",
       success: false,
     };
   }
@@ -177,6 +239,9 @@ function calculateConsensus(results: AIAnalysisResult[]): ConsensusResult {
   const totalProviders = results.length;
   const successfulResults = results.filter(r => r.success);
   
+  const defaultTechnical = { trend: "NEUTRAL", momentum: "WEAK", support: 0, resistance: 0 };
+  const defaultSentiment = { buyerStrength: 50, sellerStrength: 50, dominantSide: "NEUTRAL", psychologyNote: "Unable to determine market psychology" };
+
   if (successfulResults.length === 0) {
     return {
       consensusSignal: "NO_TRADE",
@@ -187,6 +252,9 @@ function calculateConsensus(results: AIAnalysisResult[]): ConsensusResult {
       hasConsensus: false,
       reasoning: "All AI providers failed to analyze - staying safe with NO_TRADE",
       warnings: ["All AI analysis failed", "System defaulting to capital protection mode"],
+      holdDuration: 0,
+      technicalAnalysis: defaultTechnical,
+      sentimentAnalysis: defaultSentiment,
     };
   }
 
@@ -200,6 +268,9 @@ function calculateConsensus(results: AIAnalysisResult[]): ConsensusResult {
       hasConsensus: false,
       reasoning: "Insufficient provider responses (need at least 2/3) - staying safe with NO_TRADE",
       warnings: ["Only 1 AI provider responded", "Quorum not met - defaulting to capital protection"],
+      holdDuration: 0,
+      technicalAnalysis: defaultTechnical,
+      sentimentAnalysis: defaultSentiment,
     };
   }
 
@@ -271,6 +342,26 @@ function calculateConsensus(results: AIAnalysisResult[]): ConsensusResult {
     ? Math.round(avgConfidence) 
     : 0;
 
+  const avgHoldDuration = Math.round(
+    successfulResults.reduce((sum, r) => sum + r.holdDuration, 0) / successfulResults.length
+  );
+  
+  const avgTechnicalScore = Math.round(
+    successfulResults.reduce((sum, r) => sum + r.technicalScore, 0) / successfulResults.length
+  );
+  
+  const avgSentimentScore = Math.round(
+    successfulResults.reduce((sum, r) => sum + r.sentimentScore, 0) / successfulResults.length
+  );
+
+  const psychologyInsights = successfulResults
+    .map(r => r.psychologyInsight)
+    .filter(p => p && p.length > 0);
+
+  const trend = avgTechnicalScore > 60 ? "BULLISH" : avgTechnicalScore < 40 ? "BEARISH" : "NEUTRAL";
+  const momentum = avgTechnicalScore > 70 ? "STRONG" : avgTechnicalScore > 50 ? "MODERATE" : "WEAK";
+  const dominantSide = avgSentimentScore > 55 ? "BUYERS" : avgSentimentScore < 45 ? "SELLERS" : "NEUTRAL";
+
   return {
     consensusSignal: finalSignal,
     consensusConfidence: finalConfidence,
@@ -280,6 +371,19 @@ function calculateConsensus(results: AIAnalysisResult[]): ConsensusResult {
     hasConsensus,
     reasoning: reasonings || "No clear consensus - protecting capital",
     warnings,
+    holdDuration: hasConsensus ? avgHoldDuration : 0,
+    technicalAnalysis: {
+      trend,
+      momentum,
+      support: 0,
+      resistance: 0,
+    },
+    sentimentAnalysis: {
+      buyerStrength: avgSentimentScore,
+      sellerStrength: 100 - avgSentimentScore,
+      dominantSide,
+      psychologyNote: psychologyInsights[0] || "Market participants are evaluating their positions",
+    },
   };
 }
 
@@ -300,16 +404,28 @@ export async function getMultiAIConsensus(
 export function generateConsensusExplanation(consensus: ConsensusResult): string {
   const providerSummary = consensus.providers
     .filter(p => p.success)
-    .map(p => `**${p.provider}**: ${p.signal} (${p.confidence}% confidence, ${p.riskLevel} risk)`)
+    .map(p => `**${p.provider}**: ${p.signal} (${p.confidence}% confidence, Hold: ${p.holdDuration} min)`)
     .join("\n");
 
   let explanation = `## Multi-AI Consensus Analysis\n\n`;
-  explanation += `**Consensus Decision**: ${consensus.consensusSignal}\n`;
-  explanation += `**Agreement Level**: ${consensus.agreementLevel}% (${consensus.hasConsensus ? "Strong" : "Weak"})\n`;
-  explanation += `**Combined Confidence**: ${consensus.consensusConfidence}%\n`;
-  explanation += `**Risk Assessment**: ${consensus.consensusRisk}\n\n`;
+  explanation += `**Signal**: ${consensus.consensusSignal}\n`;
+  explanation += `**Confidence**: ${consensus.consensusConfidence}%\n`;
+  explanation += `**Hold Duration**: ${consensus.holdDuration} minutes\n`;
+  explanation += `**Risk Level**: ${consensus.consensusRisk}\n\n`;
   
-  explanation += `### Individual AI Analysis:\n${providerSummary}\n\n`;
+  explanation += `### Technical Analysis\n`;
+  explanation += `- Trend: ${consensus.technicalAnalysis.trend}\n`;
+  explanation += `- Momentum: ${consensus.technicalAnalysis.momentum}\n\n`;
+  
+  explanation += `### Sentiment Analysis\n`;
+  explanation += `- Buyer Strength: ${consensus.sentimentAnalysis.buyerStrength}%\n`;
+  explanation += `- Seller Strength: ${consensus.sentimentAnalysis.sellerStrength}%\n`;
+  explanation += `- Dominant Side: ${consensus.sentimentAnalysis.dominantSide}\n\n`;
+  
+  explanation += `### Market Psychology\n`;
+  explanation += `${consensus.sentimentAnalysis.psychologyNote}\n\n`;
+
+  explanation += `### AI Provider Breakdown:\n${providerSummary}\n\n`;
   
   if (consensus.warnings.length > 0) {
     explanation += `### Safety Warnings:\n`;
@@ -319,9 +435,9 @@ export function generateConsensusExplanation(consensus: ConsensusResult): string
     explanation += "\n";
   }
 
-  explanation += `### Combined Reasoning:\n${consensus.reasoning}\n\n`;
+  explanation += `### Reasoning:\n${consensus.reasoning}\n\n`;
   
-  explanation += `*This analysis uses OpenAI GPT-5.1, Anthropic Claude, and Google Gemini in consensus mode for maximum signal quality and capital protection.*`;
+  explanation += `*Analysis from OpenAI GPT-5.1, Anthropic Claude, and Google Gemini consensus.*`;
 
   return explanation;
 }
