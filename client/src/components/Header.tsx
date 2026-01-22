@@ -1,7 +1,7 @@
 import { Shield, Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import logoImage from "@assets/IMAGE_2026-01-22_19:24:15_1769090056092.jpg";
+import logoImage from "@assets/image_1769090256764.png";
 
 interface HeaderProps {
   isDataFeedHealthy: boolean;
