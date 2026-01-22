@@ -74,6 +74,28 @@ export const llmExplanationRequestSchema = z.object({
 });
 export type LLMExplanationRequest = z.infer<typeof llmExplanationRequestSchema>;
 
+export const aiProviderAnalysisSchema = z.object({
+  provider: z.string(),
+  signal: z.enum(signalTypes),
+  confidence: z.number().min(0).max(100),
+  reasoning: z.string(),
+  riskLevel: z.enum(riskGrades),
+  success: z.boolean(),
+});
+export type AIProviderAnalysis = z.infer<typeof aiProviderAnalysisSchema>;
+
+export const consensusResultSchema = z.object({
+  consensusSignal: z.enum(signalTypes),
+  consensusConfidence: z.number().min(0).max(100),
+  consensusRisk: z.enum(riskGrades),
+  agreementLevel: z.number().min(0).max(100),
+  providers: z.array(aiProviderAnalysisSchema),
+  hasConsensus: z.boolean(),
+  reasoning: z.string(),
+  warnings: z.array(z.string()),
+});
+export type ConsensusResult = z.infer<typeof consensusResultSchema>;
+
 export const users = null;
 export const insertUserSchema = z.object({
   username: z.string(),

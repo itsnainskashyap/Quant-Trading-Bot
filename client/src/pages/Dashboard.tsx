@@ -9,17 +9,19 @@ import { LLMExplanation } from "@/components/LLMExplanation";
 import { CapitalProtection } from "@/components/CapitalProtection";
 import { SignalHistory } from "@/components/SignalHistory";
 import { Disclaimer } from "@/components/Disclaimer";
+import { AIConsensus } from "@/components/AIConsensus";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Sparkles } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { 
   TradingSignal, 
   PriceData, 
   MarketMetrics as MarketMetricsType,
   SignalHistory as SignalHistoryType,
-  TradingPair 
+  TradingPair,
+  ConsensusResult
 } from "@shared/schema";
 
 interface DashboardData {
@@ -44,6 +46,8 @@ export default function Dashboard() {
     reasoning: "",
     warnings: [],
   });
+  const [consensus, setConsensus] = useState<ConsensusResult | null>(null);
+  const [isConsensusLoading, setIsConsensusLoading] = useState(false);
 
   const { data, isLoading, refetch, isRefetching } = useQuery<DashboardData>({
     queryKey: ['/api/dashboard', selectedPair],
@@ -70,6 +74,30 @@ export default function Dashboard() {
       setIsExplanationLoading(false);
     },
   });
+
+  const consensusMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/consensus', { pair: selectedPair });
+      return response.json();
+    },
+    onSuccess: (result) => {
+      setConsensus(result.consensus);
+      setExplanation({
+        reasoning: result.explanation,
+        warnings: result.consensus.warnings || [],
+      });
+      setIsConsensusLoading(false);
+    },
+    onError: () => {
+      setConsensus(null);
+      setIsConsensusLoading(false);
+    },
+  });
+
+  const handleMultiAIAnalysis = useCallback(() => {
+    setIsConsensusLoading(true);
+    consensusMutation.mutate();
+  }, [consensusMutation]);
 
   useEffect(() => {
     if (data?.signal) {
@@ -149,6 +177,28 @@ export default function Dashboard() {
               signal={data?.signal ?? null} 
               isLoading={isRefetching}
             />
+            
+            <Card className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-medium">AI-Powered Analysis</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Get consensus from 3 world-class AI providers
+                  </p>
+                </div>
+                <Button
+                  onClick={handleMultiAIAnalysis}
+                  disabled={isConsensusLoading}
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                  data-testid="button-multi-ai-analysis"
+                >
+                  <Sparkles className={`w-4 h-4 mr-2 ${isConsensusLoading ? 'animate-spin' : ''}`} />
+                  {isConsensusLoading ? 'Analyzing...' : 'Multi-AI Analysis'}
+                </Button>
+              </div>
+              
+              <AIConsensus consensus={consensus} isLoading={isConsensusLoading} />
+            </Card>
             
             <LLMExplanation
               reasoning={explanation.reasoning || "Analyzing market conditions..."}

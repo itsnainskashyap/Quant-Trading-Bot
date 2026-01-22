@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import OpenAI from "openai";
 import type { TradingPair } from "@shared/schema";
+import { getMultiAIConsensus, generateConsensusExplanation } from "./consensus";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -132,6 +133,40 @@ export async function registerRoutes(
     } catch (error) {
       console.error("History error:", error);
       res.status(500).json({ error: "Failed to fetch history" });
+    }
+  });
+
+  app.post("/api/consensus", async (req, res) => {
+    try {
+      const { pair } = req.body as { pair: TradingPair };
+      const validPairs: TradingPair[] = ["BTC-USDT", "ETH-USDT"];
+      
+      if (!validPairs.includes(pair)) {
+        res.status(400).json({ error: "Invalid trading pair" });
+        return;
+      }
+      
+      const [prices, metrics] = await Promise.all([
+        storage.getAllPrices(),
+        storage.getMarketMetrics(pair),
+      ]);
+      
+      const priceData = prices.find(p => p.pair === pair);
+      if (!priceData) {
+        res.status(404).json({ error: "Price data not found" });
+        return;
+      }
+      
+      const consensus = await getMultiAIConsensus(pair, metrics, priceData.price);
+      const explanation = generateConsensusExplanation(consensus);
+      
+      res.json({
+        consensus,
+        explanation,
+      });
+    } catch (error) {
+      console.error("Consensus error:", error);
+      res.status(500).json({ error: "Failed to generate consensus" });
     }
   });
 
