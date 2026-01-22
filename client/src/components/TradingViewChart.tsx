@@ -1,18 +1,39 @@
 import { useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { TradingPair } from "@shared/schema";
 
 interface TradingViewChartProps {
   pair: TradingPair;
+  entryPrice?: number;
+  signal?: 'BUY' | 'SELL' | 'SKIP';
+  stopLoss?: number;
+  takeProfit?: number;
 }
 
-export function TradingViewChart({ pair }: TradingViewChartProps) {
+const SYMBOL_MAP: Record<TradingPair, string> = {
+  "BTC-USDT": "BINANCE:BTCUSDT",
+  "ETH-USDT": "BINANCE:ETHUSDT",
+  "SOL-USDT": "BINANCE:SOLUSDT",
+  "XRP-USDT": "BINANCE:XRPUSDT",
+  "DOGE-USDT": "BINANCE:DOGEUSDT",
+  "BNB-USDT": "BINANCE:BNBUSDT",
+  "ADA-USDT": "BINANCE:ADAUSDT",
+  "AVAX-USDT": "BINANCE:AVAXUSDT",
+  "DOT-USDT": "BINANCE:DOTUSDT",
+  "MATIC-USDT": "BINANCE:MATICUSDT",
+  "LINK-USDT": "BINANCE:LINKUSDT",
+  "LTC-USDT": "BINANCE:LTCUSDT",
+  "SHIB-USDT": "BINANCE:SHIBUSDT",
+  "ATOM-USDT": "BINANCE:ATOMUSDT",
+  "UNI-USDT": "BINANCE:UNIUSDT",
+};
+
+export function TradingViewChart({ pair, entryPrice, signal, stopLoss, takeProfit }: TradingViewChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     if (!containerRef.current) return;
     
-    const symbol = pair === "BTC-USDT" ? "BINANCE:BTCUSDT" : "BINANCE:ETHUSDT";
+    const symbol = SYMBOL_MAP[pair] || "BINANCE:BTCUSDT";
     
     containerRef.current.innerHTML = '';
     
@@ -23,13 +44,13 @@ export function TradingViewChart({ pair }: TradingViewChartProps) {
     script.innerHTML = JSON.stringify({
       autosize: true,
       symbol: symbol,
-      interval: "15",
+      interval: "1",
       timezone: "Asia/Kolkata",
       theme: "dark",
       style: "1",
       locale: "en",
-      backgroundColor: "rgba(10, 12, 20, 1)",
-      gridColor: "rgba(40, 42, 54, 0.5)",
+      backgroundColor: "rgba(10, 10, 15, 1)",
+      gridColor: "rgba(40, 42, 54, 0.3)",
       hide_top_toolbar: false,
       hide_legend: false,
       allow_symbol_change: false,
@@ -49,22 +70,32 @@ export function TradingViewChart({ pair }: TradingViewChartProps) {
   }, [pair]);
 
   return (
-    <Card className="col-span-full" data-testid="card-tradingview-chart">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <svg className="w-4 h-4" viewBox="0 0 36 28" fill="none">
-            <path d="M14 22V6h8v16h-8zm10-6v-6h8v6h-8zm-20 0v-6h8v6H4z" fill="currentColor"/>
-          </svg>
-          Live Chart - {pair}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div 
-          ref={containerRef}
-          className="tradingview-widget-container h-[400px] rounded-md overflow-hidden"
-          data-testid="tradingview-container"
-        />
-      </CardContent>
-    </Card>
+    <div className="relative w-full h-full" data-testid="tradingview-chart">
+      <div 
+        ref={containerRef}
+        className="tradingview-widget-container w-full h-full"
+        data-testid="tradingview-container"
+      />
+      
+      {entryPrice && signal && signal !== 'SKIP' && (
+        <div className="absolute top-2 left-2 z-10 space-y-1">
+          <div className={`px-2 py-1 rounded text-xs font-medium ${
+            signal === 'BUY' ? 'bg-emerald-500/90 text-white' : 'bg-red-500/90 text-white'
+          }`}>
+            {signal} @ ${entryPrice.toLocaleString()}
+          </div>
+          {stopLoss && (
+            <div className="px-2 py-1 rounded text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30">
+              SL: ${stopLoss.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+            </div>
+          )}
+          {takeProfit && (
+            <div className="px-2 py-1 rounded text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              TP: ${takeProfit.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

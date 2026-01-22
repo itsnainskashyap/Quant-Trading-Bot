@@ -36,6 +36,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { TradingViewChart } from "@/components/TradingViewChart";
 import type { TradingPair, ConsensusResult } from "@shared/schema";
+import logoImage from "@assets/IMAGE_2026-01-22_19:24:15_1769090056092.jpg";
 
 const CRYPTO_ICONS: Record<string, { color: string; symbol: string }> = {
   'BTC': { color: '#F7931A', symbol: '₿' },
@@ -110,13 +111,6 @@ interface AnalysisResult {
   tradeRecommendation?: TradeRecommendation;
 }
 
-interface SubscriptionData {
-  plan: string;
-  remaining: number;
-  dailyLimit: number;
-  isEarlyAdopter: boolean;
-}
-
 export default function Dashboard() {
   const [selectedPair, setSelectedPair] = useState<TradingPair>("BTC-USDT");
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
@@ -138,11 +132,6 @@ export default function Dashboard() {
   const { data, isLoading, refetch, isRefetching } = useQuery<DashboardData>({
     queryKey: ['/api/dashboard', selectedPair],
     refetchInterval: 10000,
-  });
-
-  const { data: subscription } = useQuery<SubscriptionData>({
-    queryKey: ['/api/subscription'],
-    enabled: !!user,
   });
 
   const analyzeMutation = useMutation({
@@ -217,7 +206,6 @@ export default function Dashboard() {
         description: `Your ${analysis?.signal} trade has been recorded. Check back after ${analysis?.holdTime} minutes.`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/predictions'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/subscription'] });
     },
     onError: (error: Error) => {
       toast({
@@ -262,13 +250,7 @@ export default function Dashboard() {
       <header className="border-b border-white/5 bg-[#0a0a0f]/90 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 bg-gradient-to-br from-emerald-400 via-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
-              <Activity className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <span className="text-lg font-semibold tracking-tight">TradeX</span>
-              <span className="text-lg font-light text-cyan-400 ml-1">AI</span>
-            </div>
+            <img src={logoImage} alt="TradeX AI" className="h-10 w-auto" />
           </div>
           
           <div className="flex items-center gap-3">
@@ -278,14 +260,10 @@ export default function Dashboard() {
               <span className="text-sm font-medium text-white">${capital.toLocaleString()}</span>
             </div>
 
-            {subscription && (
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#12121a] border border-white/5">
-                <div className={`w-2 h-2 rounded-full ${subscription.plan === 'pro' ? 'bg-cyan-500' : 'bg-emerald-500'}`} />
-                <span className="text-xs text-gray-300">
-                  {subscription.plan === 'pro' ? 'Pro' : `${subscription.remaining}/${subscription.dailyLimit}`}
-                </span>
-              </div>
-            )}
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="text-xs text-emerald-400 font-medium">FREE</span>
+            </div>
             
             <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white" asChild>
               <a href="/profile" data-testid="link-profile">
@@ -302,9 +280,9 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-[#12121a] to-[#0f1a1a] border border-white/5">
-          <div className="flex flex-wrap items-center gap-4 mb-4">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+        <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-[#12121a] to-[#0f1a1a] border border-white/5">
+          <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
               <Wallet className="w-5 h-5 text-cyan-400" />
               <span className="text-sm font-medium text-gray-300">Your Capital</span>
@@ -326,9 +304,9 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-medium text-gray-300">Crypto Futures</h2>
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-medium text-gray-300">Crypto Futures</h2>
             <Button
               variant="ghost"
               size="sm"
@@ -341,7 +319,7 @@ export default function Dashboard() {
             </Button>
           </div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 gap-2">
             {displayedPairs?.map((price) => {
               const symbol = price.pair.split('-')[0];
               return (
@@ -351,24 +329,24 @@ export default function Dashboard() {
                     setSelectedPair(price.pair);
                     setAnalysis(null);
                   }}
-                  className={`p-3 rounded-xl border transition-all text-left ${
+                  className={`p-2 rounded-lg border transition-all text-left ${
                     selectedPair === price.pair
                       ? 'bg-cyan-500/10 border-cyan-500/50 ring-1 ring-cyan-500/30'
                       : 'bg-[#12121a] border-white/5 hover:border-white/10'
                   }`}
                   data-testid={`button-select-${price.pair.toLowerCase()}`}
                 >
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-1.5 mb-1">
                     <CryptoIcon symbol={symbol} />
                     <div>
-                      <div className="font-medium text-sm">{symbol}</div>
-                      <div className={`text-xs flex items-center gap-0.5 ${price.change24h >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {price.change24h >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                      <div className="font-medium text-xs">{symbol}</div>
+                      <div className={`text-[10px] flex items-center ${price.change24h >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {price.change24h >= 0 ? <ArrowUpRight className="w-2.5 h-2.5" /> : <ArrowDownRight className="w-2.5 h-2.5" />}
                         {Math.abs(price.change24h).toFixed(1)}%
                       </div>
                     </div>
                   </div>
-                  <div className="font-mono text-base font-semibold">
+                  <div className="font-mono text-xs font-semibold">
                     ${price.price < 1 ? price.price.toFixed(6) : price.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </button>
@@ -381,7 +359,7 @@ export default function Dashboard() {
               variant="ghost"
               size="sm"
               onClick={() => setShowAllCoins(!showAllCoins)}
-              className="w-full mt-3 text-gray-400 hover:text-white text-xs"
+              className="w-full mt-2 text-gray-400 hover:text-white text-xs"
             >
               {showAllCoins ? (
                 <>Show Less <ChevronUp className="w-3 h-3 ml-1" /></>
@@ -392,8 +370,8 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid lg:grid-cols-4 gap-4">
+          <div className="lg:col-span-3 space-y-4">
             <Card className="bg-[#12121a] border-white/5 overflow-hidden">
               <CardContent className="p-0">
                 <div className="p-3 border-b border-white/5 flex items-center justify-between">
@@ -401,58 +379,78 @@ export default function Dashboard() {
                     <CryptoIcon symbol={selectedPair.split('-')[0]} />
                     <span className="font-medium text-sm">{selectedPair}</span>
                     <span className="text-xs text-gray-500">Perpetual</span>
+                    {analysis && analysis.signal !== 'SKIP' && (
+                      <div className={`ml-2 px-2 py-0.5 rounded text-xs font-medium ${
+                        analysis.signal === 'BUY' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                      }`}>
+                        Entry: ${analysis.entryPrice.toLocaleString()}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs">Live</div>
                     <CandleTimer />
                   </div>
                 </div>
-                <div className="h-[350px]">
-                  <TradingViewChart pair={selectedPair} />
+                <div className="h-[500px]">
+                  <TradingViewChart 
+                    pair={selectedPair} 
+                    entryPrice={analysis?.entryPrice}
+                    signal={analysis?.signal}
+                    stopLoss={analysis?.tradeRecommendation?.stopLoss}
+                    takeProfit={analysis?.tradeRecommendation?.takeProfit}
+                  />
                 </div>
               </CardContent>
             </Card>
 
             {!analysis && !isAnalyzing && (
               <Card className="bg-gradient-to-br from-[#0f1a1f] to-[#12121a] border-cyan-500/20">
-                <CardContent className="p-6 text-center">
-                  <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center">
-                    <Zap className="w-7 h-7 text-cyan-400" />
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center">
+                        <Zap className="w-6 h-6 text-cyan-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-semibold">AI Signal Analysis</h3>
+                        <p className="text-gray-400 text-xs">
+                          Get entry, stop-loss, and take-profit based on ${capital.toLocaleString()} capital
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="hidden md:flex gap-2 text-xs">
+                        <span className="px-2 py-1 rounded bg-[#1a1a2e] text-blue-400 border border-blue-500/20">
+                          Technical
+                        </span>
+                        <span className="px-2 py-1 rounded bg-[#1a1a2e] text-cyan-400 border border-cyan-500/20">
+                          Volume
+                        </span>
+                        <span className="px-2 py-1 rounded bg-[#1a1a2e] text-purple-400 border border-purple-500/20">
+                          Risk
+                        </span>
+                      </div>
+                      <Button
+                        size="default"
+                        onClick={handleAnalyze}
+                        className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 rounded-xl px-6 font-medium"
+                        data-testid="button-analyze"
+                      >
+                        <Zap className="w-4 h-4 mr-2" />
+                        Analyze Now
+                      </Button>
+                    </div>
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">AI Signal Analysis</h3>
-                  <p className="text-gray-400 text-sm mb-4 max-w-md mx-auto">
-                    Get comprehensive analysis with entry, stop-loss, and take-profit based on your ${capital.toLocaleString()} capital.
-                  </p>
-                  <div className="flex flex-wrap justify-center gap-2 mb-5 text-xs">
-                    <span className="px-2.5 py-1 rounded-lg bg-[#1a1a2e] text-blue-400 border border-blue-500/20">
-                      <BarChart3 className="w-3 h-3 inline mr-1" />Technical
-                    </span>
-                    <span className="px-2.5 py-1 rounded-lg bg-[#1a1a2e] text-cyan-400 border border-cyan-500/20">
-                      <Activity className="w-3 h-3 inline mr-1" />Volume Flow
-                    </span>
-                    <span className="px-2.5 py-1 rounded-lg bg-[#1a1a2e] text-purple-400 border border-purple-500/20">
-                      <Target className="w-3 h-3 inline mr-1" />Risk Management
-                    </span>
-                  </div>
-                  <Button
-                    size="lg"
-                    onClick={handleAnalyze}
-                    className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 rounded-xl px-8 font-medium"
-                    data-testid="button-analyze"
-                  >
-                    <Zap className="w-4 h-4 mr-2" />
-                    Analyze Now
-                  </Button>
                 </CardContent>
               </Card>
             )}
 
             {isAnalyzing && (
               <Card className="bg-[#12121a] border-white/5">
-                <CardContent className="p-8 text-center">
-                  <Loader2 className="w-12 h-12 mx-auto mb-4 text-cyan-400 animate-spin" />
-                  <h3 className="text-lg font-semibold mb-2">Analyzing Market...</h3>
-                  <p className="text-gray-400 text-sm mb-4">3 AI models working simultaneously</p>
+                <CardContent className="p-6 text-center">
+                  <Loader2 className="w-10 h-10 mx-auto mb-3 text-cyan-400 animate-spin" />
+                  <h3 className="text-base font-semibold mb-2">Analyzing Market...</h3>
                   <div className="flex flex-wrap justify-center gap-2 text-xs">
                     <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-400 animate-pulse">OpenAI GPT-5.1</span>
                     <span className="px-2.5 py-1 rounded-lg bg-orange-500/10 text-orange-400 animate-pulse">Claude</span>
@@ -465,135 +463,44 @@ export default function Dashboard() {
             {analysis && (
               <Card className="bg-[#12121a] border-white/5 overflow-hidden">
                 <CardContent className="p-0">
-                  <div className={`p-5 ${
+                  <div className={`p-4 ${
                     analysis.signal === 'BUY' ? 'bg-emerald-500/10' :
                     analysis.signal === 'SELL' ? 'bg-red-500/10' :
                     'bg-yellow-500/10'
                   }`}>
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">Signal</div>
-                        <div className={`text-3xl font-bold tracking-tight ${
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-4">
+                        <div className={`text-2xl font-bold ${
                           analysis.signal === 'BUY' ? 'text-emerald-400' :
                           analysis.signal === 'SELL' ? 'text-red-400' :
                           'text-yellow-400'
                         }`}>
                           {analysis.signal}
                         </div>
+                        <div className="text-lg font-bold">{Math.round(analysis.confidence)}%</div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">Confidence</div>
-                        <div className="text-2xl font-bold">{Math.round(analysis.confidence)}%</div>
-                      </div>
+                      
+                      {analysis.signal !== 'SKIP' && (
+                        <div className="flex flex-wrap gap-2 text-xs">
+                          <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#0a0a0f]/50">
+                            <Timer className="w-3 h-3 text-blue-400" />
+                            <span className="font-medium">{analysis.holdTime}m</span>
+                          </div>
+                          <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#0a0a0f]/50">
+                            <span className="text-gray-400">Entry:</span>
+                            <span className="font-mono font-medium">${analysis.entryPrice.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     
-                    {analysis.signal !== 'SKIP' && (
-                      <div className="flex flex-wrap gap-2 text-xs">
-                        <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0a0a0f]/50">
-                          <Timer className="w-3.5 h-3.5 text-blue-400" />
-                          <span className="text-gray-400">Hold:</span>
-                          <span className="font-medium">{analysis.holdTime} min</span>
-                        </div>
-                        <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0a0a0f]/50">
-                          <span className="text-gray-400">Entry:</span>
-                          <span className="font-mono font-medium">${analysis.entryPrice.toLocaleString()}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {analysis.tradeRecommendation && analysis.signal !== 'SKIP' && (
-                    <div className="p-4 border-b border-white/5 bg-[#0a0a0f]/50">
-                      <h4 className="text-xs text-gray-400 uppercase tracking-wide mb-3">AI Trade Plan (Based on ${capital.toLocaleString()} Capital)</h4>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div className="p-3 rounded-xl bg-[#12121a] border border-white/5">
-                          <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                            <DollarSign className="w-3 h-3" />
-                            Trade Size
-                          </div>
-                          <div className="font-mono font-semibold text-cyan-400">
-                            ${analysis.tradeRecommendation.tradeSize.toLocaleString()}
-                          </div>
-                          <div className="text-xs text-gray-500">10% of capital</div>
-                        </div>
-                        <div className="p-3 rounded-xl bg-[#12121a] border border-red-500/20">
-                          <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                            <AlertTriangle className="w-3 h-3" />
-                            Stop Loss
-                          </div>
-                          <div className="font-mono font-semibold text-red-400">
-                            ${analysis.tradeRecommendation.stopLoss.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                          </div>
-                          <div className="text-xs text-gray-500">-${analysis.tradeRecommendation.riskAmount.toFixed(0)} max loss</div>
-                        </div>
-                        <div className="p-3 rounded-xl bg-[#12121a] border border-emerald-500/20">
-                          <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                            <Target className="w-3 h-3" />
-                            Take Profit
-                          </div>
-                          <div className="font-mono font-semibold text-emerald-400">
-                            ${analysis.tradeRecommendation.takeProfit.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                          </div>
-                          <div className="text-xs text-gray-500">+${analysis.tradeRecommendation.potentialProfit.toFixed(0)} profit</div>
-                        </div>
-                        <div className="p-3 rounded-xl bg-[#12121a] border border-white/5">
-                          <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                            <Shield className="w-3 h-3" />
-                            Risk:Reward
-                          </div>
-                          <div className="font-mono font-semibold text-white">
-                            {analysis.tradeRecommendation.riskRewardRatio}
-                          </div>
-                          <div className="text-xs text-gray-500">Protected</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {analysis.technicalAnalysis && analysis.sentimentAnalysis && (
-                    <div className="p-4 border-b border-white/5 grid grid-cols-3 gap-3">
-                      <div className="text-center p-3 rounded-xl bg-[#0a0a0f]/50">
-                        <BarChart3 className="w-4 h-4 mx-auto mb-1 text-blue-400" />
-                        <div className="text-xs text-gray-500 mb-0.5">Technical</div>
-                        <div className={`text-sm font-medium ${
-                          analysis.technicalAnalysis.trend === 'BULLISH' ? 'text-emerald-400' :
-                          analysis.technicalAnalysis.trend === 'BEARISH' ? 'text-red-400' :
-                          'text-yellow-400'
-                        }`}>
-                          {analysis.technicalAnalysis.trend}
-                        </div>
-                      </div>
-                      <div className="text-center p-3 rounded-xl bg-[#0a0a0f]/50">
-                        <Activity className="w-4 h-4 mx-auto mb-1 text-cyan-400" />
-                        <div className="text-xs text-gray-500 mb-0.5">Order Flow</div>
-                        <div className={`text-sm font-medium ${
-                          analysis.sentimentAnalysis.dominantSide === 'BUYERS' ? 'text-emerald-400' : 'text-red-400'
-                        }`}>
-                          {analysis.sentimentAnalysis.buyerStrength}% vs {analysis.sentimentAnalysis.sellerStrength}%
-                        </div>
-                      </div>
-                      <div className="text-center p-3 rounded-xl bg-[#0a0a0f]/50">
-                        <Target className="w-4 h-4 mx-auto mb-1 text-purple-400" />
-                        <div className="text-xs text-gray-500 mb-0.5">Sentiment</div>
-                        <div className="text-xs text-gray-300">
-                          {analysis.sentimentAnalysis.psychologyNote.slice(0, 30)}...
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="p-5">
-                    <h4 className="text-xs text-gray-400 uppercase tracking-wide mb-2">Analysis Summary</h4>
-                    <p className="text-sm text-gray-300 leading-relaxed mb-5 whitespace-pre-line">
-                      {analysis.reasoning}
-                    </p>
-                    
-                    <div className="flex gap-3">
+                    <div className="flex gap-2">
                       {analysis.signal !== 'SKIP' && (
                         <Button
                           onClick={() => takeTradeMutation.mutate()}
                           disabled={takeTradeMutation.isPending}
-                          className={`flex-1 rounded-xl ${
+                          size="sm"
+                          className={`rounded-lg ${
                             analysis.signal === 'BUY' 
                               ? 'bg-emerald-500 hover:bg-emerald-600' 
                               : 'bg-red-500 hover:bg-red-600'
@@ -601,30 +508,80 @@ export default function Dashboard() {
                           data-testid="button-take-trade"
                         >
                           {takeTradeMutation.isPending ? (
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
                           ) : (
-                            <CheckCircle2 className="w-4 h-4 mr-2" />
+                            <CheckCircle2 className="w-4 h-4 mr-1" />
                           )}
                           Take Trade
                         </Button>
                       )}
                       <Button
                         variant="outline"
+                        size="sm"
                         onClick={() => setAnalysis(null)}
-                        className="rounded-xl border-white/10 text-gray-300 hover:bg-white/5"
+                        className="rounded-lg border-white/10 text-gray-300 hover:bg-white/5"
                       >
                         New Analysis
                       </Button>
                     </div>
+                  </div>
+
+                  {analysis.tradeRecommendation && analysis.signal !== 'SKIP' && (
+                    <div className="p-3 border-b border-white/5 bg-[#0a0a0f]/50">
+                      <div className="grid grid-cols-4 gap-2">
+                        <div className="p-2 rounded-lg bg-[#12121a] border border-white/5 text-center">
+                          <div className="flex items-center justify-center gap-1 text-[10px] text-gray-500 mb-0.5">
+                            <DollarSign className="w-3 h-3" />
+                            Trade Size
+                          </div>
+                          <div className="font-mono font-semibold text-cyan-400 text-sm">
+                            ${analysis.tradeRecommendation.tradeSize.toLocaleString()}
+                          </div>
+                        </div>
+                        <div className="p-2 rounded-lg bg-[#12121a] border border-red-500/20 text-center">
+                          <div className="flex items-center justify-center gap-1 text-[10px] text-gray-500 mb-0.5">
+                            <AlertTriangle className="w-3 h-3" />
+                            Stop Loss
+                          </div>
+                          <div className="font-mono font-semibold text-red-400 text-sm">
+                            ${analysis.tradeRecommendation.stopLoss.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                          </div>
+                        </div>
+                        <div className="p-2 rounded-lg bg-[#12121a] border border-emerald-500/20 text-center">
+                          <div className="flex items-center justify-center gap-1 text-[10px] text-gray-500 mb-0.5">
+                            <Target className="w-3 h-3" />
+                            Take Profit
+                          </div>
+                          <div className="font-mono font-semibold text-emerald-400 text-sm">
+                            ${analysis.tradeRecommendation.takeProfit.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                          </div>
+                        </div>
+                        <div className="p-2 rounded-lg bg-[#12121a] border border-white/5 text-center">
+                          <div className="flex items-center justify-center gap-1 text-[10px] text-gray-500 mb-0.5">
+                            <Shield className="w-3 h-3" />
+                            Risk:Reward
+                          </div>
+                          <div className="font-mono font-semibold text-white text-sm">
+                            {analysis.tradeRecommendation.riskRewardRatio}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="p-3">
+                    <p className="text-xs text-gray-300 leading-relaxed line-clamp-3">
+                      {analysis.reasoning}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
             )}
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             <Card className="bg-[#12121a] border-white/5">
-              <CardContent className="p-4">
+              <CardContent className="p-3">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-medium text-gray-300">Your Trades</h3>
                   <History className="w-4 h-4 text-gray-500" />
@@ -634,49 +591,51 @@ export default function Dashboard() {
             </Card>
 
             <Card className="bg-[#12121a] border-white/5">
-              <CardContent className="p-4">
-                <h3 className="text-sm font-medium text-gray-300 mb-3">How It Works</h3>
-                <ol className="space-y-2.5 text-xs text-gray-400">
+              <CardContent className="p-3">
+                <h3 className="text-sm font-medium text-gray-300 mb-2">How It Works</h3>
+                <ol className="space-y-1.5 text-[11px] text-gray-400">
                   <li className="flex gap-2">
-                    <span className="w-5 h-5 rounded-full bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-xs font-medium">1</span>
-                    <span>Set your trading capital above</span>
+                    <span className="w-4 h-4 rounded-full bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-[10px] font-medium">1</span>
+                    <span>Set your capital above</span>
                   </li>
                   <li className="flex gap-2">
-                    <span className="w-5 h-5 rounded-full bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-xs font-medium">2</span>
+                    <span className="w-4 h-4 rounded-full bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-[10px] font-medium">2</span>
                     <span>Select any crypto pair</span>
                   </li>
                   <li className="flex gap-2">
-                    <span className="w-5 h-5 rounded-full bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-xs font-medium">3</span>
-                    <span>Click "Analyze Now" for AI signal</span>
+                    <span className="w-4 h-4 rounded-full bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-[10px] font-medium">3</span>
+                    <span>Click "Analyze Now"</span>
                   </li>
                   <li className="flex gap-2">
-                    <span className="w-5 h-5 rounded-full bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-xs font-medium">4</span>
+                    <span className="w-4 h-4 rounded-full bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-[10px] font-medium">4</span>
                     <span>Follow exact SL/TP levels</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="w-5 h-5 rounded-full bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-xs font-medium">5</span>
-                    <span>Exit at recommended time</span>
                   </li>
                 </ol>
               </CardContent>
             </Card>
 
-            <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-500/5 to-cyan-500/5 border border-emerald-500/10">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/5 to-cyan-500/5 border border-emerald-500/10">
               <div className="flex items-start gap-2">
                 <Shield className="w-4 h-4 text-emerald-400 mt-0.5" />
                 <div>
                   <h4 className="text-xs font-medium text-emerald-400 mb-1">Capital Protection</h4>
-                  <p className="text-xs text-gray-400 leading-relaxed">
-                    AI sets strict stop-loss at 2% risk. Max trade size 10%. Follow exact levels for protected trading.
+                  <p className="text-[11px] text-gray-400 leading-relaxed">
+                    Max 2% risk per trade. Follow exact stop-loss levels.
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-yellow-500/5 border border-yellow-500/10">
-              <p className="text-xs text-yellow-500/80 leading-relaxed">
-                <strong>Disclaimer:</strong> Trading involves risk. This is educational software using AI predictions. Past performance does not guarantee future results.
-              </p>
+            <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5" />
+                <div>
+                  <h4 className="text-xs font-medium text-amber-400 mb-1">Trade at Your Own Risk</h4>
+                  <p className="text-[11px] text-gray-400 leading-relaxed">
+                    Crypto trading is risky. Never trade more than you can afford to lose.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -701,10 +660,10 @@ export default function Dashboard() {
               <div className="p-3 rounded-xl bg-cyan-500/10 text-gray-300">
                 Hi! I can help you with:
                 <ul className="mt-2 space-y-1 text-xs text-gray-400">
-                  <li>• Understanding signals</li>
-                  <li>• Setting stop-loss/take-profit</li>
-                  <li>• Capital management tips</li>
-                  <li>• Risk management strategies</li>
+                  <li>Understanding signals</li>
+                  <li>Setting stop-loss/take-profit</li>
+                  <li>Capital management tips</li>
+                  <li>Risk management strategies</li>
                 </ul>
               </div>
             </div>
@@ -766,8 +725,8 @@ function TradeHistory() {
 
   if (predictions.length === 0) {
     return (
-      <div className="text-center py-6 text-gray-500 text-sm">
-        <History className="w-8 h-8 mx-auto mb-2 opacity-50" />
+      <div className="text-center py-4 text-gray-500 text-xs">
+        <History className="w-6 h-6 mx-auto mb-2 opacity-50" />
         No trades yet
       </div>
     );
@@ -775,39 +734,36 @@ function TradeHistory() {
 
   return (
     <div>
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        <div className="text-center p-2 rounded-lg bg-[#0a0a0f]">
-          <div className="text-lg font-semibold">{stats.totalTrades}</div>
-          <div className="text-xs text-gray-500">Trades</div>
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="text-center p-1.5 rounded-lg bg-[#0a0a0f]">
+          <div className="text-sm font-semibold">{stats.totalTrades}</div>
+          <div className="text-[10px] text-gray-500">Trades</div>
         </div>
-        <div className="text-center p-2 rounded-lg bg-[#0a0a0f]">
-          <div className="text-lg font-semibold text-cyan-400">{stats.winRate}%</div>
-          <div className="text-xs text-gray-500">Win Rate</div>
+        <div className="text-center p-1.5 rounded-lg bg-[#0a0a0f]">
+          <div className="text-sm font-semibold text-cyan-400">{stats.winRate}%</div>
+          <div className="text-[10px] text-gray-500">Win Rate</div>
         </div>
-        <div className="text-center p-2 rounded-lg bg-[#0a0a0f]">
-          <div className={`text-lg font-semibold ${stats.totalPnL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+        <div className="text-center p-1.5 rounded-lg bg-[#0a0a0f]">
+          <div className={`text-sm font-semibold ${stats.totalPnL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
             {stats.totalPnL >= 0 ? '+' : ''}{stats.totalPnL?.toFixed(1)}%
           </div>
-          <div className="text-xs text-gray-500">P/L</div>
+          <div className="text-[10px] text-gray-500">P/L</div>
         </div>
       </div>
       
-      <div className="space-y-2 max-h-48 overflow-y-auto">
-        {predictions.slice(0, 5).map((pred: any) => (
+      <div className="space-y-1.5 max-h-32 overflow-y-auto">
+        {predictions.slice(0, 4).map((pred: any) => (
           <div 
             key={pred.id} 
-            className="flex items-center justify-between p-2 rounded-lg bg-[#0a0a0f] text-xs"
+            className="flex items-center justify-between p-1.5 rounded-lg bg-[#0a0a0f] text-[11px]"
           >
-            <div className="flex items-center gap-2">
-              <div className={`w-6 h-6 rounded flex items-center justify-center ${
+            <div className="flex items-center gap-1.5">
+              <div className={`w-5 h-5 rounded flex items-center justify-center ${
                 pred.signal === 'BUY' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
               }`}>
                 {pred.signal === 'BUY' ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
               </div>
-              <div>
-                <div className="font-medium">{pred.pair}</div>
-                <div className="text-gray-500">{new Date(pred.createdAt).toLocaleDateString()}</div>
-              </div>
+              <span className="font-medium">{pred.pair?.split('-')[0]}</span>
             </div>
             <div className={`font-mono font-medium ${
               pred.pnlPercent > 0 ? 'text-emerald-400' : pred.pnlPercent < 0 ? 'text-red-400' : 'text-gray-400'

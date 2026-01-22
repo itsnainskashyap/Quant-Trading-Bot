@@ -3,14 +3,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
 import { 
   ArrowLeft, 
   TrendingUp,
   TrendingDown,
   LogOut,
-  User
+  User,
+  AlertTriangle
 } from "lucide-react";
+import logoImage from "@assets/IMAGE_2026-01-22_19:24:15_1769090056092.jpg";
 
 interface PredictionData {
   predictions: Array<{
@@ -89,16 +90,11 @@ export default function Profile() {
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" asChild className="text-gray-400 hover:text-white hover:bg-white/5">
-              <Link href="/dashboard">
+              <a href="/dashboard" data-testid="link-back-dashboard">
                 <ArrowLeft className="w-5 h-5" />
-              </Link>
+              </a>
             </Button>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold">TradeX</span>
-            </div>
+            <img src={logoImage} alt="TradeX AI" className="h-8 w-auto" />
           </div>
           <Button 
             variant="ghost" 
@@ -126,12 +122,8 @@ export default function Profile() {
                 </h1>
                 <p className="text-gray-400 text-sm" data-testid="text-user-email">{user.email}</p>
               </div>
-              <div className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-                subscription?.plan === 'pro' 
-                  ? 'bg-blue-500/20 text-blue-400' 
-                  : 'bg-emerald-500/20 text-emerald-400'
-              }`}>
-                {subscription?.plan === 'pro' ? 'Pro' : subscription?.isEarlyAdopter ? 'Free (Early Adopter)' : 'Free'}
+              <div className="px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400">
+                FREE
               </div>
             </div>
           </CardContent>
@@ -234,10 +226,13 @@ export default function Profile() {
           </CardContent>
         </Card>
 
-        <div className="mt-6 p-4 rounded-xl bg-yellow-500/5 border border-yellow-500/20">
-          <p className="text-xs text-yellow-500/80 text-center">
-            This is for educational purposes only. Past performance does not guarantee future results.
-          </p>
+        <div className="mt-6 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-400" />
+            <p className="text-xs text-amber-400/80">
+              Trade at your own risk. Past performance does not guarantee future results.
+            </p>
+          </div>
         </div>
       </main>
     </div>
