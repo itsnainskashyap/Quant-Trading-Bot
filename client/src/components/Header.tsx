@@ -1,4 +1,4 @@
-import { Shield, Bell, User, Settings } from "lucide-react";
+import { Shield, Bell, User, Settings, Crown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -9,9 +9,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
 import logoImage from "@assets/image_1769090256764.png";
+
+interface SubscriptionData {
+  subscription: { plan: string; status: string } | null;
+  canTrade: boolean;
+  remaining: number;
+  dailyUsed: number;
+  dailyLimit: number;
+  isEarlyAdopter: boolean;
+}
 
 interface HeaderProps {
   isDataFeedHealthy: boolean;
@@ -20,9 +30,16 @@ interface HeaderProps {
 export function Header({ isDataFeedHealthy }: HeaderProps) {
   const { user, logout, isLoggingOut } = useAuth();
   
+  const { data: subData } = useQuery<SubscriptionData>({
+    queryKey: ['/api/subscription'],
+    refetchInterval: 60000,
+  });
+  
   const initials = user 
     ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() || 'U'
     : 'U';
+
+  const isPro = subData?.subscription?.plan === "pro";
 
   return (
     <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
@@ -45,13 +62,23 @@ export function Header({ isDataFeedHealthy }: HeaderProps) {
               </span>
             </div>
             
+            {subData?.remaining !== undefined && subData.remaining >= 0 && !isPro && (
+              <Badge 
+                variant="outline" 
+                className="gap-1 text-xs"
+                data-testid="badge-remaining"
+              >
+                {subData.remaining}/{subData.dailyLimit} left
+              </Badge>
+            )}
+            
             <Badge 
-              variant="outline" 
-              className="gap-1 text-xs"
+              variant={isPro ? "default" : "outline"}
+              className={`gap-1 text-xs ${isPro ? 'bg-gradient-to-r from-amber-500 to-yellow-500' : ''}`}
               data-testid="badge-plan"
             >
-              <Shield className="w-3 h-3" />
-              Free
+              {isPro ? <Crown className="w-3 h-3" /> : <Shield className="w-3 h-3" />}
+              {isPro ? 'Pro' : subData?.isEarlyAdopter ? 'Free (Early)' : 'Free'}
             </Badge>
             
             <Button size="icon" variant="ghost" data-testid="button-notifications">

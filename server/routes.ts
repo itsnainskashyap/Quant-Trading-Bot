@@ -174,6 +174,150 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/predictions/take", async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+      
+      const canTrade = await storage.canUserTrade(user.id);
+      if (!canTrade.allowed) {
+        res.status(403).json({ 
+          error: canTrade.reason,
+          upgradeRequired: true,
+          remaining: canTrade.remaining,
+        });
+        return;
+      }
+      
+      const { pair } = req.body as { pair: TradingPair };
+      const validPairs: TradingPair[] = ["BTC-USDT", "ETH-USDT"];
+      
+      if (!validPairs.includes(pair)) {
+        res.status(400).json({ error: "Invalid trading pair" });
+        return;
+      }
+      
+      const [signal, prices] = await Promise.all([
+        storage.generateSignal(pair),
+        storage.getAllPrices(),
+      ]);
+      
+      if (!signal) {
+        res.status(400).json({ error: "No signal available for this pair" });
+        return;
+      }
+      
+      const priceData = prices.find(p => p.pair === pair);
+      if (!priceData) {
+        res.status(404).json({ error: "Price data not found" });
+        return;
+      }
+      
+      const metrics = await storage.getMarketMetrics(pair);
+      const reasoning = await generateExplanation(signal, priceData, metrics);
+      signal.reasoning = reasoning;
+      
+      const prediction = await storage.createPrediction(user.id, signal, priceData.price);
+      
+      res.json({
+        prediction,
+        signal,
+        message: `Trade recorded. Exit window: ${signal.exitWindowMinutes} minutes.`,
+        remaining: canTrade.remaining !== undefined ? canTrade.remaining - 1 : undefined,
+      });
+    } catch (error) {
+      console.error("Take prediction error:", error);
+      res.status(500).json({ error: "Failed to record prediction" });
+    }
+  });
+
+  app.get("/api/predictions", async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+      
+      const limit = parseInt(req.query.limit as string) || 20;
+      const predictions = await storage.getUserPredictions(user.id, limit);
+      
+      const stats = predictions.reduce((acc, p) => {
+        if (p.outcome === "WIN") acc.wins++;
+        else if (p.outcome === "LOSS") acc.losses++;
+        else if (p.outcome === "NEUTRAL") acc.neutral++;
+        else if (p.outcome === "PENDING") acc.pending++;
+        else if (p.outcome === "SKIPPED") acc.skipped++;
+        
+        if (p.profitLoss !== null) {
+          acc.totalProfitLoss += p.profitLoss;
+        }
+        return acc;
+      }, { wins: 0, losses: 0, neutral: 0, pending: 0, skipped: 0, totalProfitLoss: 0 });
+      
+      const completedTrades = stats.wins + stats.losses + stats.neutral;
+      const winRate = completedTrades > 0 ? (stats.wins / completedTrades) * 100 : 0;
+      
+      res.json({
+        predictions,
+        stats: {
+          ...stats,
+          total: predictions.length,
+          completedTrades,
+          winRate: winRate.toFixed(1),
+        },
+      });
+    } catch (error) {
+      console.error("Get predictions error:", error);
+      res.status(500).json({ error: "Failed to fetch predictions" });
+    }
+  });
+
+  app.post("/api/predictions/process", async (req, res) => {
+    try {
+      const processed = await storage.processExpiredPredictions();
+      res.json({ 
+        processed,
+        message: `Processed ${processed} expired predictions.`,
+      });
+    } catch (error) {
+      console.error("Process predictions error:", error);
+      res.status(500).json({ error: "Failed to process predictions" });
+    }
+  });
+
+  app.get("/api/subscription", async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+      
+      const subscription = await storage.getUserSubscription(user.id);
+      const canTrade = await storage.canUserTrade(user.id);
+      const totalUsers = await storage.getTotalUserCount();
+      const dailyCount = await storage.getUserDailyPredictionCount(user.id);
+      
+      res.json({
+        subscription,
+        canTrade: canTrade.allowed,
+        remaining: canTrade.remaining,
+        reason: canTrade.reason,
+        dailyUsed: dailyCount,
+        dailyLimit: 10,
+        totalUsers,
+        isEarlyAdopter: totalUsers <= 1000,
+      });
+    } catch (error) {
+      console.error("Subscription error:", error);
+      res.status(500).json({ error: "Failed to fetch subscription" });
+    }
+  });
+
   return httpServer;
 }
 

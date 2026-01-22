@@ -11,11 +11,13 @@ import { SignalHistory } from "@/components/SignalHistory";
 import { Disclaimer } from "@/components/Disclaimer";
 import { AIConsensus } from "@/components/AIConsensus";
 import { TradingViewChart } from "@/components/TradingViewChart";
+import { PredictionHistory } from "@/components/PredictionHistory";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Sparkles } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { RefreshCw, Sparkles, TrendingUp } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { 
   TradingSignal, 
   PriceData, 
@@ -49,10 +51,32 @@ export default function Dashboard() {
   });
   const [consensus, setConsensus] = useState<ConsensusResult | null>(null);
   const [isConsensusLoading, setIsConsensusLoading] = useState(false);
+  const { toast } = useToast();
 
   const { data, isLoading, refetch, isRefetching } = useQuery<DashboardData>({
     queryKey: ['/api/dashboard', selectedPair],
     refetchInterval: 5000,
+  });
+
+  const takeTradeMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/predictions/take', { pair: selectedPair });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Trade Recorded",
+        description: data.message,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/predictions'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to record trade",
+        variant: "destructive",
+      });
+    },
   });
 
   const explainMutation = useMutation({
@@ -181,6 +205,28 @@ export default function Dashboard() {
               isLoading={isRefetching}
             />
             
+            {data?.signal && data.signal.signal !== "NO_TRADE" && (
+              <Card className="p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-sm font-medium">Execute This Trade</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Record this signal and track profit/loss after exit window
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => takeTradeMutation.mutate()}
+                    disabled={takeTradeMutation.isPending}
+                    className={`${data.signal.signal === 'BUY' ? 'bg-success hover:bg-success/90' : 'bg-destructive hover:bg-destructive/90'}`}
+                    data-testid="button-take-trade"
+                  >
+                    <TrendingUp className={`w-4 h-4 mr-2 ${takeTradeMutation.isPending ? 'animate-spin' : ''}`} />
+                    {takeTradeMutation.isPending ? 'Recording...' : `Take ${data.signal.signal} Trade`}
+                  </Button>
+                </div>
+              </Card>
+            )}
+            
             <Card className="p-4">
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -236,6 +282,8 @@ export default function Dashboard() {
             {data?.history && (
               <SignalHistory history={data.history} />
             )}
+            
+            <PredictionHistory />
           </div>
         </div>
       </main>

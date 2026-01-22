@@ -1,4 +1,8 @@
 import { randomUUID } from "crypto";
+import { eq, and, lt, count, gte, sql } from "drizzle-orm";
+import { db } from "./db";
+import { predictions, subscriptions, type Prediction, type Subscription } from "@shared/models/trading";
+import { users } from "@shared/models/auth";
 import type { 
   TradingSignal, 
   PriceData, 
@@ -26,6 +30,18 @@ export interface IStorage {
     isNewsPause: boolean;
   }>;
   isDataFeedHealthy(): boolean;
+  
+  createPrediction(userId: string, signal: TradingSignal, entryPrice: number): Promise<Prediction>;
+  getUserPredictions(userId: string, limit?: number): Promise<Prediction[]>;
+  getPendingPredictions(): Promise<Prediction[]>;
+  completePrediction(predictionId: string, exitPrice: number, outcome: string, profitLoss: number, outcomeReason: string): Promise<Prediction | null>;
+  processExpiredPredictions(): Promise<number>;
+  
+  getUserSubscription(userId: string): Promise<Subscription | null>;
+  createOrUpdateSubscription(userId: string, plan: string): Promise<Subscription>;
+  getTotalUserCount(): Promise<number>;
+  getUserDailyPredictionCount(userId: string): Promise<number>;
+  canUserTrade(userId: string): Promise<{ allowed: boolean; reason?: string; remaining?: number }>;
 }
 
 export class MemStorage implements IStorage {
@@ -245,6 +261,227 @@ export class MemStorage implements IStorage {
 
   isDataFeedHealthy(): boolean {
     return Date.now() - this.lastPriceUpdate < 10000;
+  }
+
+  async createPrediction(userId: string, signal: TradingSignal, entryPrice: number): Promise<Prediction> {
+    const exitTimestamp = new Date(signal.exitTimestamp);
+    
+    const [prediction] = await db.insert(predictions).values({
+      userId,
+      pair: signal.pair,
+      signal: signal.signal,
+      confidence: signal.confidence,
+      riskGrade: signal.riskGrade,
+      entryPrice,
+      exitWindowMinutes: signal.exitWindowMinutes,
+      exitTimestamp,
+      reasoning: signal.reasoning,
+      outcome: "PENDING",
+    }).returning();
+    
+    this.tradesExecutedToday++;
+    
+    return prediction;
+  }
+
+  async getUserPredictions(userId: string, limit: number = 20): Promise<Prediction[]> {
+    return db.select()
+      .from(predictions)
+      .where(eq(predictions.userId, userId))
+      .orderBy(sql`${predictions.createdAt} DESC`)
+      .limit(limit);
+  }
+
+  async getPendingPredictions(): Promise<Prediction[]> {
+    const now = new Date();
+    return db.select()
+      .from(predictions)
+      .where(
+        and(
+          eq(predictions.outcome, "PENDING"),
+          lt(predictions.exitTimestamp, now)
+        )
+      );
+  }
+
+  async completePrediction(
+    predictionId: string, 
+    exitPrice: number, 
+    outcome: string, 
+    profitLoss: number, 
+    outcomeReason: string
+  ): Promise<Prediction | null> {
+    const [updated] = await db.update(predictions)
+      .set({
+        exitPrice,
+        outcome,
+        profitLoss,
+        outcomeReason,
+        completedAt: new Date(),
+      })
+      .where(eq(predictions.id, predictionId))
+      .returning();
+    
+    return updated || null;
+  }
+
+  async processExpiredPredictions(): Promise<number> {
+    const pending = await this.getPendingPredictions();
+    let processed = 0;
+    
+    for (const prediction of pending) {
+      const currentPrice = await this.getPriceData(prediction.pair as TradingPair);
+      const exitPrice = currentPrice.price;
+      const entryPrice = prediction.entryPrice;
+      
+      let profitLoss = 0;
+      let outcome = "NEUTRAL";
+      
+      if (prediction.signal === "BUY") {
+        profitLoss = ((exitPrice - entryPrice) / entryPrice) * 100;
+        outcome = profitLoss > 0.1 ? "WIN" : profitLoss < -0.1 ? "LOSS" : "NEUTRAL";
+      } else if (prediction.signal === "SELL") {
+        profitLoss = ((entryPrice - exitPrice) / entryPrice) * 100;
+        outcome = profitLoss > 0.1 ? "WIN" : profitLoss < -0.1 ? "LOSS" : "NEUTRAL";
+      } else {
+        outcome = "SKIPPED";
+        profitLoss = 0;
+      }
+      
+      const outcomeReason = this.generateOutcomeReason(prediction, exitPrice, profitLoss, outcome);
+      
+      await this.completePrediction(prediction.id, exitPrice, outcome, profitLoss, outcomeReason);
+      processed++;
+    }
+    
+    return processed;
+  }
+
+  private generateOutcomeReason(prediction: Prediction, exitPrice: number, profitLoss: number, outcome: string): string {
+    const direction = prediction.signal === "BUY" ? "long" : "short";
+    const priceChange = ((exitPrice - prediction.entryPrice) / prediction.entryPrice * 100).toFixed(2);
+    
+    if (outcome === "WIN") {
+      return `Successful ${direction} trade on ${prediction.pair}. Entry at $${prediction.entryPrice.toFixed(2)}, exit at $${exitPrice.toFixed(2)}. Price moved ${priceChange}% in our favor, yielding ${profitLoss.toFixed(2)}% profit. AI confidence of ${prediction.confidence}% was validated.`;
+    } else if (outcome === "LOSS") {
+      return `Unsuccessful ${direction} trade on ${prediction.pair}. Entry at $${prediction.entryPrice.toFixed(2)}, exit at $${exitPrice.toFixed(2)}. Price moved ${priceChange}% against position, resulting in ${Math.abs(profitLoss).toFixed(2)}% loss. Market conditions changed unexpectedly after entry.`;
+    } else if (outcome === "NEUTRAL") {
+      return `Flat trade on ${prediction.pair}. Entry at $${prediction.entryPrice.toFixed(2)}, exit at $${exitPrice.toFixed(2)}. Price movement of ${priceChange}% was insufficient for meaningful profit or loss within the exit window.`;
+    } else {
+      return `Trade skipped due to NO_TRADE signal. Market conditions did not meet the 65% confidence threshold required for entry. Capital preservation prioritized.`;
+    }
+  }
+
+  async getUserSubscription(userId: string): Promise<Subscription | null> {
+    const [subscription] = await db.select()
+      .from(subscriptions)
+      .where(eq(subscriptions.userId, userId))
+      .limit(1);
+    
+    return subscription || null;
+  }
+
+  async createOrUpdateSubscription(userId: string, plan: string): Promise<Subscription> {
+    const existing = await this.getUserSubscription(userId);
+    
+    if (existing) {
+      const [updated] = await db.update(subscriptions)
+        .set({ plan, status: "active", startDate: new Date() })
+        .where(eq(subscriptions.id, existing.id))
+        .returning();
+      return updated;
+    }
+    
+    const [subscription] = await db.insert(subscriptions)
+      .values({
+        userId,
+        plan,
+        status: "active",
+      })
+      .returning();
+    
+    return subscription;
+  }
+
+  async getTotalUserCount(): Promise<number> {
+    const result = await db.select({ count: count() }).from(users);
+    return result[0]?.count || 0;
+  }
+
+  async getUserDailyPredictionCount(userId: string): Promise<number> {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const result = await db.select({ count: count() })
+      .from(predictions)
+      .where(
+        and(
+          eq(predictions.userId, userId),
+          gte(predictions.createdAt, startOfDay)
+        )
+      );
+    
+    return result[0]?.count || 0;
+  }
+
+  async isUserEarlyAdopter(userId: string): Promise<boolean> {
+    const FIRST_N_USERS_FREE = 1000;
+    
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    
+    if (user?.isEarlyAdopter) {
+      return true;
+    }
+    
+    const usersBeforeCount = await db.select({ count: count() })
+      .from(users)
+      .where(lt(users.createdAt, user?.createdAt || new Date()));
+    
+    const position = (usersBeforeCount[0]?.count || 0) + 1;
+    
+    if (position <= FIRST_N_USERS_FREE && user) {
+      await db.update(users)
+        .set({ isEarlyAdopter: true })
+        .where(eq(users.id, userId));
+      return true;
+    }
+    
+    return false;
+  }
+
+  async canUserTrade(userId: string): Promise<{ allowed: boolean; reason?: string; remaining?: number; isEarlyAdopter?: boolean }> {
+    const FREE_DAILY_LIMIT = 10;
+    
+    const subscription = await this.getUserSubscription(userId);
+    
+    if (subscription?.plan === "pro" && subscription.status === "active") {
+      return { allowed: true, remaining: -1, isEarlyAdopter: false };
+    }
+    
+    const isEarlyAdopter = await this.isUserEarlyAdopter(userId);
+    
+    if (isEarlyAdopter) {
+      const dailyCount = await this.getUserDailyPredictionCount(userId);
+      const remaining = Math.max(0, FREE_DAILY_LIMIT - dailyCount);
+      
+      if (dailyCount >= FREE_DAILY_LIMIT) {
+        return { 
+          allowed: false, 
+          reason: "Daily limit reached. Free users get 10 signals per day. Upgrade to Pro for unlimited signals.",
+          remaining: 0,
+          isEarlyAdopter: true
+        };
+      }
+      
+      return { allowed: true, remaining, isEarlyAdopter: true };
+    }
+    
+    return { 
+      allowed: false, 
+      reason: "Free access is no longer available. Please subscribe to Pro (₹1999/month) for unlimited trading signals.",
+      remaining: 0,
+      isEarlyAdopter: false
+    };
   }
 }
 
