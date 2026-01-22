@@ -3,7 +3,7 @@
 ## Overview
 TradeX AI is a probability-based trading decision platform that helps users decide whether to BUY, SELL, or SKIP trades on 15 cryptocurrency pairs. The system focuses on capital protection over profit maximization with strict risk management (2% risk per trade, 10% max position size).
 
-**Multi-AI Consensus System** - Uses 3 world-class AI providers (OpenAI GPT-5.1, Anthropic Claude, Google Gemini) voting together for maximum signal quality and reduced false signals.
+**Multi-AI Consensus System** - Uses 3 world-class AI providers (OpenAI GPT-4o, Anthropic Claude, Google Gemini) voting together for maximum signal quality and reduced false signals. Ultra-conservative approach requiring 75%+ average confidence and multi-indicator confluence for actionable signals.
 
 **Supported Pairs**: BTC, ETH, SOL, XRP, DOGE, BNB, ADA, AVAX, DOT, MATIC, LINK, LTC, SHIB, ATOM, UNI
 
@@ -15,7 +15,7 @@ TradeX AI is a probability-based trading decision platform that helps users deci
 - **Styling**: Tailwind CSS with custom dark trading theme
 - **State Management**: TanStack Query (React Query)
 - **AI/LLM Providers**: 
-  - OpenAI GPT-5.1 (via Replit AI Integrations)
+  - OpenAI GPT-4o (via Replit AI Integrations)
   - Anthropic Claude (via Replit AI Integrations)
   - Google Gemini (via Replit AI Integrations)
 - **Charts**: TradingView Advanced Charts
@@ -83,7 +83,7 @@ shared/
 ## Key Features
 
 ### 1. Multi-AI Consensus System
-- Queries OpenAI GPT-5.1, Anthropic Claude, and Google Gemini in parallel
+- Queries OpenAI GPT-4o, Anthropic Claude, and Google Gemini in parallel
 - Requires 67%+ agreement for actionable signals
 - Requires 70%+ average confidence
 - Automatic NO_TRADE on conflicting BUY/SELL signals
@@ -116,10 +116,15 @@ shared/
 - User profile with trading statistics
 - Admin panel for system monitoring
 
-### 7. Signal Generation
-- BUY/SELL/NO_TRADE based on aggregate confidence threshold (≥65%)
+### 7. Signal Generation (Ultra-Conservative)
+- BUY/SELL only when ALL conditions are met:
+  - 75%+ average confidence across all AI providers
+  - 65%+ minimum confidence from every provider
+  - No HIGH risk flags from any provider
+  - No conflicting BUY/SELL signals
+  - 5+ technical indicators in confluence
 - Risk grading: LOW/MEDIUM/HIGH based on confidence and volatility
-- Exit window: Time-based exit recommendations (5-25 minutes)
+- Exit window: Time-based exit recommendations (3-10 minutes)
 - Capital protection: Trade frequency limiter, volatility suppression
 
 ### 8. Real-Time Market Data
@@ -128,13 +133,20 @@ shared/
 - Fallback to cached data if API is unavailable
 - 24h price change, high/low, and volume tracking
 
-### 9. Technical Indicators
+### 9. Advanced Technical Indicators (Multi-Confluence System)
 - RSI (14-period) with oversold/overbought signals
-- MACD (12, 26, 9) with trend direction and histogram
-- Bollinger Bands (20-period, 2 std) with price position
-- SMA 20/50 crossover analysis
-- ATR for volatility measurement
-- Momentum indicator for trend strength
+- Stochastic Oscillator (14, 3) with K/D crossovers
+- Williams %R for extreme conditions
+- MACD (12, 26, 9) with trend direction, histogram, and crossover detection
+- Bollinger Bands (20-period, 2 std) with squeeze detection
+- SMA 20/50/200 with Golden Cross/Death Cross detection
+- EMA 12/26/50 for trend confirmation
+- ADX for trend strength measurement
+- ROC (Rate of Change) for momentum
+- ATR and ATR% for volatility measurement
+- Support/Resistance level detection
+- Confluence scoring: requires 5+ aligned indicators for signals
+- Reliability score based on data quality and indicator agreement
 
 ### 10. Backtesting Statistics
 - Historical win rate tracking (target: 72%+)

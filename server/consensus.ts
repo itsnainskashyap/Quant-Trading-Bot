@@ -63,48 +63,72 @@ function buildAnalysisPrompt(pair: TradingPair, metrics: MarketMetrics, price: n
   const orderBookSide = metrics.orderBookImbalance > 0 ? "BUYERS DOMINATING" : "SELLERS DOMINATING";
   const fundingBias = metrics.fundingRate > 0 ? "LONGS PAYING (bullish crowded)" : "SHORTS PAYING (bearish crowded)";
   
-  return `You are an elite cryptocurrency trading analyst specializing in 1-MINUTE SCALPING. The last 1-minute candle just closed. Analyze ALL factors for the NEXT candle prediction.
+  const rsi = metrics.rsi ?? 50;
+  const rsiSignal = rsi < 25 ? "EXTREMELY OVERSOLD - Strong buy zone" :
+                    rsi < 35 ? "OVERSOLD - Potential bounce" :
+                    rsi > 75 ? "EXTREMELY OVERBOUGHT - Strong sell zone" :
+                    rsi > 65 ? "OVERBOUGHT - Potential pullback" : "NEUTRAL";
+  
+  const macdSignal = metrics.macdTrend === 'BULLISH' ? "BULLISH momentum" : 
+                     metrics.macdTrend === 'BEARISH' ? "BEARISH momentum" : "No clear momentum";
+  
+  const bbSignal = metrics.bollingerPosition === 'BELOW_LOWER' ? "BELOW LOWER BAND - Oversold" :
+                   metrics.bollingerPosition === 'ABOVE_UPPER' ? "ABOVE UPPER BAND - Overbought" : "Within bands";
+  
+  return `You are an ULTRA-CONSERVATIVE cryptocurrency trading analyst. Your #1 priority is CAPITAL PRESERVATION. You only recommend trades with EXTREME confidence and multiple confirmations.
 
-=== CURRENT MARKET STATE ===
-PAIR: ${pair}
-PRICE AT CANDLE CLOSE: $${price.toLocaleString()}
+=== PAIR: ${pair} | PRICE: $${price.toLocaleString()} ===
 
-=== TECHNICAL ANALYSIS DATA ===
-- ATR (Volatility): $${metrics.atr.toFixed(2)} (${metrics.volatility < 2 ? "LOW" : metrics.volatility < 4 ? "MEDIUM" : "HIGH"} volatility)
-- Volatility Index: ${metrics.volatility.toFixed(2)}/10
+=== MULTI-INDICATOR TECHNICAL ANALYSIS ===
+RSI (14): ${rsi.toFixed(1)} → ${rsiSignal}
+MACD: ${macdSignal}
+Bollinger: ${bbSignal}
+ATR: $${metrics.atr?.toFixed(2) || 'N/A'} (Volatility: ${metrics.volatility < 2 ? "LOW" : metrics.volatility < 4 ? "MEDIUM" : "HIGH"})
+SMA 20/50: ${metrics.sma20?.toFixed(2)} / ${metrics.sma50?.toFixed(2)}
+Technical Signal: ${metrics.overallTechnicalSignal || 'NEUTRAL'}
+Technical Strength: ${metrics.technicalStrength || 50}%
 
-=== VOLUME & ORDER FLOW ANALYSIS ===
-- Volume Delta: ${metrics.volumeDelta.toFixed(2)}% → ${volumeTrend}
-- Order Book Imbalance: ${metrics.orderBookImbalance.toFixed(2)}% → ${orderBookSide}
-- Open Interest: $${(metrics.openInterest / 1e9).toFixed(2)}B (${metrics.openInterest > 15e9 ? "HIGH leverage" : "NORMAL leverage"})
+=== ORDER FLOW & VOLUME ===
+Volume Delta: ${metrics.volumeDelta?.toFixed(2)}% → ${volumeTrend}
+Order Book: ${metrics.orderBookImbalance?.toFixed(2)}% → ${orderBookSide}
+Funding Rate: ${(metrics.fundingRate * 100).toFixed(4)}% → ${fundingBias}
 
-=== SENTIMENT & PSYCHOLOGY ANALYSIS ===
-- Funding Rate: ${(metrics.fundingRate * 100).toFixed(4)}% → ${fundingBias}
-- Last Volume Aggression: ${Math.abs(metrics.volumeDelta) > 10 ? "AGGRESSIVE" : Math.abs(metrics.volumeDelta) > 5 ? "MODERATE" : "PASSIVE"} ${metrics.volumeDelta > 0 ? "buyers" : "sellers"}
-- Crowd Psychology: ${metrics.fundingRate > 0.0005 ? "Over-leveraged longs (squeeze risk)" : metrics.fundingRate < -0.0005 ? "Over-leveraged shorts (squeeze risk)" : "Balanced positioning"}
+=== STRICT ENTRY CRITERIA (ALL must be met for BUY/SELL) ===
+For BUY signal, you need:
+✓ RSI < 35 (oversold zone)
+✓ Price at or below lower Bollinger Band
+✓ MACD showing bullish momentum or crossover
+✓ Order book favoring buyers (>15%)
+✓ Volume confirming move
+✓ Volatility not extreme
 
-=== YOUR ANALYSIS TASKS ===
-1. TECHNICAL: Analyze price action, support/resistance from ATR
-2. SENTIMENT: Who won the last candle? Buyers or sellers? What's their next move?
-3. PSYCHOLOGY: Retail traders ka behavior dekho - are they chasing? Are they scared?
-4. TIMING: Kitne minutes tak trade hold karna chahiye? (1-15 mins based on volatility)
+For SELL signal, you need:
+✓ RSI > 65 (overbought zone)
+✓ Price at or above upper Bollinger Band
+✓ MACD showing bearish momentum or crossover
+✓ Order book favoring sellers
+✓ Volume confirming move
+✓ Volatility not extreme
 
 === CRITICAL RULES ===
-- CAPITAL PROTECTION FIRST - prefer NO_TRADE over 50/50 trades
-- Only BUY/SELL with >70% confidence
-- If volatility HIGH or signals conflict → NO_TRADE
-- Consider stop-loss hunting by market makers
+1. DEFAULT TO NO_TRADE - Only signal when 5+ indicators align
+2. Never chase - wait for pullbacks
+3. High volatility (ATR > 3%) = ALWAYS NO_TRADE
+4. Conflicting signals = ALWAYS NO_TRADE
+5. Confidence below 75% = ALWAYS NO_TRADE
+6. Capital protection is more important than profit
 
-Respond in this EXACT JSON format:
+Respond in EXACT JSON:
 {
   "signal": "BUY" | "SELL" | "NO_TRADE",
   "confidence": 0-100,
   "risk": "LOW" | "MEDIUM" | "HIGH",
-  "holdMinutes": 1-15,
+  "holdMinutes": 3-10,
   "technicalScore": 0-100,
   "sentimentScore": 0-100,
-  "psychology": "1 line - what retail traders are thinking/feeling right now",
-  "reasoning": "2-3 lines explaining your signal with technical + sentiment factors"
+  "indicatorsAligned": number of indicators that agree (0-8),
+  "psychology": "1 line market psychology",
+  "reasoning": "Explain which indicators aligned and why this is a high-probability setup (or why NO_TRADE)"
 }`;
 }
 
@@ -128,7 +152,7 @@ async function analyzeWithOpenAI(pair: TradingPair, metrics: MarketMetrics, pric
       confidence: Math.min(100, Math.max(0, parsed.confidence)),
       reasoning: parsed.reasoning,
       riskLevel: parsed.risk as RiskGrade,
-      holdDuration: Math.min(15, Math.max(1, parsed.holdMinutes || 5)),
+      holdDuration: Math.min(10, Math.max(3, parsed.holdMinutes || 5)),
       technicalScore: Math.min(100, Math.max(0, parsed.technicalScore || 50)),
       sentimentScore: Math.min(100, Math.max(0, parsed.sentimentScore || 50)),
       psychologyInsight: parsed.psychology || "Market participants are cautious",
@@ -171,7 +195,7 @@ async function analyzeWithAnthropic(pair: TradingPair, metrics: MarketMetrics, p
       confidence: Math.min(100, Math.max(0, parsed.confidence)),
       reasoning: parsed.reasoning,
       riskLevel: parsed.risk as RiskGrade,
-      holdDuration: Math.min(15, Math.max(1, parsed.holdMinutes || 5)),
+      holdDuration: Math.min(10, Math.max(3, parsed.holdMinutes || 5)),
       technicalScore: Math.min(100, Math.max(0, parsed.technicalScore || 50)),
       sentimentScore: Math.min(100, Math.max(0, parsed.sentimentScore || 50)),
       psychologyInsight: parsed.psychology || "Market participants are cautious",
@@ -212,7 +236,7 @@ async function analyzeWithGemini(pair: TradingPair, metrics: MarketMetrics, pric
       confidence: Math.min(100, Math.max(0, parsed.confidence)),
       reasoning: parsed.reasoning,
       riskLevel: parsed.risk as RiskGrade,
-      holdDuration: Math.min(15, Math.max(1, parsed.holdMinutes || 5)),
+      holdDuration: Math.min(10, Math.max(3, parsed.holdMinutes || 5)),
       technicalScore: Math.min(100, Math.max(0, parsed.technicalScore || 50)),
       sentimentScore: Math.min(100, Math.max(0, parsed.sentimentScore || 50)),
       psychologyInsight: parsed.psychology || "Market participants are cautious",
@@ -302,16 +326,23 @@ function calculateConsensus(results: AIAnalysisResult[]): ConsensusResult {
     warnings.push("AI providers disagree - avoiding risky position");
   }
 
-  if (avgConfidence < 70 && finalSignal !== "NO_TRADE") {
+  if (avgConfidence < 75 && finalSignal !== "NO_TRADE") {
     finalSignal = "NO_TRADE";
     hasConsensus = false;
-    warnings.push("Average confidence too low for safe trade");
+    warnings.push("Average confidence below 75% - insufficient certainty for trade");
   }
 
-  if (highRiskCount >= 2) {
+  if (highRiskCount >= 1) {
     finalSignal = "NO_TRADE";
     hasConsensus = false;
-    warnings.push("Multiple providers flagged high risk - capital protection engaged");
+    warnings.push("At least one provider flagged high risk - capital protection engaged");
+  }
+  
+  const minConfidence = Math.min(...successfulResults.map(r => r.confidence));
+  if (minConfidence < 65 && finalSignal !== "NO_TRADE") {
+    finalSignal = "NO_TRADE";
+    hasConsensus = false;
+    warnings.push("One provider has low confidence - waiting for better setup");
   }
 
   const signalMismatch = successfulResults.some(r => 
