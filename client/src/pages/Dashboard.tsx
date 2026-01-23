@@ -500,57 +500,38 @@ export default function Dashboard() {
             )}
 
             {isAnalyzing && (
-              <Card className="bg-gradient-to-br from-[#0d0d14] via-[#0f0f1a] to-[#0d0d14] border-[#1a1a2e] overflow-hidden">
-                <CardContent className="p-8 text-center relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-cyan-500/5 animate-pulse" />
-                  
-                  <div className="relative z-10">
-                    <div className="flex justify-center items-center gap-4 mb-6">
-                      <div className="relative">
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center animate-pulse">
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center animate-spin" style={{ animationDuration: '3s' }}>
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 animate-ping" style={{ animationDuration: '1.5s' }} />
-                          </div>
-                        </div>
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
-                        <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-                        <div className="absolute top-1/2 -right-3 w-2 h-2 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
+              <Card className="bg-[#0d0d14] border-[#1a1a2e]">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-10 h-10 flex-shrink-0">
+                      <div className="absolute inset-0 rounded-full border-2 border-gray-700" />
+                      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 animate-spin" />
+                      <div className="absolute inset-2 rounded-full border border-transparent border-t-gray-500 animate-spin" style={{ animationDuration: '1.5s', animationDirection: 'reverse' }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-medium text-white">Analyzing {selectedPair}</span>
+                        <span className="text-xs text-gray-500">•</span>
+                        <span className="text-xs text-gray-500">{tradeMode}m</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                          OpenAI
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" style={{ animationDelay: '0.2s' }} />
+                          Claude
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" style={{ animationDelay: '0.4s' }} />
+                          Gemini
+                        </span>
                       </div>
                     </div>
-                    
-                    <div className="space-y-3 mb-4">
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="h-1 w-8 bg-gradient-to-r from-transparent via-blue-500 to-transparent rounded animate-pulse" />
-                        <span className="text-blue-400 text-xs font-medium animate-pulse">GPT-4o</span>
-                        <div className="h-1 w-8 bg-gradient-to-r from-transparent via-purple-500 to-transparent rounded animate-pulse" style={{ animationDelay: '0.3s' }} />
-                        <span className="text-purple-400 text-xs font-medium animate-pulse" style={{ animationDelay: '0.3s' }}>Claude</span>
-                        <div className="h-1 w-8 bg-gradient-to-r from-transparent via-cyan-500 to-transparent rounded animate-pulse" style={{ animationDelay: '0.6s' }} />
-                        <span className="text-cyan-400 text-xs font-medium animate-pulse" style={{ animationDelay: '0.6s' }}>Gemini</span>
-                      </div>
-                    </div>
-                    
-                    <h3 className="text-lg font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent mb-2">
-                      Multi-AI Analysis in Progress
-                    </h3>
-                    <p className="text-sm text-gray-400 mb-1">
-                      Analyzing <span className="text-white font-semibold">{selectedPair}</span>
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {tradeMode} minute timeframe • 15+ technical indicators
-                    </p>
-                    
-                    <div className="mt-4 flex justify-center gap-1">
-                      {[...Array(5)].map((_, i) => (
-                        <div 
-                          key={i}
-                          className="w-2 h-6 bg-gradient-to-t from-blue-500 to-purple-500 rounded-full animate-pulse"
-                          style={{ 
-                            animationDelay: `${i * 0.15}s`,
-                            height: `${12 + Math.random() * 12}px`
-                          }}
-                        />
-                      ))}
-                    </div>
+                  </div>
+                  <div className="mt-4 h-1 bg-gray-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 rounded-full animate-pulse" style={{ width: '60%' }} />
                   </div>
                 </CardContent>
               </Card>
