@@ -7,6 +7,9 @@ interface TradingViewChartProps {
   signal?: 'BUY' | 'SELL' | 'SKIP';
   stopLoss?: number;
   takeProfit?: number;
+  tradeSize?: number;
+  riskAmount?: number;
+  potentialProfit?: number;
 }
 
 const SYMBOL_MAP: Record<TradingPair, string> = {
@@ -27,7 +30,7 @@ const SYMBOL_MAP: Record<TradingPair, string> = {
   "UNI-USDT": "BINANCE:UNIUSDT",
 };
 
-export function TradingViewChart({ pair, entryPrice, signal, stopLoss, takeProfit }: TradingViewChartProps) {
+export function TradingViewChart({ pair, entryPrice, signal, stopLoss, takeProfit, tradeSize, riskAmount, potentialProfit }: TradingViewChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
@@ -84,14 +87,21 @@ export function TradingViewChart({ pair, entryPrice, signal, stopLoss, takeProfi
           }`}>
             {signal} @ ${entryPrice.toLocaleString()}
           </div>
+          {tradeSize && (
+            <div className="px-2 py-1 rounded text-xs font-medium bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+              Trade: ${tradeSize.toLocaleString()}
+            </div>
+          )}
           {stopLoss && (
             <div className="px-2 py-1 rounded text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30">
               SL: ${stopLoss.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              {riskAmount && <span className="ml-1 opacity-70">(-${riskAmount.toFixed(0)})</span>}
             </div>
           )}
           {takeProfit && (
             <div className="px-2 py-1 rounded text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
               TP: ${takeProfit.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              {potentialProfit && <span className="ml-1 opacity-70">(+${potentialProfit.toFixed(0)})</span>}
             </div>
           )}
         </div>

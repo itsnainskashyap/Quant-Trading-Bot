@@ -34,7 +34,7 @@ export interface IStorage {
   }>;
   isDataFeedHealthy(): boolean;
   
-  createPrediction(userId: string, signal: TradingSignal, entryPrice: number): Promise<Prediction>;
+  createPrediction(userId: string, signal: TradingSignal, entryPrice: number, tradeDetails?: { capital?: number; tradeSize?: number; stopLoss?: number; takeProfit?: number }): Promise<Prediction>;
   getUserPredictions(userId: string, limit?: number): Promise<Prediction[]>;
   getPendingPredictions(): Promise<Prediction[]>;
   completePrediction(predictionId: string, exitPrice: number, outcome: string, profitLoss: number, outcomeReason: string): Promise<Prediction | null>;
@@ -519,7 +519,7 @@ export class MemStorage implements IStorage {
     return Date.now() - this.lastPriceUpdate < 10000;
   }
 
-  async createPrediction(userId: string, signal: TradingSignal, entryPrice: number): Promise<Prediction> {
+  async createPrediction(userId: string, signal: TradingSignal, entryPrice: number, tradeDetails?: { capital?: number; tradeSize?: number; stopLoss?: number; takeProfit?: number }): Promise<Prediction> {
     const exitTimestamp = new Date(signal.exitTimestamp);
     
     const [prediction] = await db.insert(predictions).values({
@@ -533,6 +533,10 @@ export class MemStorage implements IStorage {
       exitTimestamp,
       reasoning: signal.reasoning,
       outcome: "PENDING",
+      capital: tradeDetails?.capital,
+      tradeSize: tradeDetails?.tradeSize,
+      stopLoss: tradeDetails?.stopLoss,
+      takeProfit: tradeDetails?.takeProfit,
     }).returning();
     
     this.tradesExecutedToday++;

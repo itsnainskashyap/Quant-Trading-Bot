@@ -27,6 +27,10 @@ export const predictions = pgTable("predictions", {
   outcome: varchar("outcome").default("PENDING"),
   profitLoss: real("profit_loss"),
   outcomeReason: text("outcome_reason"),
+  capital: real("capital"),
+  tradeSize: real("trade_size"),
+  stopLoss: real("stop_loss"),
+  takeProfit: real("take_profit"),
   createdAt: timestamp("created_at").defaultNow(),
   completedAt: timestamp("completed_at"),
 });

@@ -242,12 +242,16 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
         return;
       }
       
-      const { pair, signal: signalType, entryPrice, confidence, exitWindowMinutes } = req.body as { 
+      const { pair, signal: signalType, entryPrice, confidence, exitWindowMinutes, capital, tradeSize, stopLoss, takeProfit } = req.body as { 
         pair: TradingPair;
         signal: 'BUY' | 'SELL';
         entryPrice: number;
         confidence: number;
         exitWindowMinutes: number;
+        capital?: number;
+        tradeSize?: number;
+        stopLoss?: number;
+        takeProfit?: number;
       };
       
       if (!tradingPairs.includes(pair)) {
@@ -285,7 +289,12 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
       };
       
       try {
-        const prediction = await storage.createPrediction(userId, signal, entryPrice);
+        const prediction = await storage.createPrediction(userId, signal, entryPrice, {
+          capital,
+          tradeSize,
+          stopLoss,
+          takeProfit,
+        });
         
         res.json({
           prediction,

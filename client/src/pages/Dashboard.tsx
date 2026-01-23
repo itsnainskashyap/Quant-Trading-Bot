@@ -497,6 +497,9 @@ export default function Dashboard() {
                     signal={analysis?.signal}
                     stopLoss={analysis?.tradeRecommendation?.stopLoss}
                     takeProfit={analysis?.tradeRecommendation?.takeProfit}
+                    tradeSize={analysis?.tradeRecommendation?.tradeSize}
+                    riskAmount={analysis?.tradeRecommendation?.riskAmount}
+                    potentialProfit={analysis?.tradeRecommendation?.potentialProfit}
                   />
                 </div>
               </CardContent>
@@ -712,7 +715,7 @@ export default function Dashboard() {
                   <h3 className="text-sm font-medium text-gray-300">Your Trades</h3>
                   <History className="w-4 h-4 text-gray-500" />
                 </div>
-                <TradeHistory />
+                <TradeHistory currentPrices={new Map(data?.prices?.map((p: any) => [p.pair, p.price]) || [])} />
               </CardContent>
             </Card>
 
@@ -877,10 +880,17 @@ function CandleTimer() {
   );
 }
 
-function TradeHistory() {
+function TradeHistory({ currentPrices }: { currentPrices?: Map<string, number> }) {
   const { data, isLoading } = useQuery<{ predictions: any[]; stats: any }>({
     queryKey: ['/api/predictions'],
+    refetchInterval: 5000,
   });
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   if (isLoading) {
     return <Skeleton className="h-24 bg-white/5" />;
@@ -892,6 +902,36 @@ function TradeHistory() {
     total: rawStats.total || rawStats.completedTrades || 0,
     winRate: parseFloat(rawStats.winRate) || 0,
     totalPnL: rawStats.totalProfitLoss || 0,
+  };
+
+  const formatTimeAgo = (timestamp: string) => {
+    const diff = now - new Date(timestamp).getTime();
+    const mins = Math.floor(diff / 60000);
+    const hrs = Math.floor(mins / 60);
+    if (hrs > 0) return `${hrs}h ago`;
+    if (mins > 0) return `${mins}m ago`;
+    return 'Just now';
+  };
+
+  const getTimeRemaining = (exitTimestamp: string) => {
+    const remaining = new Date(exitTimestamp).getTime() - now;
+    if (remaining <= 0) return null;
+    const mins = Math.floor(remaining / 60000);
+    const secs = Math.floor((remaining % 60000) / 1000);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getLivePnL = (pred: any) => {
+    if (pred.outcome !== 'PENDING') {
+      return { pnl: pred.profitLoss || 0, isLive: false };
+    }
+    const currentPrice = currentPrices?.get(pred.pair);
+    if (!currentPrice || !pred.entryPrice) return { pnl: 0, isLive: true };
+    
+    const pnlPercent = pred.signal === 'BUY' 
+      ? ((currentPrice - pred.entryPrice) / pred.entryPrice) * 100
+      : ((pred.entryPrice - currentPrice) / pred.entryPrice) * 100;
+    return { pnl: pnlPercent, isLive: true };
   };
 
   if (predictions.length === 0) {
@@ -922,27 +962,61 @@ function TradeHistory() {
         </div>
       </div>
       
-      <div className="space-y-1.5 max-h-32 overflow-y-auto">
-        {predictions.slice(0, 4).map((pred: any) => (
-          <div 
-            key={pred.id} 
-            className="flex items-center justify-between p-1.5 rounded-lg bg-[#0a0a0f] text-[11px]"
-          >
-            <div className="flex items-center gap-1.5">
-              <div className={`w-5 h-5 rounded flex items-center justify-center ${
-                pred.signal === 'BUY' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
-              }`}>
-                {pred.signal === 'BUY' ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+      <div className="space-y-2 max-h-48 overflow-y-auto">
+        {predictions.slice(0, 6).map((pred: any) => {
+          const { pnl, isLive } = getLivePnL(pred);
+          const timeRemaining = getTimeRemaining(pred.exitTimestamp);
+          const isActive = pred.outcome === 'PENDING' && timeRemaining;
+          
+          return (
+            <div 
+              key={pred.id} 
+              className={`p-2 rounded-lg text-[11px] ${isActive ? 'bg-gradient-to-r from-[#0a0a0f] to-[#0d1117] border border-cyan-500/20' : 'bg-[#0a0a0f]'}`}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1.5">
+                  <div className={`w-5 h-5 rounded flex items-center justify-center ${
+                    pred.signal === 'BUY' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                  }`}>
+                    {pred.signal === 'BUY' ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                  </div>
+                  <span className="font-medium">{pred.pair?.split('-')[0]}</span>
+                  {pred.tradeSize && (
+                    <span className="text-gray-500">${Number(pred.tradeSize).toFixed(0)}</span>
+                  )}
+                </div>
+                <div className={`font-mono font-semibold ${
+                  pnl > 0 ? 'text-emerald-400' : pnl < 0 ? 'text-red-400' : 'text-gray-400'
+                }`}>
+                  {isLive && <span className="animate-pulse mr-1">●</span>}
+                  {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}%
+                </div>
               </div>
-              <span className="font-medium">{pred.pair?.split('-')[0]}</span>
+              <div className="flex items-center justify-between text-gray-500">
+                <div className="flex items-center gap-2">
+                  <span>Entry: ${Number(pred.entryPrice).toFixed(2)}</span>
+                  {pred.stopLoss && <span className="text-red-400/70">SL: ${Number(pred.stopLoss).toFixed(2)}</span>}
+                  {pred.takeProfit && <span className="text-emerald-400/70">TP: ${Number(pred.takeProfit).toFixed(2)}</span>}
+                </div>
+                <div className="flex items-center gap-1">
+                  {isActive ? (
+                    <span className="text-cyan-400 font-mono">{timeRemaining} left</span>
+                  ) : (
+                    <span>{formatTimeAgo(pred.createdAt)}</span>
+                  )}
+                  {pred.outcome !== 'PENDING' && (
+                    <span className={`px-1 rounded text-[9px] ${
+                      pred.outcome === 'WIN' ? 'bg-emerald-500/20 text-emerald-400' : 
+                      pred.outcome === 'LOSS' ? 'bg-red-500/20 text-red-400' : 'bg-gray-500/20 text-gray-400'
+                    }`}>
+                      {pred.outcome}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className={`font-mono font-medium ${
-              pred.pnlPercent != null && pred.pnlPercent > 0 ? 'text-emerald-400' : pred.pnlPercent != null && pred.pnlPercent < 0 ? 'text-red-400' : 'text-gray-400'
-            }`}>
-              {pred.pnlPercent != null ? `${pred.pnlPercent >= 0 ? '+' : ''}${Number(pred.pnlPercent).toFixed(2)}%` : 'Pending'}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
