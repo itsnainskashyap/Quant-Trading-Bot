@@ -902,6 +902,8 @@ function TradeHistory({ currentPrices }: { currentPrices?: Map<string, number> }
     total: rawStats.total || rawStats.completedTrades || 0,
     winRate: parseFloat(rawStats.winRate) || 0,
     totalPnL: rawStats.totalProfitLoss || 0,
+    totalDollarProfit: rawStats.totalDollarProfit || 0,
+    completedTrades: rawStats.completedTrades || 0,
   };
 
   const formatTimeAgo = (timestamp: string) => {
@@ -922,16 +924,21 @@ function TradeHistory({ currentPrices }: { currentPrices?: Map<string, number> }
   };
 
   const getLivePnL = (pred: any) => {
+    const tradeSize = Number(pred.tradeSize) || 0;
+    
     if (pred.outcome !== 'PENDING') {
-      return { pnl: pred.profitLoss || 0, isLive: false };
+      const pnlPercent = Number(pred.profitLoss) || 0;
+      const dollarProfit = (pnlPercent / 100) * tradeSize;
+      return { pnl: pnlPercent, dollarProfit, isLive: false, tradeSize };
     }
     const currentPrice = currentPrices?.get(pred.pair);
-    if (!currentPrice || !pred.entryPrice) return { pnl: 0, isLive: true };
+    if (!currentPrice || !pred.entryPrice) return { pnl: 0, dollarProfit: 0, isLive: true, tradeSize };
     
     const pnlPercent = pred.signal === 'BUY' 
       ? ((currentPrice - pred.entryPrice) / pred.entryPrice) * 100
       : ((pred.entryPrice - currentPrice) / pred.entryPrice) * 100;
-    return { pnl: pnlPercent, isLive: true };
+    const dollarProfit = (pnlPercent / 100) * tradeSize;
+    return { pnl: pnlPercent, dollarProfit, isLive: true, tradeSize };
   };
 
   if (predictions.length === 0) {
@@ -945,26 +952,34 @@ function TradeHistory({ currentPrices }: { currentPrices?: Map<string, number> }
 
   return (
     <div>
-      <div className="grid grid-cols-3 gap-2 mb-3">
+      <div className="grid grid-cols-2 gap-2 mb-3">
         <div className="text-center p-1.5 rounded-lg bg-[#0a0a0f]">
-          <div className="text-sm font-semibold">{stats.total}</div>
-          <div className="text-[10px] text-gray-500">Trades</div>
+          <div className="text-sm font-semibold">{stats.completedTrades}</div>
+          <div className="text-[10px] text-gray-500">Completed</div>
         </div>
         <div className="text-center p-1.5 rounded-lg bg-[#0a0a0f]">
           <div className="text-sm font-semibold text-cyan-400">{stats.winRate}%</div>
           <div className="text-[10px] text-gray-500">Win Rate</div>
         </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2 mb-3">
         <div className="text-center p-1.5 rounded-lg bg-[#0a0a0f]">
           <div className={`text-sm font-semibold ${stats.totalPnL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
             {stats.totalPnL >= 0 ? '+' : ''}{Number(stats.totalPnL).toFixed(1)}%
           </div>
-          <div className="text-[10px] text-gray-500">P/L</div>
+          <div className="text-[10px] text-gray-500">P/L %</div>
+        </div>
+        <div className="text-center p-1.5 rounded-lg bg-[#0a0a0f]">
+          <div className={`text-sm font-semibold ${stats.totalDollarProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            {stats.totalDollarProfit >= 0 ? '+' : '-'}${Math.abs(stats.totalDollarProfit).toFixed(2)}
+          </div>
+          <div className="text-[10px] text-gray-500">Profit</div>
         </div>
       </div>
       
       <div className="space-y-2 max-h-48 overflow-y-auto">
         {predictions.slice(0, 6).map((pred: any) => {
-          const { pnl, isLive } = getLivePnL(pred);
+          const { pnl, dollarProfit, isLive } = getLivePnL(pred);
           const timeRemaining = getTimeRemaining(pred.exitTimestamp);
           const isActive = pred.outcome === 'PENDING' && timeRemaining;
           
@@ -985,11 +1000,20 @@ function TradeHistory({ currentPrices }: { currentPrices?: Map<string, number> }
                     <span className="text-gray-500">${Number(pred.tradeSize).toFixed(0)}</span>
                   )}
                 </div>
-                <div className={`font-mono font-semibold ${
-                  pnl > 0 ? 'text-emerald-400' : pnl < 0 ? 'text-red-400' : 'text-gray-400'
-                }`}>
-                  {isLive && <span className="animate-pulse mr-1">●</span>}
-                  {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}%
+                <div className="flex items-center gap-2">
+                  <div className={`font-mono font-semibold ${
+                    pnl > 0 ? 'text-emerald-400' : pnl < 0 ? 'text-red-400' : 'text-gray-400'
+                  }`}>
+                    {isLive && <span className="animate-pulse mr-1">●</span>}
+                    {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}%
+                  </div>
+                  {dollarProfit !== 0 && (
+                    <div className={`font-mono text-[10px] ${
+                      dollarProfit > 0 ? 'text-emerald-400' : dollarProfit < 0 ? 'text-red-400' : 'text-gray-400'
+                    }`}>
+                      ({dollarProfit >= 0 ? '+' : ''}${dollarProfit.toFixed(2)})
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex items-center justify-between text-gray-500">

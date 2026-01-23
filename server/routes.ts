@@ -328,6 +328,13 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
         return;
       }
       
+      // Auto-process expired predictions before fetching
+      try {
+        await storage.processExpiredPredictions();
+      } catch (e) {
+        console.error("Error processing expired predictions:", e);
+      }
+      
       const limit = parseInt(req.query.limit as string) || 20;
       const predictions = await storage.getUserPredictions(userId, limit);
       
@@ -338,11 +345,15 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
         else if (p.outcome === "PENDING") acc.pending++;
         else if (p.outcome === "SKIPPED") acc.skipped++;
         
-        if (p.profitLoss !== null) {
-          acc.totalProfitLoss += p.profitLoss;
+        if (p.profitLoss != null) {
+          acc.totalProfitLoss += Number(p.profitLoss);
+          // Calculate dollar profit based on trade size
+          const tradeSize = Number(p.tradeSize) || 0;
+          const dollarProfit = (Number(p.profitLoss) / 100) * tradeSize;
+          acc.totalDollarProfit += dollarProfit;
         }
         return acc;
-      }, { wins: 0, losses: 0, neutral: 0, pending: 0, skipped: 0, totalProfitLoss: 0 });
+      }, { wins: 0, losses: 0, neutral: 0, pending: 0, skipped: 0, totalProfitLoss: 0, totalDollarProfit: 0 });
       
       const completedTrades = stats.wins + stats.losses + stats.neutral;
       const winRate = completedTrades > 0 ? (stats.wins / completedTrades) * 100 : 0;
