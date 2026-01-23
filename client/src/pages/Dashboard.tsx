@@ -177,8 +177,9 @@ export default function Dashboard() {
       const entryPrice = data?.prices.find(p => p.pair === selectedPair)?.price || 0;
       const holdDuration = tradeMode;
       
-      // Risk/reward based on trade mode - shorter timeframes = tighter targets
-      const riskPercent = tradeMode === 1 ? 0.01 : tradeMode === 3 ? 0.015 : tradeMode === 5 ? 0.02 : 0.025;
+      // Risk/reward based on trade mode - shorter timeframes = MUCH tighter targets for scalping
+      // 1 min: 0.15% risk (very tight scalp), 3 min: 0.25%, 5 min: 0.4%, 10 min: 0.6%
+      const riskPercent = tradeMode === 1 ? 0.0015 : tradeMode === 3 ? 0.0025 : tradeMode === 5 ? 0.004 : 0.006;
       const rewardPercent = riskPercent * 1.5;
       const tradeSize = capital * 0.1;
       const stopLossPrice = consensus.consensusSignal === 'BUY' 

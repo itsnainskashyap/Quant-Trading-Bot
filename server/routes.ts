@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import OpenAI from "openai";
-import { tradingPairs, type TradingPair } from "@shared/schema";
+import { tradingPairs, type TradingPair, type TradingSignal } from "@shared/schema";
 import { getMultiAIConsensus, generateConsensusExplanation } from "./consensus";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 
@@ -196,39 +196,54 @@ export async function registerRoutes(
         return;
       }
       
-      const { pair } = req.body as { pair: TradingPair };
+      const { pair, signal: signalType, entryPrice, confidence, exitWindowMinutes } = req.body as { 
+        pair: TradingPair;
+        signal: 'BUY' | 'SELL';
+        entryPrice: number;
+        confidence: number;
+        exitWindowMinutes: number;
+      };
       
       if (!tradingPairs.includes(pair)) {
         res.status(400).json({ error: "Invalid trading pair" });
         return;
       }
       
-      const [signal, prices] = await Promise.all([
-        storage.generateSignal(pair),
-        storage.getAllPrices(),
-      ]);
-      
-      if (!signal) {
-        res.status(400).json({ error: "No signal available for this pair" });
+      if (!signalType || (signalType !== 'BUY' && signalType !== 'SELL')) {
+        res.status(400).json({ error: "Invalid signal type" });
         return;
       }
       
-      const priceData = prices.find(p => p.pair === pair);
-      if (!priceData) {
-        res.status(404).json({ error: "Price data not found" });
+      if (!entryPrice || entryPrice <= 0) {
+        res.status(400).json({ error: "Invalid entry price" });
         return;
       }
       
-      const metrics = await storage.getMarketMetrics(pair);
-      const reasoning = await generateExplanation(signal, priceData, metrics);
-      signal.reasoning = reasoning;
+      // Use the signal data from the frontend instead of regenerating
+      const exitWindow = exitWindowMinutes || 5;
+      const exitTimestamp = Date.now() + exitWindow * 60 * 1000;
       
-      const prediction = await storage.createPrediction(user.id, signal, priceData.price);
+      const signal: TradingSignal = {
+        id: crypto.randomUUID(),
+        pair,
+        signal: signalType,
+        confidence: confidence || 60,
+        riskGrade: confidence >= 70 ? 'LOW' : confidence >= 55 ? 'MEDIUM' : 'HIGH',
+        exitWindowMinutes: exitWindow,
+        exitTimestamp,
+        marketRegime: 'TREND',
+        modelScores: [],
+        reasoning: `${signalType} signal with ${confidence}% confidence. Trade recorded for ${exitWindow} minute hold.`,
+        warnings: [],
+        timestamp: Date.now(),
+      };
+      
+      const prediction = await storage.createPrediction(user.id, signal, entryPrice);
       
       res.json({
         prediction,
         signal,
-        message: `Trade recorded. Exit window: ${signal.exitWindowMinutes} minutes.`,
+        message: `Trade recorded. Exit window: ${exitWindow} minutes.`,
         remaining: canTrade.remaining !== undefined ? canTrade.remaining - 1 : undefined,
       });
     } catch (error) {
