@@ -58,10 +58,19 @@ export interface ConsensusResult {
   };
 }
 
-function buildAnalysisPrompt(pair: TradingPair, metrics: MarketMetrics, price: number): string {
+function buildAnalysisPrompt(pair: TradingPair, metrics: MarketMetrics, price: number, tradeMode: number = 5): string {
   const volumeTrend = metrics.volumeDelta > 0 ? "BUYING PRESSURE" : "SELLING PRESSURE";
   const orderBookSide = metrics.orderBookImbalance > 0 ? "BUYERS DOMINATING" : "SELLERS DOMINATING";
   const fundingBias = metrics.fundingRate > 0 ? "LONGS PAYING (bullish crowded)" : "SHORTS PAYING (bearish crowded)";
+  
+  // Timeframe-specific settings
+  const timeframeSettings = {
+    1: { name: "SCALP (1 min)", riskPct: 1.0, minConfidence: 70, description: "Very short scalp trade - need strong momentum" },
+    3: { name: "SHORT (3 min)", riskPct: 1.5, minConfidence: 65, description: "Short-term swing - moderate momentum required" },
+    5: { name: "MEDIUM (5 min)", riskPct: 2.0, minConfidence: 60, description: "Standard trade duration - balanced approach" },
+    10: { name: "LONG (10 min)", riskPct: 2.5, minConfidence: 55, description: "Longer hold - trend following approach" },
+  };
+  const settings = timeframeSettings[tradeMode as keyof typeof timeframeSettings] || timeframeSettings[5];
   
   const rsi = metrics.rsi ?? 50;
   const rsiSignal = rsi < 25 ? "EXTREMELY OVERSOLD - Strong buy zone" :
@@ -75,9 +84,10 @@ function buildAnalysisPrompt(pair: TradingPair, metrics: MarketMetrics, price: n
   const bbSignal = metrics.bollingerPosition === 'BELOW_LOWER' ? "BELOW LOWER BAND - Oversold" :
                    metrics.bollingerPosition === 'ABOVE_UPPER' ? "ABOVE UPPER BAND - Overbought" : "Within bands";
   
-  return `You are an ULTRA-CONSERVATIVE cryptocurrency trading analyst. Your #1 priority is CAPITAL PRESERVATION. You only recommend trades with EXTREME confidence and multiple confirmations.
+  return `You are a cryptocurrency trading analyst analyzing for a ${settings.name} trade.
+${settings.description}. Risk per trade: ${settings.riskPct}%. Minimum confidence required: ${settings.minConfidence}%.
 
-=== PAIR: ${pair} | PRICE: $${price.toLocaleString()} ===
+=== PAIR: ${pair} | PRICE: $${price.toLocaleString()} | TIMEFRAME: ${tradeMode} MINUTE ===
 
 === MULTI-INDICATOR TECHNICAL ANALYSIS ===
 RSI (14): ${rsi.toFixed(1)} → ${rsiSignal}
@@ -110,20 +120,19 @@ For SELL signal, you need:
 ✓ Volume confirming move
 ✓ Volatility not extreme
 
-=== CRITICAL RULES ===
-1. DEFAULT TO NO_TRADE - Only signal when 5+ indicators align
-2. Never chase - wait for pullbacks
-3. High volatility (ATR > 3%) = ALWAYS NO_TRADE
+=== CRITICAL RULES FOR ${tradeMode} MINUTE TRADE ===
+1. DEFAULT TO NO_TRADE - Only signal when indicators align
+2. For ${tradeMode}min trades: Need ${tradeMode === 1 ? 'strong immediate momentum' : tradeMode === 3 ? 'clear short-term setup' : tradeMode === 5 ? 'balanced multi-indicator confluence' : 'established trend direction'}
+3. High volatility = more caution for shorter timeframes
 4. Conflicting signals = ALWAYS NO_TRADE
-5. Confidence below 75% = ALWAYS NO_TRADE
-6. Capital protection is more important than profit
+5. Confidence must be at least ${settings.minConfidence}%
 
 Respond in EXACT JSON:
 {
   "signal": "BUY" | "SELL" | "NO_TRADE",
   "confidence": 0-100,
   "risk": "LOW" | "MEDIUM" | "HIGH",
-  "holdMinutes": 3-10,
+  "holdMinutes": ${tradeMode},
   "technicalScore": 0-100,
   "sentimentScore": 0-100,
   "indicatorsAligned": number of indicators that agree (0-8),
@@ -132,11 +141,11 @@ Respond in EXACT JSON:
 }`;
 }
 
-async function analyzeWithOpenAI(pair: TradingPair, metrics: MarketMetrics, price: number): Promise<AIAnalysisResult> {
+async function analyzeWithOpenAI(pair: TradingPair, metrics: MarketMetrics, price: number, tradeMode: number = 5): Promise<AIAnalysisResult> {
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
-      messages: [{ role: "user", content: buildAnalysisPrompt(pair, metrics, price) }],
+      messages: [{ role: "user", content: buildAnalysisPrompt(pair, metrics, price, tradeMode) }],
       temperature: 0.1,
       max_completion_tokens: 800,
     });
@@ -152,7 +161,7 @@ async function analyzeWithOpenAI(pair: TradingPair, metrics: MarketMetrics, pric
       confidence: Math.min(100, Math.max(0, parsed.confidence)),
       reasoning: parsed.reasoning,
       riskLevel: parsed.risk as RiskGrade,
-      holdDuration: Math.min(10, Math.max(3, parsed.holdMinutes || 5)),
+      holdDuration: Math.min(10, Math.max(1, parsed.holdMinutes || 5)),
       technicalScore: Math.min(100, Math.max(0, parsed.technicalScore || 50)),
       sentimentScore: Math.min(100, Math.max(0, parsed.sentimentScore || 50)),
       psychologyInsight: parsed.psychology || "Market participants are cautious",
@@ -175,12 +184,12 @@ async function analyzeWithOpenAI(pair: TradingPair, metrics: MarketMetrics, pric
   }
 }
 
-async function analyzeWithAnthropic(pair: TradingPair, metrics: MarketMetrics, price: number): Promise<AIAnalysisResult> {
+async function analyzeWithAnthropic(pair: TradingPair, metrics: MarketMetrics, price: number, tradeMode: number = 5): Promise<AIAnalysisResult> {
   try {
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-5",
       max_tokens: 800,
-      messages: [{ role: "user", content: buildAnalysisPrompt(pair, metrics, price) }],
+      messages: [{ role: "user", content: buildAnalysisPrompt(pair, metrics, price, tradeMode) }],
     });
 
     const content = message.content[0];
@@ -195,7 +204,7 @@ async function analyzeWithAnthropic(pair: TradingPair, metrics: MarketMetrics, p
       confidence: Math.min(100, Math.max(0, parsed.confidence)),
       reasoning: parsed.reasoning,
       riskLevel: parsed.risk as RiskGrade,
-      holdDuration: Math.min(10, Math.max(3, parsed.holdMinutes || 5)),
+      holdDuration: Math.min(10, Math.max(1, parsed.holdMinutes || 5)),
       technicalScore: Math.min(100, Math.max(0, parsed.technicalScore || 50)),
       sentimentScore: Math.min(100, Math.max(0, parsed.sentimentScore || 50)),
       psychologyInsight: parsed.psychology || "Market participants are cautious",
@@ -218,11 +227,11 @@ async function analyzeWithAnthropic(pair: TradingPair, metrics: MarketMetrics, p
   }
 }
 
-async function analyzeWithGemini(pair: TradingPair, metrics: MarketMetrics, price: number): Promise<AIAnalysisResult> {
+async function analyzeWithGemini(pair: TradingPair, metrics: MarketMetrics, price: number, tradeMode: number = 5): Promise<AIAnalysisResult> {
   try {
     const response = await gemini.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: buildAnalysisPrompt(pair, metrics, price),
+      contents: buildAnalysisPrompt(pair, metrics, price, tradeMode),
     });
 
     const text = response.text || "";
@@ -236,7 +245,7 @@ async function analyzeWithGemini(pair: TradingPair, metrics: MarketMetrics, pric
       confidence: Math.min(100, Math.max(0, parsed.confidence)),
       reasoning: parsed.reasoning,
       riskLevel: parsed.risk as RiskGrade,
-      holdDuration: Math.min(10, Math.max(3, parsed.holdMinutes || 5)),
+      holdDuration: Math.min(10, Math.max(1, parsed.holdMinutes || 5)),
       technicalScore: Math.min(100, Math.max(0, parsed.technicalScore || 50)),
       sentimentScore: Math.min(100, Math.max(0, parsed.sentimentScore || 50)),
       psychologyInsight: parsed.psychology || "Market participants are cautious",
@@ -424,12 +433,14 @@ function calculateConsensus(results: AIAnalysisResult[]): ConsensusResult {
 export async function getMultiAIConsensus(
   pair: TradingPair,
   metrics: MarketMetrics,
-  price: number
+  price: number,
+  tradeMode: number = 5
 ): Promise<ConsensusResult> {
+  console.log(`[Consensus] Starting ${tradeMode} minute analysis for ${pair}`);
   const [openaiResult, anthropicResult, geminiResult] = await Promise.all([
-    analyzeWithOpenAI(pair, metrics, price),
-    analyzeWithAnthropic(pair, metrics, price),
-    analyzeWithGemini(pair, metrics, price),
+    analyzeWithOpenAI(pair, metrics, price, tradeMode),
+    analyzeWithAnthropic(pair, metrics, price, tradeMode),
+    analyzeWithGemini(pair, metrics, price, tradeMode),
   ]);
 
   return calculateConsensus([openaiResult, anthropicResult, geminiResult]);

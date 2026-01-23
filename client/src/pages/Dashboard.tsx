@@ -134,10 +134,20 @@ interface AnalysisResult {
   tradeRecommendation?: TradeRecommendation;
 }
 
+type TradeMode = 1 | 3 | 5 | 10;
+
+const TRADE_MODES: { value: TradeMode; label: string; risk: string }[] = [
+  { value: 1, label: '1 Min', risk: 'High' },
+  { value: 3, label: '3 Min', risk: 'Medium' },
+  { value: 5, label: '5 Min', risk: 'Low' },
+  { value: 10, label: '10 Min', risk: 'Very Low' },
+];
+
 export default function Dashboard() {
   const [selectedPair, setSelectedPair] = useState<TradingPair>("BTC-USDT");
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [tradeMode, setTradeMode] = useState<TradeMode>(5);
   const [capital, setCapital] = useState<number>(() => {
     const saved = localStorage.getItem('userCapital');
     return saved ? Number(saved) : 10000;
@@ -159,16 +169,17 @@ export default function Dashboard() {
 
   const analyzeMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/consensus', { pair: selectedPair, capital });
+      const response = await apiRequest('POST', '/api/consensus', { pair: selectedPair, capital, tradeMode });
       return response.json();
     },
     onSuccess: (result) => {
       const consensus = result.consensus as ConsensusResult;
       const entryPrice = data?.prices.find(p => p.pair === selectedPair)?.price || 0;
-      const holdDuration = (consensus as any).holdDuration || 5;
+      const holdDuration = tradeMode;
       
-      const riskPercent = 0.02;
-      const rewardPercent = 0.03;
+      // Risk/reward based on trade mode - shorter timeframes = tighter targets
+      const riskPercent = tradeMode === 1 ? 0.01 : tradeMode === 3 ? 0.015 : tradeMode === 5 ? 0.02 : 0.025;
+      const rewardPercent = riskPercent * 1.5;
       const tradeSize = capital * 0.1;
       const stopLossPrice = consensus.consensusSignal === 'BUY' 
         ? entryPrice * (1 - riskPercent) 
@@ -304,25 +315,56 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-        <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-[#12121a] to-[#0f1a1a] border border-white/5">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-cyan-400" />
-              <span className="text-sm font-medium text-gray-300">Your Capital</span>
+        <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="p-3 rounded-lg bg-[#0d0d14] border border-[#1a1a2e]">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-gray-500 uppercase tracking-wider">Capital</span>
+              <Wallet className="w-4 h-4 text-gray-600" />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-gray-500">$</span>
+              <span className="text-gray-500 text-lg">$</span>
               <Input
                 type="number"
                 value={capital}
                 onChange={(e) => setCapital(Number(e.target.value) || 0)}
-                className="w-32 h-9 bg-[#0a0a0f] border-white/10 text-white font-mono"
+                className="flex-1 h-10 bg-transparent border-0 border-b border-[#1a1a2e] rounded-none text-xl font-semibold text-white font-mono focus-visible:ring-0 focus-visible:border-cyan-500/50 px-0"
                 data-testid="input-capital"
               />
             </div>
-            <div className="flex items-center gap-4 text-xs text-gray-500">
-              <span>Risk per trade: <span className="text-yellow-400">2%</span></span>
-              <span>Max trade size: <span className="text-cyan-400">10%</span></span>
+            <div className="flex items-center gap-4 mt-2 text-[11px] text-gray-500">
+              <span>Risk: <span className="text-amber-400">{tradeMode === 1 ? '1%' : tradeMode === 3 ? '1.5%' : tradeMode === 5 ? '2%' : '2.5%'}</span></span>
+              <span>Position: <span className="text-cyan-400">10%</span></span>
+            </div>
+          </div>
+          
+          <div className="p-3 rounded-lg bg-[#0d0d14] border border-[#1a1a2e]">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-gray-500 uppercase tracking-wider">Trade Duration</span>
+              <Timer className="w-4 h-4 text-gray-600" />
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {TRADE_MODES.map((mode) => (
+                <button
+                  key={mode.value}
+                  onClick={() => {
+                    setTradeMode(mode.value);
+                    setAnalysis(null);
+                  }}
+                  className={`py-2.5 px-3 rounded-md text-center transition-all ${
+                    tradeMode === mode.value
+                      ? 'bg-cyan-500/20 border border-cyan-500/50 text-cyan-400'
+                      : 'bg-[#12121a] border border-[#1a1a2e] text-gray-400 hover:border-gray-600'
+                  }`}
+                  data-testid={`button-mode-${mode.value}min`}
+                >
+                  <div className="font-semibold text-sm">{mode.label}</div>
+                  <div className={`text-[10px] mt-0.5 ${
+                    mode.risk === 'High' ? 'text-red-400' :
+                    mode.risk === 'Medium' ? 'text-amber-400' :
+                    mode.risk === 'Low' ? 'text-emerald-400' : 'text-cyan-400'
+                  }`}>{mode.risk}</div>
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -395,23 +437,28 @@ export default function Dashboard() {
 
         <div className="grid lg:grid-cols-4 gap-4">
           <div className="lg:col-span-3 space-y-4">
-            <Card className="bg-[#12121a] border-white/5 overflow-hidden">
+            <Card className="bg-[#0d0d14] border-[#1a1a2e] overflow-hidden">
               <CardContent className="p-0">
-                <div className="p-3 border-b border-white/5 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                <div className="px-4 py-3 border-b border-[#1a1a2e] flex items-center justify-between">
+                  <div className="flex items-center gap-3">
                     <CryptoIcon symbol={selectedPair.split('-')[0]} />
-                    <span className="font-medium text-sm">{selectedPair}</span>
-                    <span className="text-xs text-gray-500">Perpetual</span>
+                    <div>
+                      <div className="font-semibold text-sm">{selectedPair}</div>
+                      <div className="text-[10px] text-gray-500 uppercase tracking-wider">Perpetual</div>
+                    </div>
                     {analysis && analysis.signal !== 'SKIP' && (
-                      <div className={`ml-2 px-2 py-0.5 rounded text-xs font-medium ${
-                        analysis.signal === 'BUY' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                      <div className={`ml-2 px-2.5 py-1 rounded text-xs font-semibold ${
+                        analysis.signal === 'BUY' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/10 text-red-400 border border-red-500/30'
                       }`}>
-                        Entry: ${analysis.entryPrice.toLocaleString()}
+                        {analysis.signal} @ ${analysis.entryPrice.toLocaleString()}
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs">Live</div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-[#12121a] border border-[#1a1a2e]">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-[10px] text-gray-400 uppercase">Live</span>
+                    </div>
                     <CandleTimer />
                   </div>
                 </div>
@@ -428,90 +475,71 @@ export default function Dashboard() {
             </Card>
 
             {!analysis && !isAnalyzing && (
-              <Card className="bg-gradient-to-br from-[#0f1a1f] to-[#12121a] border-cyan-500/20">
+              <Card className="bg-[#0d0d14] border-[#1a1a2e]">
                 <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center">
-                        <Zap className="w-6 h-6 text-cyan-400" />
-                      </div>
-                      <div>
-                        <h3 className="text-base font-semibold">AI Signal Analysis</h3>
-                        <p className="text-gray-400 text-xs">
-                          Get entry, stop-loss, and take-profit based on ${capital.toLocaleString()} capital
-                        </p>
-                      </div>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-white mb-1">Generate Signal</h3>
+                      <p className="text-gray-500 text-xs">
+                        {tradeMode} minute trade • ${capital.toLocaleString()} capital • {selectedPair}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="hidden md:flex gap-2 text-xs">
-                        <span className="px-2 py-1 rounded bg-[#1a1a2e] text-blue-400 border border-blue-500/20">
-                          Technical
-                        </span>
-                        <span className="px-2 py-1 rounded bg-[#1a1a2e] text-cyan-400 border border-cyan-500/20">
-                          Volume
-                        </span>
-                        <span className="px-2 py-1 rounded bg-[#1a1a2e] text-purple-400 border border-purple-500/20">
-                          Risk
-                        </span>
-                      </div>
-                      <Button
-                        size="default"
-                        onClick={handleAnalyze}
-                        className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 rounded-xl px-6 font-medium"
-                        data-testid="button-analyze"
-                      >
-                        <Zap className="w-4 h-4 mr-2" />
-                        Analyze Now
-                      </Button>
-                    </div>
+                    <Button
+                      size="default"
+                      onClick={handleAnalyze}
+                      className="w-full sm:w-auto bg-cyan-600 hover:bg-cyan-700 text-white font-medium"
+                      data-testid="button-analyze"
+                    >
+                      <BarChart3 className="w-4 h-4 mr-2" />
+                      Analyze
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
             )}
 
             {isAnalyzing && (
-              <Card className="bg-[#12121a] border-white/5">
+              <Card className="bg-[#0d0d14] border-[#1a1a2e]">
                 <CardContent className="p-6 text-center">
-                  <Loader2 className="w-10 h-10 mx-auto mb-3 text-cyan-400 animate-spin" />
-                  <h3 className="text-base font-semibold mb-2">Analyzing Market...</h3>
-                  <div className="flex flex-wrap justify-center gap-2 text-xs">
-                    <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-400 animate-pulse">GPT-4o</span>
-                    <span className="px-2.5 py-1 rounded-lg bg-orange-500/10 text-orange-400 animate-pulse">Claude</span>
-                    <span className="px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-400 animate-pulse">Gemini</span>
-                  </div>
+                  <Loader2 className="w-8 h-8 mx-auto mb-3 text-gray-400 animate-spin" />
+                  <p className="text-sm text-gray-400">Analyzing {selectedPair}...</p>
+                  <p className="text-xs text-gray-600 mt-1">{tradeMode} minute timeframe</p>
                 </CardContent>
               </Card>
             )}
 
             {analysis && (
-              <Card className="bg-[#12121a] border-white/5 overflow-hidden">
+              <Card className="bg-[#0d0d14] border-[#1a1a2e] overflow-hidden">
                 <CardContent className="p-0">
-                  <div className={`p-4 ${
-                    analysis.signal === 'BUY' ? 'bg-emerald-500/10' :
-                    analysis.signal === 'SELL' ? 'bg-red-500/10' :
-                    'bg-yellow-500/10'
+                  <div className={`p-4 border-l-4 ${
+                    analysis.signal === 'BUY' ? 'border-l-emerald-500 bg-emerald-500/5' :
+                    analysis.signal === 'SELL' ? 'border-l-red-500 bg-red-500/5' :
+                    'border-l-amber-500 bg-amber-500/5'
                   }`}>
                     <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-4">
-                        <div className={`text-2xl font-bold ${
+                      <div className="flex items-center gap-3">
+                        <div className={`text-3xl font-bold tracking-tight ${
                           analysis.signal === 'BUY' ? 'text-emerald-400' :
                           analysis.signal === 'SELL' ? 'text-red-400' :
-                          'text-yellow-400'
+                          'text-amber-400'
                         }`}>
-                          {analysis.signal}
+                          {analysis.signal === 'SKIP' ? 'NO TRADE' : analysis.signal}
                         </div>
-                        <div className="text-lg font-bold">{Math.round(analysis.confidence)}%</div>
+                        <div className="flex flex-col">
+                          <span className="text-xs text-gray-500 uppercase">Confidence</span>
+                          <span className="text-lg font-bold font-mono">{Math.round(analysis.confidence)}%</span>
+                        </div>
                       </div>
                       
                       {analysis.signal !== 'SKIP' && (
-                        <div className="flex flex-wrap gap-2 text-xs">
-                          <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#0a0a0f]/50">
-                            <Timer className="w-3 h-3 text-blue-400" />
-                            <span className="font-medium">{analysis.holdTime}m</span>
+                        <div className="flex flex-wrap gap-3 text-xs">
+                          <div className="flex flex-col items-center px-3 py-1.5 rounded bg-[#12121a] border border-[#1a1a2e]">
+                            <span className="text-[10px] text-gray-500 uppercase">Duration</span>
+                            <span className="font-mono font-semibold text-cyan-400">{analysis.holdTime}m</span>
                           </div>
-                          <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#0a0a0f]/50">
-                            <span className="text-gray-400">Entry:</span>
-                            <span className="font-mono font-medium">${analysis.entryPrice.toLocaleString()}</span>
+                          <div className="flex flex-col items-center px-3 py-1.5 rounded bg-[#12121a] border border-[#1a1a2e]">
+                            <span className="text-[10px] text-gray-500 uppercase">Entry</span>
+                            <span className="font-mono font-semibold text-white">${analysis.entryPrice.toLocaleString()}</span>
                           </div>
                         </div>
                       )}
@@ -550,41 +578,29 @@ export default function Dashboard() {
                   </div>
 
                   {analysis.tradeRecommendation && analysis.signal !== 'SKIP' && (
-                    <div className="p-3 border-b border-white/5 bg-[#0a0a0f]/50">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                        <div className="p-2 rounded-lg bg-[#12121a] border border-white/5 text-center">
-                          <div className="flex items-center justify-center gap-1 text-[10px] text-gray-500 mb-0.5">
-                            <DollarSign className="w-3 h-3" />
-                            Trade Size
-                          </div>
-                          <div className="font-mono font-semibold text-cyan-400 text-sm">
+                    <div className="p-4 border-t border-[#1a1a2e] bg-[#0a0a0f]">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="p-3 rounded bg-[#12121a] border border-[#1a1a2e]">
+                          <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Position Size</div>
+                          <div className="font-mono font-bold text-cyan-400 text-base">
                             ${analysis.tradeRecommendation.tradeSize.toLocaleString()}
                           </div>
                         </div>
-                        <div className="p-2 rounded-lg bg-[#12121a] border border-red-500/20 text-center">
-                          <div className="flex items-center justify-center gap-1 text-[10px] text-gray-500 mb-0.5">
-                            <AlertTriangle className="w-3 h-3" />
-                            Stop Loss
-                          </div>
-                          <div className="font-mono font-semibold text-red-400 text-sm">
+                        <div className="p-3 rounded bg-[#12121a] border-l-2 border-l-red-500 border border-[#1a1a2e]">
+                          <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Stop Loss</div>
+                          <div className="font-mono font-bold text-red-400 text-base">
                             ${analysis.tradeRecommendation.stopLoss.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                           </div>
                         </div>
-                        <div className="p-2 rounded-lg bg-[#12121a] border border-emerald-500/20 text-center">
-                          <div className="flex items-center justify-center gap-1 text-[10px] text-gray-500 mb-0.5">
-                            <Target className="w-3 h-3" />
-                            Take Profit
-                          </div>
-                          <div className="font-mono font-semibold text-emerald-400 text-sm">
+                        <div className="p-3 rounded bg-[#12121a] border-l-2 border-l-emerald-500 border border-[#1a1a2e]">
+                          <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Take Profit</div>
+                          <div className="font-mono font-bold text-emerald-400 text-base">
                             ${analysis.tradeRecommendation.takeProfit.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                           </div>
                         </div>
-                        <div className="p-2 rounded-lg bg-[#12121a] border border-white/5 text-center">
-                          <div className="flex items-center justify-center gap-1 text-[10px] text-gray-500 mb-0.5">
-                            <Shield className="w-3 h-3" />
-                            Risk:Reward
-                          </div>
-                          <div className="font-mono font-semibold text-white text-sm">
+                        <div className="p-3 rounded bg-[#12121a] border border-[#1a1a2e]">
+                          <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Risk:Reward</div>
+                          <div className="font-mono font-bold text-white text-base">
                             {analysis.tradeRecommendation.riskRewardRatio}
                           </div>
                         </div>

@@ -142,12 +142,17 @@ export async function registerRoutes(
 
   app.post("/api/consensus", async (req, res) => {
     try {
-      const { pair } = req.body as { pair: TradingPair };
+      const { pair, tradeMode = 5 } = req.body as { pair: TradingPair; tradeMode?: number };
       
       if (!tradingPairs.includes(pair)) {
         res.status(400).json({ error: "Invalid trading pair" });
         return;
       }
+      
+      // Validate tradeMode
+      const validModes = [1, 3, 5, 10];
+      const validatedMode = validModes.includes(tradeMode) ? tradeMode : 5;
+      console.log(`[Consensus] Analyzing ${pair} for ${validatedMode} minute trade`);
       
       const [prices, metrics] = await Promise.all([
         storage.getAllPrices(),
@@ -160,7 +165,7 @@ export async function registerRoutes(
         return;
       }
       
-      const consensus = await getMultiAIConsensus(pair, metrics, priceData.price);
+      const consensus = await getMultiAIConsensus(pair, metrics, priceData.price, validatedMode);
       const explanation = generateConsensusExplanation(consensus);
       
       res.json({
