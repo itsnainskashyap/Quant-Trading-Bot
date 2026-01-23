@@ -238,17 +238,24 @@ export async function registerRoutes(
         timestamp: Date.now(),
       };
       
-      const prediction = await storage.createPrediction(user.id, signal, entryPrice);
-      
-      res.json({
-        prediction,
-        signal,
-        message: `Trade recorded. Exit window: ${exitWindow} minutes.`,
-        remaining: canTrade.remaining !== undefined ? canTrade.remaining - 1 : undefined,
-      });
-    } catch (error) {
-      console.error("Take prediction error:", error);
-      res.status(500).json({ error: "Failed to record prediction" });
+      try {
+        const prediction = await storage.createPrediction(user.id, signal, entryPrice);
+        
+        res.json({
+          prediction,
+          signal,
+          message: `Trade recorded. Exit window: ${exitWindow} minutes.`,
+          remaining: canTrade.remaining !== undefined ? canTrade.remaining - 1 : undefined,
+        });
+      } catch (dbError: any) {
+        console.error("Database error creating prediction:", dbError?.message || dbError);
+        console.error("User ID:", user.id);
+        console.error("Signal:", JSON.stringify(signal));
+        res.status(500).json({ error: "Database error recording trade", details: dbError?.message });
+      }
+    } catch (error: any) {
+      console.error("Take prediction error:", error?.message || error);
+      res.status(500).json({ error: "Failed to record prediction", details: error?.message });
     }
   });
 
