@@ -500,40 +500,61 @@ export default function Dashboard() {
             )}
 
             {isAnalyzing && (
-              <Card className="bg-[#0d0d14] border-[#1a1a2e]">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="relative w-10 h-10 flex-shrink-0">
-                      <div className="absolute inset-0 rounded-full border-2 border-gray-700" />
-                      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 animate-spin" />
-                      <div className="absolute inset-2 rounded-full border border-transparent border-t-gray-500 animate-spin" style={{ animationDuration: '1.5s', animationDirection: 'reverse' }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-medium text-white">Analyzing {selectedPair}</span>
-                        <span className="text-xs text-gray-500">•</span>
-                        <span className="text-xs text-gray-500">{tradeMode}m</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                          OpenAI
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" style={{ animationDelay: '0.2s' }} />
-                          Claude
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" style={{ animationDelay: '0.4s' }} />
-                          Gemini
-                        </span>
-                      </div>
-                    </div>
+              <Card className="bg-[#0d0d14] border-[#1a1a2e] overflow-hidden">
+                <CardContent className="p-6 relative">
+                  <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/3 via-purple-500/5 to-blue-500/3" 
+                         style={{ animation: 'pulse 2s ease-in-out infinite' }} />
                   </div>
-                  <div className="mt-4 h-1 bg-gray-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 rounded-full animate-pulse" style={{ width: '60%' }} />
+                  
+                  <div className="relative z-10 flex flex-col items-center">
+                    <div className="relative w-20 h-20 mb-4">
+                      <div className="absolute inset-0 rounded-full border border-gray-700/50" />
+                      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500/80 animate-spin" 
+                           style={{ animationDuration: '1.2s' }} />
+                      <div className="absolute inset-2 rounded-full border border-transparent border-t-purple-500/60 animate-spin" 
+                           style={{ animationDuration: '1.8s', animationDirection: 'reverse' }} />
+                      <div className="absolute inset-4 rounded-full border border-transparent border-t-cyan-500/40 animate-spin" 
+                           style={{ animationDuration: '2.4s' }} />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-sm flex items-center justify-center">
+                          <div className="w-2 h-2 rounded-full bg-white/60 animate-pulse" />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <h3 className="text-sm font-medium text-white mb-2">Analyzing {selectedPair}</h3>
+                    
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                        <span className="text-[10px] text-gray-500">GPT-4o</span>
+                      </div>
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" style={{ animationDelay: '0.3s' }} />
+                        <span className="text-[10px] text-gray-500">Claude</span>
+                      </div>
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" style={{ animationDelay: '0.6s' }} />
+                        <span className="text-[10px] text-gray-500">Gemini</span>
+                      </div>
+                    </div>
+                    
+                    <div className="w-full max-w-xs">
+                      <div className="h-0.5 bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-full w-full bg-gradient-to-r from-transparent via-blue-500 to-transparent rounded-full"
+                             style={{ animation: 'shimmer 1.5s ease-in-out infinite' }} />
+                      </div>
+                      <p className="text-[10px] text-gray-600 text-center mt-2">{tradeMode} minute timeframe • Multi-AI consensus</p>
+                    </div>
                   </div>
                 </CardContent>
+                <style>{`
+                  @keyframes shimmer {
+                    0% { transform: translateX(-100%); }
+                    100% { transform: translateX(100%); }
+                  }
+                `}</style>
               </Card>
             )}
 
@@ -577,7 +598,17 @@ export default function Dashboard() {
                     <div className="flex gap-2">
                       {analysis.signal !== 'SKIP' && (
                         <Button
-                          onClick={() => takeTradeMutation.mutate()}
+                          onClick={() => {
+                            if (!user) {
+                              toast({
+                                title: "Login Required",
+                                description: "Please log in with Replit to record trades",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+                            takeTradeMutation.mutate();
+                          }}
                           disabled={takeTradeMutation.isPending}
                           size="sm"
                           className={`rounded-lg ${
