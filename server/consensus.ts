@@ -103,29 +103,30 @@ Volume Delta: ${metrics.volumeDelta?.toFixed(2)}% → ${volumeTrend}
 Order Book: ${metrics.orderBookImbalance?.toFixed(2)}% → ${orderBookSide}
 Funding Rate: ${(metrics.fundingRate * 100).toFixed(4)}% → ${fundingBias}
 
-=== STRICT ENTRY CRITERIA (ALL must be met for BUY/SELL) ===
-For BUY signal, you need:
-✓ RSI < 35 (oversold zone)
-✓ Price at or below lower Bollinger Band
-✓ MACD showing bullish momentum or crossover
-✓ Order book favoring buyers (>15%)
-✓ Volume confirming move
-✓ Volatility not extreme
+=== TRADING CRITERIA (You must make a decision) ===
+For BUY signal (any 3+ of these):
+• RSI < 45 or showing bullish divergence
+• Price near lower Bollinger Band or bouncing from support
+• MACD above signal line or showing bullish crossover
+• Order book slightly favoring buyers
+• Positive volume trend
+• Any bullish momentum signs
 
-For SELL signal, you need:
-✓ RSI > 65 (overbought zone)
-✓ Price at or above upper Bollinger Band
-✓ MACD showing bearish momentum or crossover
-✓ Order book favoring sellers
-✓ Volume confirming move
-✓ Volatility not extreme
+For SELL signal (any 3+ of these):
+• RSI > 55 or showing bearish divergence  
+• Price near upper Bollinger Band or rejected from resistance
+• MACD below signal line or showing bearish crossover
+• Order book slightly favoring sellers
+• Negative volume trend
+• Any bearish momentum signs
 
-=== CRITICAL RULES FOR ${tradeMode} MINUTE TRADE ===
-1. DEFAULT TO NO_TRADE - Only signal when indicators align
-2. For ${tradeMode}min trades: Need ${tradeMode === 1 ? 'strong immediate momentum' : tradeMode === 3 ? 'clear short-term setup' : tradeMode === 5 ? 'balanced multi-indicator confluence' : 'established trend direction'}
-3. High volatility = more caution for shorter timeframes
-4. Conflicting signals = ALWAYS NO_TRADE
-5. Confidence must be at least ${settings.minConfidence}%
+=== IMPORTANT RULES FOR ${tradeMode} MINUTE TRADE ===
+1. YOU MUST MAKE A DECISION - analyze the data and pick a direction
+2. NO_TRADE only when indicators are completely mixed (close to 50/50)
+3. Be decisive - even slight directional bias should result in BUY or SELL
+4. For ${tradeMode}min trades: ${tradeMode === 1 ? 'Favor momentum and recent price action' : tradeMode === 3 ? 'Look for short-term patterns' : tradeMode === 5 ? 'Balance multiple indicators' : 'Follow the dominant trend'}
+5. Confidence should reflect how clear the direction is (60-85% is normal)
+6. Risk is LOW if volatility is low, MEDIUM normally, HIGH only in extreme conditions
 
 Respond in EXACT JSON:
 {
@@ -329,38 +330,45 @@ function calculateConsensus(results: AIAnalysisResult[]): ConsensusResult {
   let finalSignal: SignalType = dominantSignal;
   let hasConsensus = true;
 
-  if (agreementCount < 2) {
-    finalSignal = "NO_TRADE";
-    hasConsensus = false;
-    warnings.push("AI providers disagree - avoiding risky position");
+  // Need at least 2/3 providers to agree for a signal
+  if (agreementCount < 2 && finalSignal !== "NO_TRADE") {
+    // Check if there's no direct conflict (BUY vs SELL)
+    const hasBuy = signalCounts["BUY"] > 0;
+    const hasSell = signalCounts["SELL"] > 0;
+    
+    if (hasBuy && hasSell) {
+      // Direct conflict - stay out
+      finalSignal = "NO_TRADE";
+      hasConsensus = false;
+      warnings.push("BUY/SELL conflict between providers - staying out");
+    } else if (agreementCount === 1) {
+      // Only 1 provider has a direction, others say NO_TRADE
+      // Keep the directional signal but add warning
+      warnings.push("Only 1 provider gave directional signal - lower conviction");
+    }
   }
 
-  // Require 60%+ average confidence for actionable signals
-  if (avgConfidence < 60 && finalSignal !== "NO_TRADE") {
-    finalSignal = "NO_TRADE";
-    hasConsensus = false;
-    warnings.push("Average confidence below 60% - insufficient certainty for trade");
+  // Require 55%+ average confidence for actionable signals (relaxed from 60%)
+  if (avgConfidence < 55 && finalSignal !== "NO_TRADE") {
+    warnings.push(`Confidence at ${Math.round(avgConfidence)}% - borderline setup`);
+    // Only block if very low confidence
+    if (avgConfidence < 45) {
+      finalSignal = "NO_TRADE";
+      hasConsensus = false;
+    }
   }
 
-  // Only block if majority (2+) flag HIGH risk
-  if (highRiskCount >= 2) {
+  // Only block if ALL providers flag HIGH risk
+  if (highRiskCount >= 3) {
     finalSignal = "NO_TRADE";
     hasConsensus = false;
-    warnings.push("Majority of providers flagged high risk - capital protection engaged");
+    warnings.push("All providers flagged high risk - capital protection engaged");
+  } else if (highRiskCount >= 2) {
+    warnings.push("Elevated risk detected - use smaller position size");
   }
   
-  // Require at least 50% confidence from every provider
-  const minConfidence = Math.min(...successfulResults.map(r => r.confidence));
-  if (minConfidence < 50 && finalSignal !== "NO_TRADE") {
-    finalSignal = "NO_TRADE";
-    hasConsensus = false;
-    warnings.push("One provider has very low confidence - waiting for better setup");
-  }
-
-  const signalMismatch = successfulResults.some(r => 
-    (r.signal === "BUY" && successfulResults.some(o => o.signal === "SELL")) ||
-    (r.signal === "SELL" && successfulResults.some(o => o.signal === "BUY"))
-  );
+  // Check for direct BUY vs SELL conflict
+  const signalMismatch = signalCounts["BUY"] > 0 && signalCounts["SELL"] > 0;
 
   if (signalMismatch) {
     finalSignal = "NO_TRADE";
@@ -381,9 +389,8 @@ function calculateConsensus(results: AIAnalysisResult[]): ConsensusResult {
     .map(r => `${r.provider}: ${r.reasoning}`)
     .join(" | ");
 
-  const finalConfidence = hasConsensus 
-    ? Math.round(avgConfidence) 
-    : 0;
+  // Always show actual confidence, even for NO_TRADE (so users know how close it was)
+  const finalConfidence = Math.round(avgConfidence);
 
   const avgHoldDuration = Math.round(
     successfulResults.reduce((sum, r) => sum + r.holdDuration, 0) / successfulResults.length
