@@ -887,7 +887,12 @@ function TradeHistory() {
   }
 
   const predictions = data?.predictions || [];
-  const stats = data?.stats || { totalTrades: 0, winRate: 0, totalPnL: 0 };
+  const rawStats = data?.stats || {};
+  const stats = {
+    total: rawStats.total || rawStats.completedTrades || 0,
+    winRate: parseFloat(rawStats.winRate) || 0,
+    totalPnL: rawStats.totalProfitLoss || 0,
+  };
 
   if (predictions.length === 0) {
     return (
@@ -902,7 +907,7 @@ function TradeHistory() {
     <div>
       <div className="grid grid-cols-3 gap-2 mb-3">
         <div className="text-center p-1.5 rounded-lg bg-[#0a0a0f]">
-          <div className="text-sm font-semibold">{stats.totalTrades}</div>
+          <div className="text-sm font-semibold">{stats.total}</div>
           <div className="text-[10px] text-gray-500">Trades</div>
         </div>
         <div className="text-center p-1.5 rounded-lg bg-[#0a0a0f]">
@@ -911,7 +916,7 @@ function TradeHistory() {
         </div>
         <div className="text-center p-1.5 rounded-lg bg-[#0a0a0f]">
           <div className={`text-sm font-semibold ${stats.totalPnL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-            {stats.totalPnL >= 0 ? '+' : ''}{stats.totalPnL?.toFixed(1)}%
+            {stats.totalPnL >= 0 ? '+' : ''}{Number(stats.totalPnL).toFixed(1)}%
           </div>
           <div className="text-[10px] text-gray-500">P/L</div>
         </div>
@@ -932,9 +937,9 @@ function TradeHistory() {
               <span className="font-medium">{pred.pair?.split('-')[0]}</span>
             </div>
             <div className={`font-mono font-medium ${
-              pred.pnlPercent > 0 ? 'text-emerald-400' : pred.pnlPercent < 0 ? 'text-red-400' : 'text-gray-400'
+              pred.pnlPercent != null && pred.pnlPercent > 0 ? 'text-emerald-400' : pred.pnlPercent != null && pred.pnlPercent < 0 ? 'text-red-400' : 'text-gray-400'
             }`}>
-              {pred.pnlPercent !== null ? `${pred.pnlPercent >= 0 ? '+' : ''}${pred.pnlPercent.toFixed(2)}%` : 'Pending'}
+              {pred.pnlPercent != null ? `${pred.pnlPercent >= 0 ? '+' : ''}${Number(pred.pnlPercent).toFixed(2)}%` : 'Pending'}
             </div>
           </div>
         ))}
