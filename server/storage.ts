@@ -161,23 +161,57 @@ export class MemStorage implements IStorage {
                           indicators.overallSignal === 'STRONG_SELL' ? -40 - Math.random() * 30 :
                           indicators.overallSignal === 'SELL' ? -10 - Math.random() * 30 :
                           (Math.random() - 0.5) * 20,
-      volatility: Math.max(1, indicators.atr / 100),
+      volatility: Math.max(1, indicators.atrPercent),
       atr: indicators.atr,
       fundingRate: (Math.random() - 0.5) * 0.002,
       openInterest: pair === "BTC-USDT" 
         ? 15000000000 + Math.random() * 5000000000
         : 8000000000 + Math.random() * 2000000000,
-      // Technical Indicators
+      // Core Technical Indicators
       rsi: indicators.rsi,
       rsiSignal: indicators.rsiSignal,
       macdTrend: indicators.macd.trend,
       macdHistogram: indicators.macd.histogram,
+      macdCrossover: indicators.macd.crossover,
       bollingerPosition: indicators.bollingerBands.position,
+      bollingerWidth: indicators.bollingerBands.width,
+      bollingerSqueeze: indicators.bollingerBands.squeeze,
+      // Moving Averages
       sma20: indicators.movingAverages.sma20,
       sma50: indicators.movingAverages.sma50,
+      sma200: indicators.movingAverages.sma200,
+      ema12: indicators.movingAverages.ema12,
+      ema26: indicators.movingAverages.ema26,
+      ema50: indicators.movingAverages.ema50,
+      maTrend: indicators.movingAverages.trend,
+      goldenCross: indicators.movingAverages.goldenCross,
+      deathCross: indicators.movingAverages.deathCross,
+      // Oscillators
+      stochasticK: indicators.stochastic.k,
+      stochasticD: indicators.stochastic.d,
+      stochasticSignal: indicators.stochastic.signal,
+      williamsR: indicators.williamsR,
+      // Trend & Momentum
+      adx: indicators.adx,
+      trendStrength: indicators.trendStrength,
       momentum: indicators.momentum,
+      roc: indicators.roc,
+      atrPercent: indicators.atrPercent,
+      // Support/Resistance
+      nearestSupport: indicators.supportResistance.nearestSupport,
+      nearestResistance: indicators.supportResistance.nearestResistance,
+      distanceToSupport: indicators.supportResistance.distanceToSupport,
+      distanceToResistance: indicators.supportResistance.distanceToResistance,
+      // Volume Analysis
+      volumeTrend: indicators.volumeProfile.trend,
+      volumeConfirmation: indicators.volumeProfile.confirmation,
+      // Confluence Analysis
+      confluenceScore: indicators.confluenceScore,
+      bullishSignals: indicators.confluenceSignals.bullish,
+      bearishSignals: indicators.confluenceSignals.bearish,
       overallTechnicalSignal: indicators.overallSignal,
       technicalStrength: indicators.strength,
+      reliability: indicators.reliability,
     };
   }
 

@@ -61,84 +61,147 @@ export interface ConsensusResult {
 function buildAnalysisPrompt(pair: TradingPair, metrics: MarketMetrics, price: number, tradeMode: number = 5): string {
   const volumeTrend = metrics.volumeDelta > 0 ? "BUYING PRESSURE" : "SELLING PRESSURE";
   const orderBookSide = metrics.orderBookImbalance > 0 ? "BUYERS DOMINATING" : "SELLERS DOMINATING";
-  const fundingBias = metrics.fundingRate > 0 ? "LONGS PAYING (bullish crowded)" : "SHORTS PAYING (bearish crowded)";
+  const fundingBias = metrics.fundingRate > 0 ? "LONGS PAYING" : "SHORTS PAYING";
   
-  // Timeframe-specific settings
   const timeframeSettings = {
-    1: { name: "SCALP (1 min)", riskPct: 1.0, minConfidence: 70, description: "Very short scalp trade - need strong momentum" },
-    3: { name: "SHORT (3 min)", riskPct: 1.5, minConfidence: 65, description: "Short-term swing - moderate momentum required" },
-    5: { name: "MEDIUM (5 min)", riskPct: 2.0, minConfidence: 60, description: "Standard trade duration - balanced approach" },
-    10: { name: "LONG (10 min)", riskPct: 2.5, minConfidence: 55, description: "Longer hold - trend following approach" },
+    1: { name: "SCALP (1 min)", style: "Momentum-based quick entry/exit" },
+    3: { name: "SHORT (3 min)", style: "Short-term swing trading" },
+    5: { name: "MEDIUM (5 min)", style: "Balanced multi-indicator approach" },
+    10: { name: "LONG (10 min)", style: "Trend following with confirmation" },
   };
   const settings = timeframeSettings[tradeMode as keyof typeof timeframeSettings] || timeframeSettings[5];
   
+  // Format RSI interpretation
   const rsi = metrics.rsi ?? 50;
-  const rsiSignal = rsi < 25 ? "EXTREMELY OVERSOLD - Strong buy zone" :
-                    rsi < 35 ? "OVERSOLD - Potential bounce" :
-                    rsi > 75 ? "EXTREMELY OVERBOUGHT - Strong sell zone" :
-                    rsi > 65 ? "OVERBOUGHT - Potential pullback" : "NEUTRAL";
+  const rsiZone = rsi < 20 ? "EXTREMELY OVERSOLD" : rsi < 30 ? "OVERSOLD" : rsi < 40 ? "SLIGHTLY OVERSOLD" :
+                  rsi > 80 ? "EXTREMELY OVERBOUGHT" : rsi > 70 ? "OVERBOUGHT" : rsi > 60 ? "SLIGHTLY OVERBOUGHT" : "NEUTRAL";
   
-  const macdSignal = metrics.macdTrend === 'BULLISH' ? "BULLISH momentum" : 
-                     metrics.macdTrend === 'BEARISH' ? "BEARISH momentum" : "No clear momentum";
+  // Format Stochastic
+  const stochK = metrics.stochasticK ?? 50;
+  const stochD = metrics.stochasticD ?? 50;
+  const stochZone = stochK < 20 ? "OVERSOLD" : stochK > 80 ? "OVERBOUGHT" : "NEUTRAL";
+  const stochCross = stochK > stochD ? "BULLISH K>D" : stochK < stochD ? "BEARISH K<D" : "NEUTRAL";
   
-  const bbSignal = metrics.bollingerPosition === 'BELOW_LOWER' ? "BELOW LOWER BAND - Oversold" :
-                   metrics.bollingerPosition === 'ABOVE_UPPER' ? "ABOVE UPPER BAND - Overbought" : "Within bands";
+  // Format Williams %R
+  const willR = metrics.williamsR ?? -50;
+  const willZone = willR < -80 ? "OVERSOLD" : willR > -20 ? "OVERBOUGHT" : "NEUTRAL";
   
-  return `You are a cryptocurrency trading analyst analyzing for a ${settings.name} trade.
-${settings.description}. Risk per trade: ${settings.riskPct}%. Minimum confidence required: ${settings.minConfidence}%.
+  // Format ADX trend strength
+  const adx = metrics.adx ?? 25;
+  const trendStr = adx > 50 ? "VERY STRONG TREND" : adx > 40 ? "STRONG TREND" : adx > 25 ? "MODERATE TREND" : adx > 15 ? "WEAK TREND" : "NO TREND";
+  
+  // Moving average analysis
+  const priceVsSMA20 = metrics.sma20 ? ((price - metrics.sma20) / metrics.sma20 * 100).toFixed(2) : "N/A";
+  const priceVsSMA50 = metrics.sma50 ? ((price - metrics.sma50) / metrics.sma50 * 100).toFixed(2) : "N/A";
+  const priceVsSMA200 = metrics.sma200 ? ((price - metrics.sma200) / metrics.sma200 * 100).toFixed(2) : "N/A";
+  
+  // Support/Resistance analysis
+  const distSupport = metrics.distanceToSupport?.toFixed(2) ?? "N/A";
+  const distResist = metrics.distanceToResistance?.toFixed(2) ?? "N/A";
+  
+  // Confluence analysis
+  const bullishCount = metrics.bullishSignals?.length ?? 0;
+  const bearishCount = metrics.bearishSignals?.length ?? 0;
+  const confluenceNet = metrics.confluenceScore ?? 0;
+  const confluenceDir = confluenceNet > 2 ? "BULLISH" : confluenceNet < -2 ? "BEARISH" : "MIXED";
+  
+  return `You are an ELITE cryptocurrency trader performing institutional-grade analysis for a ${settings.name} trade.
+Strategy: ${settings.style}
 
-=== PAIR: ${pair} | PRICE: $${price.toLocaleString()} | TIMEFRAME: ${tradeMode} MINUTE ===
+═══════════════════════════════════════════════════════════════
+ASSET: ${pair} | CURRENT PRICE: $${price.toLocaleString()} | TIMEFRAME: ${tradeMode} MIN
+═══════════════════════════════════════════════════════════════
 
-=== MULTI-INDICATOR TECHNICAL ANALYSIS ===
-RSI (14): ${rsi.toFixed(1)} → ${rsiSignal}
-MACD: ${macdSignal}
-Bollinger: ${bbSignal}
-ATR: $${metrics.atr?.toFixed(2) || 'N/A'} (Volatility: ${metrics.volatility < 2 ? "LOW" : metrics.volatility < 4 ? "MEDIUM" : "HIGH"})
-SMA 20/50: ${metrics.sma20?.toFixed(2)} / ${metrics.sma50?.toFixed(2)}
-Technical Signal: ${metrics.overallTechnicalSignal || 'NEUTRAL'}
-Technical Strength: ${metrics.technicalStrength || 50}%
+╔══════════════════════════════════════════════════════════════╗
+║                  MOMENTUM OSCILLATORS                         ║
+╚══════════════════════════════════════════════════════════════╝
+RSI (14):        ${rsi.toFixed(1)} → ${rsiZone}
+Stochastic:      K=${stochK.toFixed(1)} D=${stochD.toFixed(1)} → ${stochZone} | ${stochCross}
+Williams %R:     ${willR.toFixed(1)} → ${willZone}
+Momentum:        ${metrics.momentum?.toFixed(2) ?? 0}%
+ROC (12):        ${metrics.roc?.toFixed(2) ?? 0}%
 
-=== ORDER FLOW & VOLUME ===
-Volume Delta: ${metrics.volumeDelta?.toFixed(2)}% → ${volumeTrend}
-Order Book: ${metrics.orderBookImbalance?.toFixed(2)}% → ${orderBookSide}
-Funding Rate: ${(metrics.fundingRate * 100).toFixed(4)}% → ${fundingBias}
+╔══════════════════════════════════════════════════════════════╗
+║                    TREND INDICATORS                           ║
+╚══════════════════════════════════════════════════════════════╝
+ADX:             ${adx.toFixed(1)} → ${trendStr}
+MA Trend:        ${metrics.maTrend ?? 'NEUTRAL'}
+MACD:            ${metrics.macdTrend ?? 'NEUTRAL'} | Histogram: ${metrics.macdHistogram?.toFixed(2) ?? 0}
+MACD Crossover:  ${metrics.macdCrossover ?? 'NONE'}
+Golden Cross:    ${metrics.goldenCross ? 'YES ✓' : 'NO'}
+Death Cross:     ${metrics.deathCross ? 'YES ✓' : 'NO'}
 
-=== TRADING CRITERIA (You must make a decision) ===
-For BUY signal (any 3+ of these):
-• RSI < 45 or showing bullish divergence
-• Price near lower Bollinger Band or bouncing from support
-• MACD above signal line or showing bullish crossover
-• Order book slightly favoring buyers
-• Positive volume trend
-• Any bullish momentum signs
+╔══════════════════════════════════════════════════════════════╗
+║                  MOVING AVERAGES                              ║
+╚══════════════════════════════════════════════════════════════╝
+Price vs SMA20:  ${priceVsSMA20}% (${Number(priceVsSMA20) > 0 ? 'ABOVE' : 'BELOW'})
+Price vs SMA50:  ${priceVsSMA50}% (${Number(priceVsSMA50) > 0 ? 'ABOVE' : 'BELOW'})
+Price vs SMA200: ${priceVsSMA200}% (${Number(priceVsSMA200) > 0 ? 'ABOVE' : 'BELOW'})
+EMA 12/26/50:    ${metrics.ema12?.toFixed(2) ?? 'N/A'} / ${metrics.ema26?.toFixed(2) ?? 'N/A'} / ${metrics.ema50?.toFixed(2) ?? 'N/A'}
 
-For SELL signal (any 3+ of these):
-• RSI > 55 or showing bearish divergence  
-• Price near upper Bollinger Band or rejected from resistance
-• MACD below signal line or showing bearish crossover
-• Order book slightly favoring sellers
-• Negative volume trend
-• Any bearish momentum signs
+╔══════════════════════════════════════════════════════════════╗
+║                  VOLATILITY & BANDS                           ║
+╚══════════════════════════════════════════════════════════════╝
+Bollinger:       ${metrics.bollingerPosition ?? 'NEUTRAL'}
+BB Width:        ${metrics.bollingerWidth?.toFixed(2) ?? 'N/A'}%
+BB Squeeze:      ${metrics.bollingerSqueeze ? 'YES - Breakout imminent!' : 'NO'}
+ATR:             $${metrics.atr?.toFixed(2) ?? 'N/A'} (${metrics.atrPercent?.toFixed(2) ?? 'N/A'}%)
+Volatility:      ${metrics.volatility < 1.5 ? 'LOW' : metrics.volatility < 3 ? 'MEDIUM' : 'HIGH'}
 
-=== IMPORTANT RULES FOR ${tradeMode} MINUTE TRADE ===
-1. YOU MUST MAKE A DECISION - analyze the data and pick a direction
-2. NO_TRADE only when indicators are completely mixed (close to 50/50)
-3. Be decisive - even slight directional bias should result in BUY or SELL
-4. For ${tradeMode}min trades: ${tradeMode === 1 ? 'Favor momentum and recent price action' : tradeMode === 3 ? 'Look for short-term patterns' : tradeMode === 5 ? 'Balance multiple indicators' : 'Follow the dominant trend'}
-5. Confidence should reflect how clear the direction is (60-85% is normal)
-6. Risk is LOW if volatility is low, MEDIUM normally, HIGH only in extreme conditions
+╔══════════════════════════════════════════════════════════════╗
+║               SUPPORT & RESISTANCE                            ║
+╚══════════════════════════════════════════════════════════════╝
+Nearest Support:     $${metrics.nearestSupport?.toFixed(2) ?? 'N/A'} (${distSupport}% away)
+Nearest Resistance:  $${metrics.nearestResistance?.toFixed(2) ?? 'N/A'} (${distResist}% away)
 
-Respond in EXACT JSON:
+╔══════════════════════════════════════════════════════════════╗
+║                  ORDER FLOW & VOLUME                          ║
+╚══════════════════════════════════════════════════════════════╝
+Volume Delta:    ${metrics.volumeDelta?.toFixed(2)}% → ${volumeTrend}
+Volume Trend:    ${metrics.volumeTrend ?? 'STABLE'}
+Volume Confirm:  ${metrics.volumeConfirmation ? 'YES ✓' : 'NO'}
+Order Book:      ${metrics.orderBookImbalance?.toFixed(2)}% → ${orderBookSide}
+Funding Rate:    ${(metrics.fundingRate * 100).toFixed(4)}% → ${fundingBias}
+Open Interest:   $${(metrics.openInterest / 1000000000).toFixed(2)}B
+
+╔══════════════════════════════════════════════════════════════╗
+║              CONFLUENCE ANALYSIS (PRE-CALCULATED)             ║
+╚══════════════════════════════════════════════════════════════╝
+Bullish Signals: ${bullishCount} ${metrics.bullishSignals?.slice(0, 5).join(', ') ?? ''}
+Bearish Signals: ${bearishCount} ${metrics.bearishSignals?.slice(0, 5).join(', ') ?? ''}
+Net Confluence:  ${confluenceNet > 0 ? '+' : ''}${confluenceNet} → ${confluenceDir}
+Signal Strength: ${metrics.technicalStrength ?? 50}%
+Reliability:     ${metrics.reliability ?? 50}%
+Overall Signal:  ${metrics.overallTechnicalSignal ?? 'NEUTRAL'}
+
+═══════════════════════════════════════════════════════════════
+                    TRADING DECISION RULES
+═══════════════════════════════════════════════════════════════
+1. WEIGH ALL INDICATORS - Use the complete technical picture above
+2. CONFLUENCE IS KEY - More aligned indicators = higher confidence
+3. RESPECT TREND STRENGTH - ADX > 25 means follow the trend
+4. CHECK OSCILLATOR EXTREMES - Oversold/overbought zones are reversal areas
+5. VOLUME CONFIRMS - Volume should support price direction
+6. SUPPORT/RESISTANCE - Price near S/R levels = high probability zones
+
+SIGNAL DECISION:
+- BUY: Majority bullish indicators + rising momentum + volume confirmation
+- SELL: Majority bearish indicators + falling momentum + volume confirmation  
+- NO_TRADE: ONLY when indicators are genuinely split 50/50 with no edge
+
+BE DECISIVE: Professional traders make decisions. Pick a direction unless truly uncertain.
+
+Respond in EXACT JSON format:
 {
   "signal": "BUY" | "SELL" | "NO_TRADE",
-  "confidence": 0-100,
+  "confidence": 55-90 (be realistic based on confluence),
   "risk": "LOW" | "MEDIUM" | "HIGH",
   "holdMinutes": ${tradeMode},
   "technicalScore": 0-100,
   "sentimentScore": 0-100,
-  "indicatorsAligned": number of indicators that agree (0-8),
-  "psychology": "1 line market psychology",
-  "reasoning": "Write 2-3 short sentences: 1) Key indicator readings (RSI=X, MACD=Y), 2) Why signal given or why NO_TRADE. Be specific with numbers."
+  "indicatorsAligned": count of aligned indicators (1-15),
+  "psychology": "Brief market sentiment assessment",
+  "reasoning": "2-3 sentences: Key readings (RSI, Stoch, MACD, ADX values), why this signal, entry/exit logic"
 }`;
 }
 

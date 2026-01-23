@@ -59,17 +59,51 @@ export const marketMetricsSchema = z.object({
   atr: z.number(),
   fundingRate: z.number(),
   openInterest: z.number(),
-  // Technical Indicators
+  // Core Technical Indicators
   rsi: z.number().optional(),
   rsiSignal: z.enum(['OVERSOLD', 'OVERBOUGHT', 'NEUTRAL']).optional(),
   macdTrend: z.enum(['BULLISH', 'BEARISH', 'NEUTRAL']).optional(),
   macdHistogram: z.number().optional(),
+  macdCrossover: z.enum(['BULLISH_CROSS', 'BEARISH_CROSS', 'NONE']).optional(),
   bollingerPosition: z.enum(['ABOVE_UPPER', 'ABOVE_MIDDLE', 'BELOW_MIDDLE', 'BELOW_LOWER']).optional(),
+  bollingerWidth: z.number().optional(),
+  bollingerSqueeze: z.boolean().optional(),
+  // Moving Averages
   sma20: z.number().optional(),
   sma50: z.number().optional(),
+  sma200: z.number().optional(),
+  ema12: z.number().optional(),
+  ema26: z.number().optional(),
+  ema50: z.number().optional(),
+  maTrend: z.enum(['BULLISH', 'BEARISH', 'NEUTRAL']).optional(),
+  goldenCross: z.boolean().optional(),
+  deathCross: z.boolean().optional(),
+  // Oscillators
+  stochasticK: z.number().optional(),
+  stochasticD: z.number().optional(),
+  stochasticSignal: z.enum(['OVERSOLD', 'OVERBOUGHT', 'NEUTRAL']).optional(),
+  williamsR: z.number().optional(),
+  // Trend & Momentum
+  adx: z.number().optional(),
+  trendStrength: z.enum(['STRONG', 'MODERATE', 'WEAK', 'NO_TREND']).optional(),
   momentum: z.number().optional(),
+  roc: z.number().optional(),
+  atrPercent: z.number().optional(),
+  // Support/Resistance
+  nearestSupport: z.number().optional(),
+  nearestResistance: z.number().optional(),
+  distanceToSupport: z.number().optional(),
+  distanceToResistance: z.number().optional(),
+  // Volume Analysis
+  volumeTrend: z.enum(['INCREASING', 'DECREASING', 'STABLE']).optional(),
+  volumeConfirmation: z.boolean().optional(),
+  // Confluence Analysis
+  confluenceScore: z.number().optional(),
+  bullishSignals: z.array(z.string()).optional(),
+  bearishSignals: z.array(z.string()).optional(),
   overallTechnicalSignal: z.enum(['STRONG_BUY', 'BUY', 'NEUTRAL', 'SELL', 'STRONG_SELL']).optional(),
   technicalStrength: z.number().optional(),
+  reliability: z.number().optional(),
 });
 export type MarketMetrics = z.infer<typeof marketMetricsSchema>;
 
