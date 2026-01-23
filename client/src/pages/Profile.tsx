@@ -3,13 +3,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { 
   ArrowLeft, 
   TrendingUp,
   TrendingDown,
   LogOut,
-  User,
-  AlertTriangle
+  BarChart3,
+  Target,
+  AlertTriangle,
+  Clock,
+  CheckCircle2,
+  XCircle
 } from "lucide-react";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 
@@ -59,7 +64,7 @@ export default function Profile() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-[#0a0a0f]">
-        <div className="max-w-3xl mx-auto p-6">
+        <div className="max-w-2xl mx-auto p-6">
           <Skeleton className="h-16 mb-6 bg-white/5" />
           <Skeleton className="h-32 mb-6 bg-white/5" />
           <Skeleton className="h-48 bg-white/5" />
@@ -83,119 +88,156 @@ export default function Profile() {
 
   const initials = `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() || 'U';
   const stats = predictions?.stats;
+  const winRate = parseFloat(stats?.winRate || '0');
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
-      <header className="border-b border-white/5 bg-[#0a0a0f]/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild className="text-gray-400 hover:text-white hover:bg-white/5">
-              <a href="/dashboard" data-testid="link-back-dashboard">
+      <header className="border-b border-white/5 bg-[#0a0a0f]/95 backdrop-blur-xl sticky top-0 z-50">
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link href="/">
+              <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-white/5" data-testid="link-back-dashboard">
                 <ArrowLeft className="w-5 h-5" />
-              </a>
-            </Button>
-            <img src={logoImage} alt="TradeX AI" className="h-8 w-auto" />
+              </Button>
+            </Link>
+            <img src={logoImage} alt="TradeX AI" className="h-7 w-auto" />
           </div>
           <Button 
             variant="ghost" 
             onClick={() => logout()}
             disabled={isLoggingOut}
-            className="text-gray-400 hover:text-white hover:bg-white/5"
+            className="text-gray-400 hover:text-red-400 hover:bg-red-500/10"
             data-testid="button-logout"
           >
             <LogOut className="w-4 h-4 mr-2" />
-            {isLoggingOut ? "Logging out..." : "Logout"}
+            {isLoggingOut ? "..." : "Logout"}
           </Button>
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-6 py-8">
-        <Card className="bg-[#12121a] border-white/10 mb-6">
-          <CardContent className="p-6">
+      <main className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+        <Card className="bg-gradient-to-br from-[#12121a] to-[#0d0d14] border-white/5 overflow-hidden">
+          <CardContent className="p-5">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-2xl font-bold">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-xl font-bold shadow-lg shadow-cyan-500/20">
                 {initials}
               </div>
-              <div className="flex-1">
-                <h1 className="text-xl font-bold" data-testid="text-user-name">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-lg font-semibold truncate" data-testid="text-user-name">
                   {user.firstName} {user.lastName}
                 </h1>
-                <p className="text-gray-400 text-sm" data-testid="text-user-email">{user.email}</p>
+                <p className="text-gray-400 text-sm truncate" data-testid="text-user-email">{user.email}</p>
               </div>
-              <div className="px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400">
+              <div className="px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
                 FREE
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          <Card className="bg-[#12121a] border-white/10">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Card className="bg-[#12121a] border-white/5">
             <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold">{stats?.total || 0}</div>
+              <div className="flex items-center justify-center gap-1.5 mb-1">
+                <BarChart3 className="w-4 h-4 text-gray-500" />
+                <span className="text-xl font-bold">{stats?.total || 0}</span>
+              </div>
               <div className="text-xs text-gray-500">Total Trades</div>
             </CardContent>
           </Card>
-          <Card className="bg-[#12121a] border-white/10">
+          <Card className="bg-[#12121a] border-white/5">
             <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-emerald-400">{stats?.wins || 0}</div>
+              <div className="flex items-center justify-center gap-1.5 mb-1">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                <span className="text-xl font-bold text-emerald-400">{stats?.wins || 0}</span>
+              </div>
               <div className="text-xs text-gray-500">Wins</div>
             </CardContent>
           </Card>
-          <Card className="bg-[#12121a] border-white/10">
+          <Card className="bg-[#12121a] border-white/5">
             <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-red-400">{stats?.losses || 0}</div>
+              <div className="flex items-center justify-center gap-1.5 mb-1">
+                <XCircle className="w-4 h-4 text-red-500" />
+                <span className="text-xl font-bold text-red-400">{stats?.losses || 0}</span>
+              </div>
               <div className="text-xs text-gray-500">Losses</div>
             </CardContent>
           </Card>
-          <Card className="bg-[#12121a] border-white/10">
+          <Card className="bg-[#12121a] border-white/5">
             <CardContent className="p-4 text-center">
-              <div className={`text-2xl font-bold ${(stats?.totalProfitLoss || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                {(stats?.totalProfitLoss || 0) >= 0 ? '+' : ''}{(stats?.totalProfitLoss || 0).toFixed(2)}%
+              <div className="flex items-center justify-center gap-1.5 mb-1">
+                <Target className="w-4 h-4 text-blue-500" />
+                <span className={`text-xl font-bold ${(stats?.totalProfitLoss || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {(stats?.totalProfitLoss || 0) >= 0 ? '+' : ''}{(stats?.totalProfitLoss || 0).toFixed(1)}%
+                </span>
               </div>
               <div className="text-xs text-gray-500">Total P/L</div>
             </CardContent>
           </Card>
         </div>
 
-        <Card className="bg-[#12121a] border-white/10">
+        {stats && stats.total > 0 && (
+          <Card className="bg-[#12121a] border-white/5">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-400">Win Rate</span>
+                <span className={`text-sm font-medium ${winRate >= 50 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  {winRate.toFixed(1)}%
+                </span>
+              </div>
+              <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                <div 
+                  className={`h-full transition-all duration-500 ${winRate >= 50 ? 'bg-gradient-to-r from-emerald-500 to-cyan-500' : 'bg-gradient-to-r from-amber-500 to-orange-500'}`}
+                  style={{ width: `${Math.min(winRate, 100)}%` }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <Card className="bg-[#12121a] border-white/5">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold">Trade History</h2>
-              <span className="text-xs text-gray-500">{predictions?.predictions.length || 0} trades</span>
+              <span className="text-xs text-gray-500 bg-white/5 px-2 py-1 rounded-full">
+                {predictions?.predictions.length || 0} trades
+              </span>
             </div>
             
             {predictionsLoading ? (
-              <div className="space-y-3">
-                <Skeleton className="h-16 bg-white/5" />
-                <Skeleton className="h-16 bg-white/5" />
-                <Skeleton className="h-16 bg-white/5" />
+              <div className="space-y-2">
+                <Skeleton className="h-14 bg-white/5" />
+                <Skeleton className="h-14 bg-white/5" />
+                <Skeleton className="h-14 bg-white/5" />
               </div>
             ) : predictions?.predictions.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <User className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="mb-2">No trades yet</p>
-                <p className="text-xs">Go to the dashboard and analyze a coin to make your first trade</p>
+              <div className="text-center py-10">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
+                  <BarChart3 className="w-8 h-8 text-gray-600" />
+                </div>
+                <p className="text-gray-400 mb-1">No trades yet</p>
+                <p className="text-xs text-gray-500">Go to the dashboard and analyze a coin to make your first trade</p>
               </div>
             ) : (
               <div className="space-y-2">
                 {predictions?.predictions.map((pred) => (
                   <div 
                     key={pred.id}
-                    className="flex items-center justify-between p-4 rounded-xl bg-white/5"
+                    className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors"
+                    data-testid={`trade-item-${pred.id}`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        pred.signal === 'BUY' ? 'bg-emerald-500/20' : 'bg-red-500/20'
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                        pred.signal === 'BUY' ? 'bg-emerald-500/15' : 'bg-red-500/15'
                       }`}>
                         {pred.signal === 'BUY' ? (
-                          <TrendingUp className="w-5 h-5 text-emerald-400" />
+                          <TrendingUp className="w-4 h-4 text-emerald-400" />
                         ) : (
-                          <TrendingDown className="w-5 h-5 text-red-400" />
+                          <TrendingDown className="w-4 h-4 text-red-400" />
                         )}
                       </div>
                       <div>
-                        <div className="font-medium">{pred.pair}</div>
+                        <div className="font-medium text-sm">{pred.pair}</div>
                         <div className="text-xs text-gray-500">
                           {pred.signal} @ ${pred.entryPrice?.toLocaleString()}
                         </div>
@@ -203,19 +245,26 @@ export default function Profile() {
                     </div>
                     <div className="text-right">
                       {pred.outcome === 'PENDING' ? (
-                        <div className="px-2 py-1 rounded bg-yellow-500/20 text-yellow-400 text-xs">
+                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-500/10 text-amber-400 text-xs">
+                          <Clock className="w-3 h-3" />
                           Pending
                         </div>
                       ) : pred.profitLoss !== null && pred.profitLoss !== undefined ? (
-                        <div className={`text-lg font-mono font-semibold ${
+                        <div className={`text-base font-mono font-semibold ${
                           pred.profitLoss >= 0 ? 'text-emerald-400' : 'text-red-400'
                         }`}>
                           {pred.profitLoss >= 0 ? '+' : ''}{pred.profitLoss.toFixed(2)}%
                         </div>
                       ) : (
-                        <div className="text-xs text-gray-500">{pred.outcome}</div>
+                        <div className={`text-xs px-2 py-1 rounded-lg ${
+                          pred.outcome === 'WIN' ? 'bg-emerald-500/10 text-emerald-400' : 
+                          pred.outcome === 'LOSS' ? 'bg-red-500/10 text-red-400' : 
+                          'bg-white/5 text-gray-400'
+                        }`}>
+                          {pred.outcome}
+                        </div>
                       )}
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-[10px] text-gray-600 mt-1">
                         {new Date(pred.createdAt).toLocaleDateString()}
                       </div>
                     </div>
@@ -226,11 +275,11 @@ export default function Profile() {
           </CardContent>
         </Card>
 
-        <div className="mt-6 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-400" />
-            <p className="text-xs text-amber-400/80">
-              Trade at your own risk. Past performance does not guarantee future results.
+        <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-amber-400/70 leading-relaxed">
+              Trade at your own risk. Past performance does not guarantee future results. This is not financial advice.
             </p>
           </div>
         </div>

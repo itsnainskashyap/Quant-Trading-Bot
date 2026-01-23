@@ -178,6 +178,46 @@ export async function registerRoutes(
     }
   });
 
+  // AI Trading Assistant Chat
+  app.post("/api/chat", async (req, res) => {
+    try {
+      const { message, pair, signal } = req.body;
+      
+      if (!message || typeof message !== 'string') {
+        res.status(400).json({ error: "Message is required" });
+        return;
+      }
+      
+      const systemPrompt = `You are TradeX AI Assistant, a helpful trading assistant for cryptocurrency traders. You specialize in:
+- Explaining trading signals (BUY/SELL/NO_TRADE)
+- Stop-loss and take-profit strategies
+- Risk management (2% max risk per trade, 10% position sizing)
+- Capital protection and money management
+- Technical analysis concepts (RSI, MACD, Bollinger Bands, etc.)
+
+Current context: User is viewing ${pair || 'cryptocurrency'} trading signals.
+${signal ? `Current signal: ${signal}` : ''}
+
+Keep responses concise (2-3 sentences max), helpful, and focused on trading education. Never give financial advice - remind users to do their own research. Be friendly but professional.`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: message }
+        ],
+        max_tokens: 200,
+        temperature: 0.7,
+      });
+      
+      const reply = response.choices[0]?.message?.content || "I'm here to help with trading questions!";
+      res.json({ reply });
+    } catch (error) {
+      console.error("Chat error:", error);
+      res.json({ reply: "I'm having trouble connecting right now. Try asking about stop-losses, position sizing, or signal interpretation!" });
+    }
+  });
+
   app.post("/api/predictions/take", async (req, res) => {
     try {
       const user = (req as any).user;
@@ -186,7 +226,13 @@ export async function registerRoutes(
         return;
       }
       
-      const canTrade = await storage.canUserTrade(user.id);
+      const userId = user.claims?.sub;
+      if (!userId) {
+        res.status(401).json({ error: "Invalid session - please log in again" });
+        return;
+      }
+      
+      const canTrade = await storage.canUserTrade(userId);
       if (!canTrade.allowed) {
         res.status(403).json({ 
           error: canTrade.reason,
@@ -239,7 +285,7 @@ export async function registerRoutes(
       };
       
       try {
-        const prediction = await storage.createPrediction(user.id, signal, entryPrice);
+        const prediction = await storage.createPrediction(userId, signal, entryPrice);
         
         res.json({
           prediction,
@@ -249,7 +295,7 @@ export async function registerRoutes(
         });
       } catch (dbError: any) {
         console.error("Database error creating prediction:", dbError?.message || dbError);
-        console.error("User ID:", user.id);
+        console.error("User ID:", userId);
         console.error("Signal:", JSON.stringify(signal));
         res.status(500).json({ error: "Database error recording trade", details: dbError?.message });
       }
@@ -267,8 +313,14 @@ export async function registerRoutes(
         return;
       }
       
+      const userId = user.claims?.sub;
+      if (!userId) {
+        res.status(401).json({ error: "Invalid session - please log in again" });
+        return;
+      }
+      
       const limit = parseInt(req.query.limit as string) || 20;
-      const predictions = await storage.getUserPredictions(user.id, limit);
+      const predictions = await storage.getUserPredictions(userId, limit);
       
       const stats = predictions.reduce((acc, p) => {
         if (p.outcome === "WIN") acc.wins++;

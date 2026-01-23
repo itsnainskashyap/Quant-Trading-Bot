@@ -155,6 +155,9 @@ export default function Dashboard() {
   const [showAllCoins, setShowAllCoins] = useState(false);
   const [showHelpChat, setShowHelpChat] = useState(false);
   const [helpMessage, setHelpMessage] = useState("");
+  const [chatMessages, setChatMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([
+    { role: 'assistant', content: "Hi! I can help you with understanding signals, stop-loss/take-profit strategies, and risk management. Ask me anything!" }
+  ]);
   const { toast } = useToast();
   const { user, isLoading: authLoading } = useAuth();
 
@@ -218,6 +221,30 @@ export default function Dashboard() {
       setIsAnalyzing(false);
     },
   });
+
+  const chatMutation = useMutation({
+    mutationFn: async (message: string) => {
+      const response = await apiRequest('POST', '/api/chat', {
+        message,
+        pair: selectedPair,
+        signal: analysis?.signal,
+      });
+      return response.json();
+    },
+    onSuccess: (data: { reply: string }) => {
+      setChatMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+    },
+    onError: () => {
+      setChatMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't process that. Try asking about trading concepts!" }]);
+    },
+  });
+
+  const handleSendMessage = () => {
+    if (!helpMessage.trim()) return;
+    setChatMessages(prev => [...prev, { role: 'user', content: helpMessage }]);
+    chatMutation.mutate(helpMessage);
+    setHelpMessage("");
+  };
 
   const takeTradeMutation = useMutation({
     mutationFn: async () => {
@@ -778,32 +805,48 @@ export default function Dashboard() {
             <h4 className="font-medium">AI Trading Assistant</h4>
             <p className="text-xs text-gray-400">Ask me anything about trading</p>
           </div>
-          <div className="h-64 p-4 overflow-y-auto">
+          <div className="h-64 p-4 overflow-y-auto" data-testid="chat-messages">
             <div className="space-y-3 text-sm">
-              <div className="p-3 rounded-xl bg-cyan-500/10 text-gray-300">
-                Hi! I can help you with:
-                <ul className="mt-2 space-y-1 text-xs text-gray-400">
-                  <li>Understanding signals</li>
-                  <li>Setting stop-loss/take-profit</li>
-                  <li>Capital management tips</li>
-                  <li>Risk management strategies</li>
-                </ul>
-              </div>
+              {chatMessages.map((msg, idx) => (
+                <div 
+                  key={idx}
+                  className={`p-3 rounded-xl ${
+                    msg.role === 'assistant' 
+                      ? 'bg-cyan-500/10 text-gray-300' 
+                      : 'bg-blue-500/20 text-white ml-4'
+                  }`}
+                >
+                  {msg.content}
+                </div>
+              ))}
+              {chatMutation.isPending && (
+                <div className="p-3 rounded-xl bg-cyan-500/10 text-gray-400 flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Thinking...
+                </div>
+              )}
             </div>
           </div>
           <div className="p-3 border-t border-white/5">
-            <div className="flex gap-2">
+            <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="flex gap-2">
               <Input
                 value={helpMessage}
                 onChange={(e) => setHelpMessage(e.target.value)}
                 placeholder="Ask a question..."
                 className="flex-1 h-9 bg-[#0a0a0f] border-white/10 text-sm"
                 data-testid="input-help-message"
+                disabled={chatMutation.isPending}
               />
-              <Button size="sm" className="bg-cyan-500 hover:bg-cyan-600 h-9 px-3">
+              <Button 
+                type="submit" 
+                size="sm" 
+                className="bg-cyan-500 hover:bg-cyan-600 h-9 px-3"
+                disabled={chatMutation.isPending || !helpMessage.trim()}
+                data-testid="button-send-chat"
+              >
                 <Send className="w-4 h-4" />
               </Button>
-            </div>
+            </form>
           </div>
         </div>
       )}
