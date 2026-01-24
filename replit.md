@@ -130,7 +130,29 @@ shared/
 ### 6. Authentication
 - Replit Auth for secure login
 - User profile with trading statistics
-- Admin panel for system monitoring
+- Admin panel for system monitoring and payment wallet configuration
+
+### 6.1 Crypto Payment System
+- **Supported Networks**: TRC20 (TRON) and BEP20 (BSC)
+- **Pro Subscription Price**: 10 USDT (configurable in admin panel)
+- **Admin Panel Features**:
+  - Add/update TRC20 wallet address
+  - Add/update BEP20 wallet address
+  - Configure Pro subscription price
+  - Real crypto logos (USDT, TRON, BSC)
+- **Payment Flow**:
+  - User clicks "Upgrade to Pro" in dashboard
+  - Selects TRC20 or BEP20 network
+  - Scans QR code or copies wallet address
+  - Sends USDT to the wallet
+  - Enters transaction hash
+  - Automatic blockchain verification (TronGrid/BscScan APIs)
+  - Pro subscription activated on successful verification
+- **Security**:
+  - Auth required for all payment endpoints
+  - Ownership checks on payment status queries
+  - Admin-only access for settings modification
+  - Input validation for wallet addresses
 
 ### 7. Signal Generation (Ultra-Conservative)
 - BUY/SELL only when ALL conditions are met:

@@ -15,6 +15,7 @@ function AuthenticatedRoutes() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/profile" component={Profile} />
       <Route path="/admin" component={Admin} />
       <Route component={NotFound} />

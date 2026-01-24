@@ -48,6 +48,7 @@ import { BrokerSettings } from "@/components/BrokerSettings";
 import { PortfolioDashboard } from "@/components/PortfolioDashboard";
 import { LiveTradeAnalyzer } from "@/components/LiveTradeAnalyzer";
 import { TradeAutomationSettings } from "@/components/TradeAutomationSettings";
+import { PaymentModal } from "@/components/PaymentModal";
 import { TradexBroker } from "@/components/TradexBroker";
 import type { TradingPair, ConsensusResult, MarketMetrics } from "@shared/schema";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
@@ -161,6 +162,7 @@ export default function Dashboard() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [tradeMode, setTradeMode] = useState<TradeMode>(5);
   const [showAllCoins, setShowAllCoins] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showHelpChat, setShowHelpChat] = useState(false);
   const [helpMessage, setHelpMessage] = useState("");
   const [chatMessages, setChatMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([
@@ -438,6 +440,7 @@ export default function Dashboard() {
               size="sm" 
               className="bg-gradient-to-r from-amber-500 to-orange-500 text-black hover:from-amber-400 hover:to-orange-400 text-xs h-7"
               data-testid="button-upgrade-pro"
+              onClick={() => setShowPaymentModal(true)}
             >
               <Sparkles className="w-3 h-3 mr-1" />
               Upgrade to Pro
@@ -980,6 +983,11 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      <PaymentModal 
+        isOpen={showPaymentModal} 
+        onClose={() => setShowPaymentModal(false)} 
+      />
     </div>
   );
 }

@@ -104,3 +104,30 @@ export type TradexTrade = typeof tradexTrades.$inferSelect;
 export type InsertTradexTrade = typeof tradexTrades.$inferInsert;
 export type DailyUsage = typeof dailyUsage.$inferSelect;
 export type InsertDailyUsage = typeof dailyUsage.$inferInsert;
+
+// Admin settings for payment wallet addresses
+export const adminSettings = pgTable("admin_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  trc20Address: varchar("trc20_address"), // TRON TRC20 USDT address
+  bep20Address: varchar("bep20_address"), // BSC BEP20 USDT address
+  proPrice: real("pro_price").notNull().default(10), // Pro subscription price in USDT
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Payment records for subscription payments
+export const paymentRecords = pgTable("payment_records", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  network: varchar("network").notNull(), // trc20 or bep20
+  txHash: varchar("tx_hash").notNull().unique(),
+  amount: real("amount").notNull(),
+  walletAddress: varchar("wallet_address").notNull(),
+  status: varchar("status").notNull().default("pending"), // pending, verified, failed
+  verifiedAt: timestamp("verified_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type AdminSettings = typeof adminSettings.$inferSelect;
+export type InsertAdminSettings = typeof adminSettings.$inferInsert;
+export type PaymentRecord = typeof paymentRecords.$inferSelect;
+export type InsertPaymentRecord = typeof paymentRecords.$inferInsert;

@@ -47,6 +47,17 @@ export interface IStorage {
   canUserTrade(userId: string): Promise<{ allowed: boolean; reason?: string; remaining?: number }>;
   getDailyUsage(userId: string, date: string): Promise<{ analysisCount: number } | null>;
   incrementDailyUsage(userId: string): Promise<void>;
+  
+  // Admin settings
+  getAdminSettings(): Promise<{ trc20Address?: string; bep20Address?: string; proPrice: number } | null>;
+  updateAdminSettings(trc20Address: string, bep20Address: string, proPrice?: number): Promise<void>;
+  
+  // Payment records
+  createPaymentRecord(userId: string, network: string, txHash: string, amount: number, walletAddress: string): Promise<any>;
+  getPaymentByTxHash(txHash: string): Promise<any | null>;
+  verifyPayment(paymentId: string): Promise<void>;
+  failPayment(paymentId: string): Promise<void>;
+  getUserPayments(userId: string): Promise<any[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -764,6 +775,133 @@ export class MemStorage implements IStorage {
       }
     } catch (error) {
       console.error("Error incrementing daily usage:", error);
+    }
+  }
+
+  // Admin settings methods
+  async getAdminSettings(): Promise<{ trc20Address?: string; bep20Address?: string; proPrice: number } | null> {
+    try {
+      const { adminSettings } = await import("@shared/models/trading");
+      const result = await db.select().from(adminSettings).limit(1);
+      
+      if (result.length === 0) {
+        // Create default settings
+        const newSettings = await db.insert(adminSettings).values({
+          proPrice: 10
+        }).returning();
+        return { 
+          trc20Address: newSettings[0].trc20Address || undefined, 
+          bep20Address: newSettings[0].bep20Address || undefined, 
+          proPrice: newSettings[0].proPrice 
+        };
+      }
+      
+      return { 
+        trc20Address: result[0].trc20Address || undefined, 
+        bep20Address: result[0].bep20Address || undefined, 
+        proPrice: result[0].proPrice 
+      };
+    } catch (error) {
+      console.error("Error getting admin settings:", error);
+      return { proPrice: 10 };
+    }
+  }
+
+  async updateAdminSettings(trc20Address: string, bep20Address: string, proPrice?: number): Promise<void> {
+    try {
+      const { adminSettings } = await import("@shared/models/trading");
+      const existing = await db.select().from(adminSettings).limit(1);
+      
+      if (existing.length > 0) {
+        await db.update(adminSettings)
+          .set({ 
+            trc20Address, 
+            bep20Address, 
+            proPrice: proPrice || existing[0].proPrice,
+            updatedAt: new Date() 
+          })
+          .where(eq(adminSettings.id, existing[0].id));
+      } else {
+        await db.insert(adminSettings).values({
+          trc20Address,
+          bep20Address,
+          proPrice: proPrice || 10
+        });
+      }
+    } catch (error) {
+      console.error("Error updating admin settings:", error);
+    }
+  }
+
+  // Payment record methods
+  async createPaymentRecord(userId: string, network: string, txHash: string, amount: number, walletAddress: string): Promise<any> {
+    try {
+      const { paymentRecords } = await import("@shared/models/trading");
+      const result = await db.insert(paymentRecords).values({
+        userId,
+        network,
+        txHash,
+        amount,
+        walletAddress,
+        status: 'pending'
+      }).returning();
+      return result[0];
+    } catch (error) {
+      console.error("Error creating payment record:", error);
+      throw error;
+    }
+  }
+
+  async getPaymentByTxHash(txHash: string): Promise<any | null> {
+    try {
+      const { paymentRecords } = await import("@shared/models/trading");
+      const result = await db.select()
+        .from(paymentRecords)
+        .where(eq(paymentRecords.txHash, txHash))
+        .limit(1);
+      return result[0] || null;
+    } catch (error) {
+      console.error("Error getting payment by tx hash:", error);
+      return null;
+    }
+  }
+
+  async verifyPayment(paymentId: string): Promise<void> {
+    try {
+      const { paymentRecords } = await import("@shared/models/trading");
+      await db.update(paymentRecords)
+        .set({ 
+          status: 'verified',
+          verifiedAt: new Date()
+        })
+        .where(eq(paymentRecords.id, paymentId));
+    } catch (error) {
+      console.error("Error verifying payment:", error);
+    }
+  }
+
+  async failPayment(paymentId: string): Promise<void> {
+    try {
+      const { paymentRecords } = await import("@shared/models/trading");
+      await db.update(paymentRecords)
+        .set({ status: 'failed' })
+        .where(eq(paymentRecords.id, paymentId));
+    } catch (error) {
+      console.error("Error failing payment:", error);
+    }
+  }
+
+  async getUserPayments(userId: string): Promise<any[]> {
+    try {
+      const { paymentRecords } = await import("@shared/models/trading");
+      const result = await db.select()
+        .from(paymentRecords)
+        .where(eq(paymentRecords.userId, userId))
+        .orderBy(sql`${paymentRecords.createdAt} DESC`);
+      return result;
+    } catch (error) {
+      console.error("Error getting user payments:", error);
+      return [];
     }
   }
 }
