@@ -244,8 +244,25 @@ shared/
 - AI suggests position adjustments ("add $100" or "take $50 profit")
 - Real-time multi-device sync (trades sync across tabs/devices every 3 seconds)
 - Live P&L tracking with visual indicators
-- AI recommendations: HOLD, TRAILING_STOP, TAKE_PARTIAL_PROFIT, CLOSE_LOSS
+- AI recommendations: HOLD, TRAILING_STOP, TAKE_PARTIAL_PROFIT, CLOSE_LOSS, EXTENDED, AUTO_CLOSE
 - Trade history with win rate tracking
+
+### 18. Smart Trade Exit Management
+- **Exit Timer**: Each trade has a countdown timer showing time until auto-close
+- **Auto-Close**: Trades automatically close when exit time expires
+- **AI Time Extension**: AI can extend trade time up to 3 times if:
+  - Trade is in profit (+1.5% or more): Extends 2 min to capture more upside
+  - Small profit (+0.5% to +1.5%): Extends 1 min to find better exit
+  - In loss but recoverable (-0.5% to -2%): Extends 2 min for potential recovery
+- **Force Close Scenarios**:
+  - Maximum extensions (3) reached
+  - Loss exceeds -2%
+  - Trade near breakeven at expiry
+- **Visual Indicators**:
+  - Blue timer: Normal time remaining
+  - Amber pulsing timer: Less than 1 minute remaining
+  - Red timer: Time expired (AI deciding)
+  - Purple "+N" badge: Number of AI extensions applied
 
 ## Design System
 - **Theme**: Dark mode by default (professional trading aesthetic)

@@ -305,7 +305,7 @@ export default function Dashboard() {
         takeProfit: analysis.tradeRecommendation?.takeProfit,
       });
       
-      // Also open TradeX virtual trade
+      // Also open TradeX virtual trade with exit window
       try {
         await apiRequest('POST', '/api/tradex/trade', {
           pair: selectedPair,
@@ -315,6 +315,7 @@ export default function Dashboard() {
           leverage: 1,
           stopLoss: analysis.tradeRecommendation?.stopLoss,
           takeProfit: analysis.tradeRecommendation?.takeProfit,
+          exitWindowMinutes: analysis.holdTime || 5,
         });
       } catch (e) {
         console.log('TradeX trade not opened (may not have balance)');

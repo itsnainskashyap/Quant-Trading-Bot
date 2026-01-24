@@ -39,6 +39,8 @@ interface TradexTrade {
   takeProfit: number | null;
   aiStopLoss: number | null;
   aiTakeProfit: number | null;
+  exitTimestamp: string | null;
+  extensionCount: number | null;
   status: string;
   profitLoss: number | null;
   profitLossPercent: number | null;
@@ -70,11 +72,36 @@ function formatElapsedTime(createdAt: string): string {
   return `${diffSec}s`;
 }
 
+// Calculate time remaining until exit
+function formatTimeRemaining(exitTimestamp: string | null): { text: string; isUrgent: boolean; isExpired: boolean } {
+  if (!exitTimestamp) return { text: '-', isUrgent: false, isExpired: false };
+  
+  const exitTime = new Date(exitTimestamp).getTime();
+  const now = Date.now();
+  const diffMs = exitTime - now;
+  
+  if (diffMs <= 0) {
+    return { text: 'Expired', isUrgent: true, isExpired: true };
+  }
+  
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const remainingSec = diffSec % 60;
+  
+  const isUrgent = diffMs < 60000; // Less than 1 minute
+  
+  if (diffMin > 0) {
+    return { text: `${diffMin}m ${remainingSec}s`, isUrgent, isExpired: false };
+  }
+  return { text: `${diffSec}s`, isUrgent, isExpired: false };
+}
+
 export function TradexBroker({ selectedPair, currentPrice, signal }: TradexBrokerProps) {
   const { toast } = useToast();
   const [isAddBalanceOpen, setIsAddBalanceOpen] = useState(false);
   const [addAmount, setAddAmount] = useState("");
   const [elapsedTimes, setElapsedTimes] = useState<Record<string, string>>({});
+  const [timeRemaining, setTimeRemaining] = useState<Record<string, { text: string; isUrgent: boolean; isExpired: boolean }>>({});
   const [isAnalyzing, setIsAnalyzing] = useState<Record<string, boolean>>({});
 
   const { data: balanceData, refetch: refetchBalance } = useQuery<{ balance: number }>({
@@ -133,22 +160,47 @@ export function TradexBroker({ selectedPair, currentPrice, signal }: TradexBroke
       const res = await apiRequest('POST', `/api/tradex/analyze/${tradeId}`, { currentPrice });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/tradex/trades'] });
+      
+      // Show notification for auto-close
+      if (data.autoClosed) {
+        const pnl = data.trade?.profitLoss || 0;
+        toast({
+          title: pnl >= 0 ? "Trade auto-closed in profit" : "Trade auto-closed",
+          description: `${data.analysis?.analysis || 'Exit time expired.'} P/L: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`,
+          variant: pnl >= 0 ? "default" : "destructive",
+        });
+        queryClient.invalidateQueries({ queryKey: ['/api/tradex/balance'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/tradex/history'] });
+      }
+      
+      // Show notification for extension
+      if (data.extended) {
+        toast({
+          title: "Trade time extended",
+          description: `AI extended by ${data.extensionMinutes} min. ${data.analysis?.analysis || ''}`,
+        });
+      }
     },
   });
 
-  // Update elapsed times every second
+  // Update elapsed times and time remaining every second
   useEffect(() => {
     if (tradesData?.trades && tradesData.trades.length > 0) {
       const timerInterval = setInterval(() => {
-        const newTimes: Record<string, string> = {};
+        const newElapsed: Record<string, string> = {};
+        const newRemaining: Record<string, { text: string; isUrgent: boolean; isExpired: boolean }> = {};
         tradesData.trades.forEach(trade => {
-          if (trade.status === 'OPEN' && trade.createdAt) {
-            newTimes[trade.id] = formatElapsedTime(trade.createdAt);
+          if (trade.status === 'OPEN') {
+            if (trade.createdAt) {
+              newElapsed[trade.id] = formatElapsedTime(trade.createdAt);
+            }
+            newRemaining[trade.id] = formatTimeRemaining(trade.exitTimestamp);
           }
         });
-        setElapsedTimes(newTimes);
+        setElapsedTimes(newElapsed);
+        setTimeRemaining(newRemaining);
       }, 1000);
       return () => clearInterval(timerInterval);
     }
@@ -185,16 +237,18 @@ export function TradexBroker({ selectedPair, currentPrice, signal }: TradexBroke
   const getRecommendationColor = (rec: string | null) => {
     if (!rec) return 'text-gray-400';
     if (rec.includes('PROFIT') || rec === 'TRAILING_STOP') return 'text-emerald-400';
-    if (rec.includes('LOSS') || rec.includes('CAUTION')) return 'text-red-400';
+    if (rec.includes('LOSS') || rec.includes('CAUTION') || rec === 'AUTO_CLOSE') return 'text-red-400';
     if (rec === 'HOLD') return 'text-blue-400';
+    if (rec === 'EXTENDED') return 'text-purple-400';
     return 'text-amber-400';
   };
 
   const getRecommendationIcon = (rec: string | null) => {
     if (!rec) return null;
     if (rec.includes('PROFIT')) return <TrendingUp className="w-3 h-3" />;
-    if (rec.includes('LOSS')) return <TrendingDown className="w-3 h-3" />;
+    if (rec.includes('LOSS') || rec === 'AUTO_CLOSE') return <TrendingDown className="w-3 h-3" />;
     if (rec === 'TRAILING_STOP') return <Target className="w-3 h-3" />;
+    if (rec === 'EXTENDED') return <RefreshCw className="w-3 h-3" />;
     return <Clock className="w-3 h-3" />;
   };
 
@@ -329,6 +383,21 @@ export function TradexBroker({ selectedPair, currentPrice, signal }: TradexBroke
                       <Timer className="w-3 h-3" />
                       <span className="font-mono">{elapsedTimes[trade.id] || '0s'}</span>
                     </div>
+                    {trade.exitTimestamp && (
+                      <div className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded ${
+                        timeRemaining[trade.id]?.isExpired 
+                          ? 'bg-red-500/20 text-red-400' 
+                          : timeRemaining[trade.id]?.isUrgent 
+                            ? 'bg-amber-500/20 text-amber-400 animate-pulse' 
+                            : 'bg-blue-500/10 text-blue-400'
+                      }`}>
+                        <Target className="w-3 h-3" />
+                        <span className="font-mono">{timeRemaining[trade.id]?.text || '-'}</span>
+                        {(trade.extensionCount || 0) > 0 && (
+                          <span className="text-purple-400">+{trade.extensionCount}</span>
+                        )}
+                      </div>
+                    )}
                     <div className={`text-sm font-bold ${(trade.profitLossPercent || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                       {(trade.profitLossPercent || 0) >= 0 ? '+' : ''}{(trade.profitLossPercent || 0).toFixed(2)}%
                     </div>

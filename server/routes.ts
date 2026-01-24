@@ -927,7 +927,7 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
         return;
       }
 
-      const { pair, signal, entryPrice, amount, leverage, stopLoss, takeProfit } = req.body;
+      const { pair, signal, entryPrice, amount, leverage, stopLoss, takeProfit, exitWindowMinutes } = req.body;
 
       if (!pair || !signal || !entryPrice || !amount) {
         res.status(400).json({ error: "Missing required fields" });
@@ -936,7 +936,7 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
 
       const { openTradexTrade } = await import('./brokerService');
       const result = await openTradexTrade(
-        userId, pair, signal, entryPrice, amount, leverage || 1, stopLoss, takeProfit
+        userId, pair, signal, entryPrice, amount, leverage || 1, stopLoss, takeProfit, exitWindowMinutes || 5
       );
 
       if (result.success) {
@@ -1053,53 +1053,133 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
 
       // AI-based dynamic SL/TP analysis
       const timeInTrade = (Date.now() - new Date(trade.createdAt!).getTime()) / 1000 / 60; // minutes
+      const exitTimestamp = trade.exitTimestamp ? new Date(trade.exitTimestamp).getTime() : null;
+      const timeExpired = exitTimestamp ? Date.now() >= exitTimestamp : false;
+      const extensionCount = trade.extensionCount || 0;
+      const maxExtensions = 3; // Max 3 extensions allowed
       
       let aiRecommendation = 'HOLD';
       let aiAnalysis = '';
       let aiStopLoss = trade.stopLoss;
       let aiTakeProfit = trade.takeProfit;
+      let shouldAutoClose = false;
+      let shouldExtend = false;
+      let extensionMinutes = 0;
 
-      // Dynamic analysis based on current state
-      if (percentChange > 2) {
-        // In profit - consider trailing stop
-        aiStopLoss = trade.signal === 'BUY' 
-          ? currentPrice * 0.99 // Trail 1% below for BUY
-          : currentPrice * 1.01; // Trail 1% above for SELL
-        
-        if (percentChange > 5) {
-          aiRecommendation = 'TAKE_PARTIAL_PROFIT';
-          aiAnalysis = `Strong profit of ${percentChange.toFixed(2)}%. Consider taking 50% profit and letting rest run with trailing stop.`;
+      // Check if exit time has expired - AI decides whether to close or extend
+      if (timeExpired) {
+        // AI logic to decide: close now OR extend time
+        if (extensionCount >= maxExtensions) {
+          // Max extensions reached - must close
+          shouldAutoClose = true;
+          aiRecommendation = 'AUTO_CLOSE';
+          aiAnalysis = `Exit time expired. Maximum extensions (${maxExtensions}) reached. Auto-closing trade.`;
+        } else if (percentChange > 1.5) {
+          // In good profit but exit time passed - extend to capture more
+          shouldExtend = true;
+          extensionMinutes = 2;
+          aiRecommendation = 'EXTENDED';
+          aiAnalysis = `Trade in profit (+${percentChange.toFixed(2)}%). Extending 2 min to capture more upside.`;
+        } else if (percentChange > 0.5) {
+          // Small profit - extend briefly to lock in
+          shouldExtend = true;
+          extensionMinutes = 1;
+          aiRecommendation = 'EXTENDED';
+          aiAnalysis = `Small profit. Extending 1 min to find better exit.`;
+        } else if (percentChange < -2) {
+          // Big loss - close immediately
+          shouldAutoClose = true;
+          aiRecommendation = 'AUTO_CLOSE';
+          aiAnalysis = `Exit time expired with -${Math.abs(percentChange).toFixed(2)}% loss. Closing to prevent further damage.`;
+        } else if (percentChange < -0.5) {
+          // In loss but recoverable - extend to find recovery
+          if (extensionCount < 2) {
+            shouldExtend = true;
+            extensionMinutes = 2;
+            aiRecommendation = 'EXTENDED';
+            aiAnalysis = `In drawdown but recovering possible. Extending 2 min for potential recovery.`;
+          } else {
+            shouldAutoClose = true;
+            aiRecommendation = 'AUTO_CLOSE';
+            aiAnalysis = `Recovery attempts exhausted. Closing at ${percentChange.toFixed(2)}%.`;
+          }
         } else {
-          aiRecommendation = 'TRAILING_STOP';
-          aiAnalysis = `Good profit. Move stop-loss to ${aiStopLoss.toFixed(2)} to lock in gains.`;
+          // Near breakeven - close
+          shouldAutoClose = true;
+          aiRecommendation = 'AUTO_CLOSE';
+          aiAnalysis = `Exit time expired. Trade near breakeven. Closing position.`;
         }
-      } else if (percentChange > 1) {
-        aiRecommendation = 'HOLD';
-        aiAnalysis = `Small profit. Hold position, consider trailing stop if profit increases.`;
-      } else if (percentChange < -1.5) {
-        // In loss
-        if (percentChange < -3) {
-          aiRecommendation = 'CLOSE_LOSS';
-          aiAnalysis = `Loss exceeds -3%. Consider closing to protect capital.`;
-        } else {
-          aiRecommendation = 'HOLD_CAUTION';
-          aiAnalysis = `In drawdown. Monitor closely. Original thesis may still be valid.`;
+
+        // Handle extension
+        if (shouldExtend) {
+          const { extendTradeExitTime } = await import('./brokerService');
+          await extendTradeExitTime(trade.id, extensionMinutes);
+        }
+
+        // Handle auto-close
+        if (shouldAutoClose) {
+          const { closeTradexTrade } = await import('./brokerService');
+          const closeResult = await closeTradexTrade(trade.id, userId, currentPrice, 'AI_TIME_EXPIRED');
+          res.json({
+            success: true,
+            trade: closeResult.trade,
+            autoClosed: true,
+            analysis: {
+              recommendation: aiRecommendation,
+              analysis: aiAnalysis,
+              currentPnL: profitLoss,
+              currentPnLPercent: percentChange,
+              timeInTrade,
+            },
+          });
+          return;
         }
       } else {
-        // Near entry
-        if (timeInTrade > 10) {
-          aiRecommendation = 'REVIEW';
-          aiAnalysis = `Trade is flat after ${timeInTrade.toFixed(0)} min. Consider reducing position or closing.`;
-        } else {
+        // Normal analysis when time not expired
+        if (percentChange > 2) {
+          // In profit - consider trailing stop
+          aiStopLoss = trade.signal === 'BUY' 
+            ? currentPrice * 0.99 // Trail 1% below for BUY
+            : currentPrice * 1.01; // Trail 1% above for SELL
+          
+          if (percentChange > 5) {
+            aiRecommendation = 'TAKE_PARTIAL_PROFIT';
+            aiAnalysis = `Strong profit of ${percentChange.toFixed(2)}%. Consider taking 50% profit and letting rest run with trailing stop.`;
+          } else {
+            aiRecommendation = 'TRAILING_STOP';
+            aiAnalysis = `Good profit. Move stop-loss to ${aiStopLoss.toFixed(2)} to lock in gains.`;
+          }
+        } else if (percentChange > 1) {
           aiRecommendation = 'HOLD';
-          aiAnalysis = `Trade is developing. Give it time to play out.`;
+          aiAnalysis = `Small profit. Hold position, consider trailing stop if profit increases.`;
+        } else if (percentChange < -1.5) {
+          // In loss
+          if (percentChange < -3) {
+            aiRecommendation = 'CLOSE_LOSS';
+            aiAnalysis = `Loss exceeds -3%. Consider closing to protect capital.`;
+          } else {
+            aiRecommendation = 'HOLD_CAUTION';
+            aiAnalysis = `In drawdown. Monitor closely. Original thesis may still be valid.`;
+          }
+        } else {
+          // Near entry
+          if (timeInTrade > 10) {
+            aiRecommendation = 'REVIEW';
+            aiAnalysis = `Trade is flat after ${timeInTrade.toFixed(0)} min. Consider reducing position or closing.`;
+          } else {
+            aiRecommendation = 'HOLD';
+            aiAnalysis = `Trade is developing. Give it time to play out.`;
+          }
+        }
+
+        // Add position adjustment suggestions
+        if (percentChange > 3 && trade.amount < 500) {
+          aiAnalysis += ` Add $${Math.min(100, trade.amount * 0.5).toFixed(0)} to winning position.`;
         }
       }
 
-      // Add position adjustment suggestions
-      if (percentChange > 3 && trade.amount < 500) {
-        aiAnalysis += ` Add $${Math.min(100, trade.amount * 0.5).toFixed(0)} to winning position.`;
-      }
+      // Calculate time remaining
+      const timeRemaining = exitTimestamp ? Math.max(0, exitTimestamp - Date.now()) : null;
 
       // Update trade with AI analysis
       const updated = await updateTradexTrade(trade.id, {
@@ -1115,6 +1195,8 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
       res.json({
         success: true,
         trade: updated,
+        extended: shouldExtend,
+        extensionMinutes: shouldExtend ? extensionMinutes : 0,
         analysis: {
           recommendation: aiRecommendation,
           analysis: aiAnalysis,
@@ -1123,6 +1205,8 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
           currentPnL: profitLoss,
           currentPnLPercent: percentChange,
           timeInTrade,
+          timeRemaining,
+          extensionCount,
         },
       });
     } catch (error: any) {

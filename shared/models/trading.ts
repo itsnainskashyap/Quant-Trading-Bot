@@ -71,10 +71,12 @@ export const tradexTrades = pgTable("tradex_trades", {
   takeProfit: real("take_profit"),
   aiStopLoss: real("ai_stop_loss"), // AI-adjusted stop loss
   aiTakeProfit: real("ai_take_profit"), // AI-adjusted take profit
+  exitTimestamp: timestamp("exit_timestamp"), // When trade should auto-close
+  extensionCount: integer("extension_count").default(0), // How many times AI extended
   status: varchar("status").notNull().default("OPEN"), // OPEN, CLOSED, STOPPED, PROFIT_TAKEN
   profitLoss: real("profit_loss"),
   profitLossPercent: real("profit_loss_percent"),
-  closeReason: varchar("close_reason"), // AI_STOP, AI_PROFIT, USER_CLOSE, MANUAL_SL, MANUAL_TP
+  closeReason: varchar("close_reason"), // AI_STOP, AI_PROFIT, USER_CLOSE, MANUAL_SL, MANUAL_TP, TIME_EXPIRED
   aiRecommendation: text("ai_recommendation"), // Current AI suggestion
   aiAnalysis: text("ai_analysis"), // Live AI analysis
   createdAt: timestamp("created_at").defaultNow(),

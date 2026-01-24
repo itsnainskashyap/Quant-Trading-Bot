@@ -568,7 +568,8 @@ export async function openTradexTrade(
   amount: number,
   leverage: number = 1,
   stopLoss?: number,
-  takeProfit?: number
+  takeProfit?: number,
+  exitWindowMinutes: number = 5
 ): Promise<{ success: boolean; trade?: TradexTrade; error?: string }> {
   try {
     // Check balance
@@ -579,6 +580,9 @@ export async function openTradexTrade(
 
     // Deduct from balance
     await createOrUpdateTradexBalance(userId, balance.balance - amount);
+
+    // Calculate exit timestamp
+    const exitTimestamp = new Date(Date.now() + exitWindowMinutes * 60 * 1000);
 
     // Create trade
     const [trade] = await db.insert(tradexTrades).values({
@@ -591,6 +595,8 @@ export async function openTradexTrade(
       leverage,
       stopLoss,
       takeProfit,
+      exitTimestamp,
+      extensionCount: 0,
       status: 'OPEN',
     }).returning();
 
@@ -610,10 +616,34 @@ export async function updateTradexTrade(
     aiAnalysis?: string;
     profitLoss?: number;
     profitLossPercent?: number;
+    exitTimestamp?: Date;
+    extensionCount?: number;
   }
 ): Promise<TradexTrade | null> {
   const [updated] = await db.update(tradexTrades)
     .set({ ...updates, lastUpdated: new Date() })
+    .where(eq(tradexTrades.id, tradeId))
+    .returning();
+  return updated || null;
+}
+
+// Extend trade exit time by specified minutes
+export async function extendTradeExitTime(
+  tradeId: string,
+  additionalMinutes: number
+): Promise<TradexTrade | null> {
+  const [trade] = await db.select().from(tradexTrades).where(eq(tradexTrades.id, tradeId));
+  if (!trade) return null;
+  
+  const currentExit = trade.exitTimestamp ? new Date(trade.exitTimestamp).getTime() : Date.now();
+  const newExitTimestamp = new Date(Math.max(currentExit, Date.now()) + additionalMinutes * 60 * 1000);
+  
+  const [updated] = await db.update(tradexTrades)
+    .set({ 
+      exitTimestamp: newExitTimestamp,
+      extensionCount: (trade.extensionCount || 0) + 1,
+      lastUpdated: new Date()
+    })
     .where(eq(tradexTrades.id, tradeId))
     .returning();
   return updated || null;
