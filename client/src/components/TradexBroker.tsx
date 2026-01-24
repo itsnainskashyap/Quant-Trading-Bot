@@ -1,0 +1,391 @@
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { 
+  Wallet, 
+  Plus, 
+  TrendingUp, 
+  TrendingDown, 
+  Clock, 
+  Target, 
+  AlertTriangle,
+  Loader2,
+  RefreshCw,
+  XCircle,
+  CheckCircle,
+  Sparkles,
+  Brain
+} from "lucide-react";
+import { ExchangeLogo } from "./ExchangeLogos";
+
+interface TradexTrade {
+  id: string;
+  pair: string;
+  signal: string;
+  entryPrice: number;
+  currentPrice: number | null;
+  amount: number;
+  leverage: number;
+  stopLoss: number | null;
+  takeProfit: number | null;
+  aiStopLoss: number | null;
+  aiTakeProfit: number | null;
+  status: string;
+  profitLoss: number | null;
+  profitLossPercent: number | null;
+  aiRecommendation: string | null;
+  aiAnalysis: string | null;
+  createdAt: string;
+}
+
+interface TradexBrokerProps {
+  selectedPair: string;
+  currentPrice: number;
+  signal?: { signal: string; confidence: number };
+}
+
+export function TradexBroker({ selectedPair, currentPrice, signal }: TradexBrokerProps) {
+  const { toast } = useToast();
+  const [isAddBalanceOpen, setIsAddBalanceOpen] = useState(false);
+  const [addAmount, setAddAmount] = useState("");
+  const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
+
+  const { data: balanceData, refetch: refetchBalance } = useQuery<{ balance: number }>({
+    queryKey: ['/api/tradex/balance'],
+    refetchInterval: 5000,
+  });
+
+  const { data: tradesData, refetch: refetchTrades } = useQuery<{ trades: TradexTrade[] }>({
+    queryKey: ['/api/tradex/trades'],
+    refetchInterval: 3000,
+  });
+
+  const { data: historyData } = useQuery<{ trades: TradexTrade[] }>({
+    queryKey: ['/api/tradex/history'],
+  });
+
+  const addBalanceMutation = useMutation({
+    mutationFn: async (amount: number) => {
+      const res = await apiRequest('POST', '/api/tradex/balance/add', { amount });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tradex/balance'] });
+      setIsAddBalanceOpen(false);
+      setAddAmount("");
+      toast({ title: "Balance added!", description: `$${addAmount} added to your TradeX wallet` });
+    },
+    onError: (error: any) => {
+      toast({ title: "Failed to add balance", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const closeTradeMutation = useMutation({
+    mutationFn: async ({ tradeId, exitPrice, reason }: { tradeId: string; exitPrice: number; reason: string }) => {
+      const res = await apiRequest('POST', `/api/tradex/trade/${tradeId}/close`, { exitPrice, reason });
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tradex/trades'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/tradex/balance'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/tradex/history'] });
+      const pnl = data.trade?.profitLoss || 0;
+      toast({ 
+        title: pnl >= 0 ? "Trade closed in profit!" : "Trade closed", 
+        description: `P/L: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`,
+        variant: pnl >= 0 ? "default" : "destructive"
+      });
+    },
+    onError: (error: any) => {
+      toast({ title: "Failed to close trade", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const analyzeTradeMutation = useMutation({
+    mutationFn: async ({ tradeId, currentPrice }: { tradeId: string; currentPrice: number }) => {
+      const res = await apiRequest('POST', `/api/tradex/analyze/${tradeId}`, { currentPrice });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tradex/trades'] });
+    },
+  });
+
+  useEffect(() => {
+    if (tradesData?.trades && tradesData.trades.length > 0) {
+      const interval = setInterval(() => {
+        tradesData.trades.forEach(trade => {
+          if (trade.pair === selectedPair && currentPrice > 0) {
+            analyzeTradeMutation.mutate({ tradeId: trade.id, currentPrice });
+          }
+        });
+      }, 5000);
+      setRefreshInterval(interval);
+      return () => clearInterval(interval);
+    }
+  }, [tradesData?.trades, selectedPair, currentPrice]);
+
+  const balance = balanceData?.balance || 0;
+  const openTrades = tradesData?.trades || [];
+  const closedTrades = historyData?.trades?.filter(t => t.status !== 'OPEN') || [];
+
+  const totalOpenPnL = openTrades.reduce((sum, t) => sum + (t.profitLoss || 0), 0);
+  const winRate = closedTrades.length > 0 
+    ? (closedTrades.filter(t => (t.profitLoss || 0) > 0).length / closedTrades.length * 100) 
+    : 0;
+
+  const getRecommendationColor = (rec: string | null) => {
+    if (!rec) return 'text-gray-400';
+    if (rec.includes('PROFIT') || rec === 'TRAILING_STOP') return 'text-emerald-400';
+    if (rec.includes('LOSS') || rec.includes('CAUTION')) return 'text-red-400';
+    if (rec === 'HOLD') return 'text-blue-400';
+    return 'text-amber-400';
+  };
+
+  const getRecommendationIcon = (rec: string | null) => {
+    if (!rec) return null;
+    if (rec.includes('PROFIT')) return <TrendingUp className="w-3 h-3" />;
+    if (rec.includes('LOSS')) return <TrendingDown className="w-3 h-3" />;
+    if (rec === 'TRAILING_STOP') return <Target className="w-3 h-3" />;
+    return <Clock className="w-3 h-3" />;
+  };
+
+  return (
+    <Card className="bg-gradient-to-br from-[#12121a] to-[#1a1a2e] border-blue-500/20">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <ExchangeLogo exchange="tradex" className="w-5 h-5" />
+            <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent font-bold">
+              TradeX Broker
+            </span>
+            <Badge variant="outline" className="text-[9px] border-purple-500/30 text-purple-400">
+              <Sparkles className="w-2 h-2 mr-1" />
+              AI Paper Trading
+            </Badge>
+          </CardTitle>
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className="h-6 w-6 p-0"
+            onClick={() => {
+              refetchBalance();
+              refetchTrades();
+            }}
+            data-testid="button-refresh-tradex"
+          >
+            <RefreshCw className="w-3 h-3" />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-2 space-y-3">
+        <div className="p-3 rounded-lg bg-[#0a0a0f]/80 border border-white/5">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Wallet className="w-4 h-4 text-blue-400" />
+              <span className="text-xs text-gray-400">Virtual Balance</span>
+            </div>
+            <Dialog open={isAddBalanceOpen} onOpenChange={setIsAddBalanceOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline" className="h-6 text-[10px]" data-testid="button-add-balance">
+                  <Plus className="w-3 h-3 mr-1" />
+                  Add Funds
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-[#12121a] border-white/10">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <ExchangeLogo exchange="tradex" className="w-6 h-6" />
+                    Add Virtual Balance
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div className="text-sm text-gray-400">
+                    Add funds to your TradeX virtual wallet for paper trading. This is not real money.
+                  </div>
+                  <Input
+                    type="number"
+                    value={addAmount}
+                    onChange={(e) => setAddAmount(e.target.value)}
+                    placeholder="Enter amount (e.g., 1000)"
+                    className="bg-[#0a0a0f] border-white/10"
+                    data-testid="input-add-balance"
+                  />
+                  <div className="flex gap-2">
+                    {[100, 500, 1000, 5000].map(amt => (
+                      <Button
+                        key={amt}
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setAddAmount(amt.toString())}
+                        className="flex-1 text-xs"
+                      >
+                        ${amt}
+                      </Button>
+                    ))}
+                  </div>
+                  <Button
+                    onClick={() => addBalanceMutation.mutate(Number(addAmount))}
+                    disabled={!addAmount || Number(addAmount) <= 0 || addBalanceMutation.isPending}
+                    className="w-full bg-gradient-to-r from-blue-500 to-purple-600"
+                    data-testid="button-confirm-add-balance"
+                  >
+                    {addBalanceMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : (
+                      <Plus className="w-4 h-4 mr-2" />
+                    )}
+                    Add ${addAmount || 0}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+          <div className="text-2xl font-bold text-white">
+            ${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          {openTrades.length > 0 && (
+            <div className={`text-xs mt-1 ${totalOpenPnL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              Open P/L: {totalOpenPnL >= 0 ? '+' : ''}${totalOpenPnL.toFixed(2)}
+            </div>
+          )}
+        </div>
+
+        {openTrades.length > 0 ? (
+          <div className="space-y-2">
+            <div className="text-xs text-gray-400 flex items-center gap-1">
+              <Brain className="w-3 h-3 text-purple-400" />
+              Active Trades (AI Monitoring)
+            </div>
+            {openTrades.map((trade) => (
+              <div 
+                key={trade.id} 
+                className="p-3 rounded-lg bg-[#0a0a0f]/80 border border-white/5"
+                data-testid={`tradex-trade-${trade.id}`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Badge 
+                      variant="outline" 
+                      className={trade.signal === 'BUY' ? 'border-emerald-500/30 text-emerald-400' : 'border-red-500/30 text-red-400'}
+                    >
+                      {trade.signal}
+                    </Badge>
+                    <span className="text-sm font-medium">{trade.pair}</span>
+                    {trade.leverage > 1 && (
+                      <span className="text-[9px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400">{trade.leverage}x</span>
+                    )}
+                  </div>
+                  <div className={`text-sm font-bold ${(trade.profitLossPercent || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {(trade.profitLossPercent || 0) >= 0 ? '+' : ''}{(trade.profitLossPercent || 0).toFixed(2)}%
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-[10px] mb-2">
+                  <div className="text-gray-500">Entry: <span className="text-white">${trade.entryPrice.toFixed(2)}</span></div>
+                  <div className="text-gray-500">Current: <span className="text-white">${(trade.currentPrice || trade.entryPrice).toFixed(2)}</span></div>
+                  <div className="text-gray-500">Size: <span className="text-white">${trade.amount.toFixed(2)}</span></div>
+                  <div className={`${(trade.profitLoss || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    P/L: {(trade.profitLoss || 0) >= 0 ? '+' : ''}${(trade.profitLoss || 0).toFixed(2)}
+                  </div>
+                </div>
+
+                {trade.aiRecommendation && (
+                  <div className={`p-2 rounded border ${getRecommendationColor(trade.aiRecommendation)} bg-white/5 border-white/10 mb-2`}>
+                    <div className="flex items-center gap-1 text-[10px] font-medium mb-1">
+                      <Brain className="w-3 h-3" />
+                      {getRecommendationIcon(trade.aiRecommendation)}
+                      AI: {trade.aiRecommendation}
+                    </div>
+                    {trade.aiAnalysis && (
+                      <div className="text-[9px] text-gray-400">{trade.aiAnalysis}</div>
+                    )}
+                    {trade.aiStopLoss && (
+                      <div className="text-[9px] text-amber-400 mt-1">
+                        Suggested SL: ${trade.aiStopLoss.toFixed(2)}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex gap-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 h-7 text-[10px] text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
+                    onClick={() => closeTradeMutation.mutate({ 
+                      tradeId: trade.id, 
+                      exitPrice: currentPrice || trade.currentPrice || trade.entryPrice, 
+                      reason: 'USER_PROFIT' 
+                    })}
+                    disabled={closeTradeMutation.isPending}
+                    data-testid={`button-take-profit-${trade.id}`}
+                  >
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Take Profit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 h-7 text-[10px] text-red-400 border-red-500/30 hover:bg-red-500/10"
+                    onClick={() => closeTradeMutation.mutate({ 
+                      tradeId: trade.id, 
+                      exitPrice: currentPrice || trade.currentPrice || trade.entryPrice, 
+                      reason: 'USER_STOP' 
+                    })}
+                    disabled={closeTradeMutation.isPending}
+                    data-testid={`button-stop-loss-${trade.id}`}
+                  >
+                    <XCircle className="w-3 h-3 mr-1" />
+                    Stop Loss
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-4 text-gray-500 text-xs">
+            <Brain className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            No open trades
+            <div className="text-[10px] mt-1">Take a signal to start paper trading</div>
+          </div>
+        )}
+
+        {closedTrades.length > 0 && (
+          <div className="pt-2 border-t border-white/5">
+            <div className="flex items-center justify-between text-[10px] text-gray-500 mb-2">
+              <span>Recent Closed Trades</span>
+              <span className={winRate >= 50 ? 'text-emerald-400' : 'text-amber-400'}>
+                Win Rate: {winRate.toFixed(0)}%
+              </span>
+            </div>
+            <div className="space-y-1 max-h-24 overflow-y-auto">
+              {closedTrades.slice(0, 5).map(trade => (
+                <div key={trade.id} className="flex items-center justify-between text-[10px] py-1">
+                  <div className="flex items-center gap-2">
+                    <Badge 
+                      variant="outline" 
+                      className={`text-[8px] ${trade.signal === 'BUY' ? 'border-emerald-500/30 text-emerald-400' : 'border-red-500/30 text-red-400'}`}
+                    >
+                      {trade.signal}
+                    </Badge>
+                    <span className="text-gray-400">{trade.pair}</span>
+                  </div>
+                  <span className={(trade.profitLoss || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}>
+                    {(trade.profitLoss || 0) >= 0 ? '+' : ''}${(trade.profitLoss || 0).toFixed(2)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

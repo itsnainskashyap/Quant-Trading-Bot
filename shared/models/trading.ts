@@ -49,9 +49,46 @@ export const brokerConnections = pgTable("broker_connections", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// TradeX virtual broker - paper trading with real-time sync
+export const tradexBalances = pgTable("tradex_balances", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  balance: real("balance").notNull().default(10000), // Virtual balance in USDT
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const tradexTrades = pgTable("tradex_trades", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  pair: varchar("pair").notNull(),
+  signal: varchar("signal").notNull(), // BUY or SELL
+  entryPrice: real("entry_price").notNull(),
+  currentPrice: real("current_price"),
+  amount: real("amount").notNull(), // Trade size in USDT
+  leverage: integer("leverage").notNull().default(1),
+  stopLoss: real("stop_loss"),
+  takeProfit: real("take_profit"),
+  aiStopLoss: real("ai_stop_loss"), // AI-adjusted stop loss
+  aiTakeProfit: real("ai_take_profit"), // AI-adjusted take profit
+  status: varchar("status").notNull().default("OPEN"), // OPEN, CLOSED, STOPPED, PROFIT_TAKEN
+  profitLoss: real("profit_loss"),
+  profitLossPercent: real("profit_loss_percent"),
+  closeReason: varchar("close_reason"), // AI_STOP, AI_PROFIT, USER_CLOSE, MANUAL_SL, MANUAL_TP
+  aiRecommendation: text("ai_recommendation"), // Current AI suggestion
+  aiAnalysis: text("ai_analysis"), // Live AI analysis
+  createdAt: timestamp("created_at").defaultNow(),
+  closedAt: timestamp("closed_at"),
+  lastUpdated: timestamp("last_updated").defaultNow(),
+});
+
 export type Subscription = typeof subscriptions.$inferSelect;
 export type InsertSubscription = typeof subscriptions.$inferInsert;
 export type Prediction = typeof predictions.$inferSelect;
 export type InsertPrediction = typeof predictions.$inferInsert;
 export type BrokerConnection = typeof brokerConnections.$inferSelect;
 export type InsertBrokerConnection = typeof brokerConnections.$inferInsert;
+export type TradexBalance = typeof tradexBalances.$inferSelect;
+export type InsertTradexBalance = typeof tradexBalances.$inferInsert;
+export type TradexTrade = typeof tradexTrades.$inferSelect;
+export type InsertTradexTrade = typeof tradexTrades.$inferInsert;

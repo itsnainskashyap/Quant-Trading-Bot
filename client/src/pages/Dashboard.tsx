@@ -42,6 +42,7 @@ import { BrokerSettings } from "@/components/BrokerSettings";
 import { PortfolioDashboard } from "@/components/PortfolioDashboard";
 import { LiveTradeAnalyzer } from "@/components/LiveTradeAnalyzer";
 import { TradeAutomationSettings } from "@/components/TradeAutomationSettings";
+import { TradexBroker } from "@/components/TradexBroker";
 import type { TradingPair, ConsensusResult, MarketMetrics } from "@shared/schema";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 
@@ -253,6 +254,8 @@ export default function Dashboard() {
   const takeTradeMutation = useMutation({
     mutationFn: async () => {
       if (!analysis || analysis.signal === 'SKIP') return;
+      
+      // Record in predictions (for history)
       const response = await apiRequest('POST', '/api/predictions/take', {
         pair: selectedPair,
         signal: analysis.signal,
@@ -264,6 +267,22 @@ export default function Dashboard() {
         stopLoss: analysis.tradeRecommendation?.stopLoss,
         takeProfit: analysis.tradeRecommendation?.takeProfit,
       });
+      
+      // Also open TradeX virtual trade
+      try {
+        await apiRequest('POST', '/api/tradex/trade', {
+          pair: selectedPair,
+          signal: analysis.signal,
+          entryPrice: analysis.entryPrice,
+          amount: analysis.tradeRecommendation?.tradeSize || capital * 0.1,
+          leverage: 1,
+          stopLoss: analysis.tradeRecommendation?.stopLoss,
+          takeProfit: analysis.tradeRecommendation?.takeProfit,
+        });
+      } catch (e) {
+        console.log('TradeX trade not opened (may not have balance)');
+      }
+      
       return response.json();
     },
     onSuccess: () => {
@@ -272,6 +291,8 @@ export default function Dashboard() {
         description: `Your ${analysis?.signal} trade has been recorded. Check back after ${analysis?.holdTime} minutes.`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/predictions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/tradex/trades'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/tradex/balance'] });
     },
     onError: (error: Error) => {
       toast({
@@ -713,6 +734,11 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-4">
+            <TradexBroker 
+              selectedPair={selectedPair} 
+              currentPrice={data?.prices?.find((p: any) => p.pair === selectedPair)?.price || 0}
+              signal={data?.signal}
+            />
             <BrokerSettings />
             <PortfolioDashboard confidence={data?.signal?.confidence || 75} />
             <ActiveTradeMonitor selectedPair={selectedPair} currentPrice={data?.prices?.find((p: any) => p.pair === selectedPair)?.price} />

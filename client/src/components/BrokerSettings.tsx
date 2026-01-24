@@ -9,14 +9,16 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Link2, Trash2, TestTube, Power, Zap, AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
+import { Link2, Trash2, TestTube, Power, Zap, AlertTriangle, CheckCircle, Loader2, Sparkles } from "lucide-react";
+import { ExchangeLogo } from "./ExchangeLogos";
 
 interface SupportedExchange {
   id: string;
   name: string;
-  logo: string;
+  description?: string;
   hasTestnet: boolean;
   needsPassphrase: boolean;
+  isVirtual?: boolean;
 }
 
 interface BrokerConnection {
@@ -159,10 +161,10 @@ export function BrokerSettings() {
                       <SelectValue placeholder="Select exchange" />
                     </SelectTrigger>
                     <SelectContent className="bg-[#12121a] border-white/10">
-                      {supportedExchanges?.map((ex) => (
+                      {supportedExchanges?.filter(ex => !ex.isVirtual).map((ex) => (
                         <SelectItem key={ex.id} value={ex.id}>
                           <span className="flex items-center gap-2">
-                            <span>{ex.logo}</span>
+                            <ExchangeLogo exchange={ex.id} className="w-5 h-5" />
                             <span>{ex.name}</span>
                           </span>
                         </SelectItem>
@@ -284,7 +286,7 @@ export function BrokerSettings() {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">{exchangeData?.logo || '📊'}</span>
+                      <ExchangeLogo exchange={conn.exchange} className="w-6 h-6" />
                       <div>
                         <div className="text-sm font-medium">{exchangeData?.name || conn.exchange}</div>
                         <div className="text-[10px] text-gray-500">{conn.apiKeyPreview}</div>

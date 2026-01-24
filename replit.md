@@ -211,6 +211,17 @@ shared/
 - Maximum daily trades limit
 - Minimum confidence threshold
 
+### 17. TradeX Virtual Broker (Paper Trading)
+- Built-in virtual broker for risk-free paper trading
+- Manual balance management (add/remove virtual funds)
+- Real-time AI-powered trade monitoring
+- Dynamic SL/TP calculation (not fixed percentages)
+- AI suggests position adjustments ("add $100" or "take $50 profit")
+- Real-time multi-device sync (trades sync across tabs/devices every 3 seconds)
+- Live P&L tracking with visual indicators
+- AI recommendations: HOLD, TRAILING_STOP, TAKE_PARTIAL_PROFIT, CLOSE_LOSS
+- Trade history with win rate tracking
+
 ## Design System
 - **Theme**: Dark mode by default (professional trading aesthetic)
 - **Colors**: 

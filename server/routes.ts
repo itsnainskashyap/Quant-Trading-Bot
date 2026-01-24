@@ -733,6 +733,353 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
     }
   });
 
+  // ============ TradeX Virtual Broker Routes ============
+
+  // Get TradeX balance
+  app.get("/api/tradex/balance", async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+
+      const userId = user.claims?.sub;
+      if (!userId) {
+        res.status(401).json({ error: "Invalid session" });
+        return;
+      }
+
+      const { getTradexBalance } = await import('./brokerService');
+      const balance = await getTradexBalance(userId);
+      res.json({ balance: balance?.balance || 0 });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Set/Update TradeX balance
+  app.post("/api/tradex/balance", async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+
+      const userId = user.claims?.sub;
+      if (!userId) {
+        res.status(401).json({ error: "Invalid session" });
+        return;
+      }
+
+      const { amount } = req.body;
+      if (typeof amount !== 'number' || amount < 0) {
+        res.status(400).json({ error: "Invalid amount" });
+        return;
+      }
+
+      const { createOrUpdateTradexBalance } = await import('./brokerService');
+      const balance = await createOrUpdateTradexBalance(userId, amount);
+      res.json({ success: true, balance: balance.balance });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Add to TradeX balance
+  app.post("/api/tradex/balance/add", async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+
+      const userId = user.claims?.sub;
+      if (!userId) {
+        res.status(401).json({ error: "Invalid session" });
+        return;
+      }
+
+      const { amount } = req.body;
+      if (typeof amount !== 'number' || amount <= 0) {
+        res.status(400).json({ error: "Invalid amount" });
+        return;
+      }
+
+      const { addToTradexBalance } = await import('./brokerService');
+      const balance = await addToTradexBalance(userId, amount);
+      res.json({ success: true, balance: balance.balance });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get open TradeX trades
+  app.get("/api/tradex/trades", async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+
+      const userId = user.claims?.sub;
+      if (!userId) {
+        res.status(401).json({ error: "Invalid session" });
+        return;
+      }
+
+      const { getTradexOpenTrades } = await import('./brokerService');
+      const trades = await getTradexOpenTrades(userId);
+      res.json({ trades });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get TradeX trade history
+  app.get("/api/tradex/history", async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+
+      const userId = user.claims?.sub;
+      if (!userId) {
+        res.status(401).json({ error: "Invalid session" });
+        return;
+      }
+
+      const { getTradexTradeHistory } = await import('./brokerService');
+      const trades = await getTradexTradeHistory(userId, 50);
+      res.json({ trades });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Open new TradeX trade
+  app.post("/api/tradex/trade", async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+
+      const userId = user.claims?.sub;
+      if (!userId) {
+        res.status(401).json({ error: "Invalid session" });
+        return;
+      }
+
+      const { pair, signal, entryPrice, amount, leverage, stopLoss, takeProfit } = req.body;
+
+      if (!pair || !signal || !entryPrice || !amount) {
+        res.status(400).json({ error: "Missing required fields" });
+        return;
+      }
+
+      const { openTradexTrade } = await import('./brokerService');
+      const result = await openTradexTrade(
+        userId, pair, signal, entryPrice, amount, leverage || 1, stopLoss, takeProfit
+      );
+
+      if (result.success) {
+        res.json({ success: true, trade: result.trade });
+      } else {
+        res.status(400).json({ success: false, error: result.error });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Close TradeX trade
+  app.post("/api/tradex/trade/:id/close", async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+
+      const userId = user.claims?.sub;
+      if (!userId) {
+        res.status(401).json({ error: "Invalid session" });
+        return;
+      }
+
+      const { exitPrice, reason } = req.body;
+
+      if (!exitPrice) {
+        res.status(400).json({ error: "Exit price required" });
+        return;
+      }
+
+      const { closeTradexTrade } = await import('./brokerService');
+      const result = await closeTradexTrade(req.params.id, userId, exitPrice, reason || 'USER_CLOSE');
+
+      if (result.success) {
+        res.json({ success: true, trade: result.trade });
+      } else {
+        res.status(400).json({ success: false, error: result.error });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update TradeX trade with AI analysis
+  app.patch("/api/tradex/trade/:id", async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+
+      const userId = user.claims?.sub;
+      if (!userId) {
+        res.status(401).json({ error: "Invalid session" });
+        return;
+      }
+
+      // Verify ownership
+      const { getTradexTradeById, updateTradexTrade } = await import('./brokerService');
+      const trade = await getTradexTradeById(req.params.id, userId);
+
+      if (!trade) {
+        res.status(404).json({ error: "Trade not found" });
+        return;
+      }
+
+      const updated = await updateTradexTrade(req.params.id, req.body);
+      res.json({ success: true, trade: updated });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // AI-powered live trade analysis
+  app.post("/api/tradex/analyze/:id", async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+
+      const userId = user.claims?.sub;
+      if (!userId) {
+        res.status(401).json({ error: "Invalid session" });
+        return;
+      }
+
+      const { getTradexTradeById, updateTradexTrade } = await import('./brokerService');
+      const trade = await getTradexTradeById(req.params.id, userId);
+
+      if (!trade) {
+        res.status(404).json({ error: "Trade not found" });
+        return;
+      }
+
+      const { currentPrice } = req.body;
+      if (!currentPrice) {
+        res.status(400).json({ error: "Current price required" });
+        return;
+      }
+
+      // Calculate current P/L
+      const priceDiff = trade.signal === 'BUY' 
+        ? currentPrice - trade.entryPrice 
+        : trade.entryPrice - currentPrice;
+      const percentChange = (priceDiff / trade.entryPrice) * 100 * trade.leverage;
+      const profitLoss = trade.amount * (percentChange / 100);
+
+      // AI-based dynamic SL/TP analysis
+      const timeInTrade = (Date.now() - new Date(trade.createdAt!).getTime()) / 1000 / 60; // minutes
+      
+      let aiRecommendation = 'HOLD';
+      let aiAnalysis = '';
+      let aiStopLoss = trade.stopLoss;
+      let aiTakeProfit = trade.takeProfit;
+
+      // Dynamic analysis based on current state
+      if (percentChange > 2) {
+        // In profit - consider trailing stop
+        aiStopLoss = trade.signal === 'BUY' 
+          ? currentPrice * 0.99 // Trail 1% below for BUY
+          : currentPrice * 1.01; // Trail 1% above for SELL
+        
+        if (percentChange > 5) {
+          aiRecommendation = 'TAKE_PARTIAL_PROFIT';
+          aiAnalysis = `Strong profit of ${percentChange.toFixed(2)}%. Consider taking 50% profit and letting rest run with trailing stop.`;
+        } else {
+          aiRecommendation = 'TRAILING_STOP';
+          aiAnalysis = `Good profit. Move stop-loss to ${aiStopLoss.toFixed(2)} to lock in gains.`;
+        }
+      } else if (percentChange > 1) {
+        aiRecommendation = 'HOLD';
+        aiAnalysis = `Small profit. Hold position, consider trailing stop if profit increases.`;
+      } else if (percentChange < -1.5) {
+        // In loss
+        if (percentChange < -3) {
+          aiRecommendation = 'CLOSE_LOSS';
+          aiAnalysis = `Loss exceeds -3%. Consider closing to protect capital.`;
+        } else {
+          aiRecommendation = 'HOLD_CAUTION';
+          aiAnalysis = `In drawdown. Monitor closely. Original thesis may still be valid.`;
+        }
+      } else {
+        // Near entry
+        if (timeInTrade > 10) {
+          aiRecommendation = 'REVIEW';
+          aiAnalysis = `Trade is flat after ${timeInTrade.toFixed(0)} min. Consider reducing position or closing.`;
+        } else {
+          aiRecommendation = 'HOLD';
+          aiAnalysis = `Trade is developing. Give it time to play out.`;
+        }
+      }
+
+      // Add position adjustment suggestions
+      if (percentChange > 3 && trade.amount < 500) {
+        aiAnalysis += ` Add $${Math.min(100, trade.amount * 0.5).toFixed(0)} to winning position.`;
+      }
+
+      // Update trade with AI analysis
+      const updated = await updateTradexTrade(trade.id, {
+        currentPrice,
+        profitLoss,
+        profitLossPercent: percentChange,
+        aiStopLoss: aiStopLoss ?? undefined,
+        aiTakeProfit: aiTakeProfit ?? undefined,
+        aiRecommendation,
+        aiAnalysis,
+      });
+
+      res.json({
+        success: true,
+        trade: updated,
+        analysis: {
+          recommendation: aiRecommendation,
+          analysis: aiAnalysis,
+          suggestedStopLoss: aiStopLoss,
+          suggestedTakeProfit: aiTakeProfit,
+          currentPnL: profitLoss,
+          currentPnLPercent: percentChange,
+          timeInTrade,
+        },
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   return httpServer;
 }
 

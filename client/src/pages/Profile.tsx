@@ -14,9 +14,11 @@ import {
   AlertTriangle,
   Clock,
   CheckCircle2,
-  XCircle
+  XCircle,
+  Link2
 } from "lucide-react";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
+import { ExchangeLogo } from "@/components/ExchangeLogos";
 
 interface PredictionData {
   predictions: Array<{
@@ -272,6 +274,47 @@ export default function Profile() {
                 ))}
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-[#12121a] border-white/5">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Link2 className="w-4 h-4 text-blue-400" />
+              <h2 className="font-semibold">Supported Exchanges</h2>
+            </div>
+            <p className="text-xs text-gray-500 mb-4">
+              Connect any of these exchanges to enable auto-trading with TradeX AI signals.
+            </p>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { id: 'tradex', name: 'TradeX Broker' },
+                { id: 'binance', name: 'Binance' },
+                { id: 'bybit', name: 'Bybit' },
+                { id: 'okx', name: 'OKX' },
+                { id: 'kucoin', name: 'KuCoin' },
+                { id: 'bitget', name: 'Bitget' },
+                { id: 'gateio', name: 'Gate.io' },
+                { id: 'kraken', name: 'Kraken' },
+                { id: 'mexc', name: 'MEXC' },
+              ].map(exchange => (
+                <div 
+                  key={exchange.id}
+                  className="flex flex-col items-center p-3 rounded-lg bg-white/[0.02] border border-white/5"
+                >
+                  <ExchangeLogo exchange={exchange.id} className="w-8 h-8 mb-1" />
+                  <span className="text-[10px] text-gray-400">{exchange.name}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4">
+              <Link href="/">
+                <Button size="sm" className="w-full bg-gradient-to-r from-blue-500 to-purple-600">
+                  <Link2 className="w-3 h-3 mr-2" />
+                  Connect Exchange in Dashboard
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
 

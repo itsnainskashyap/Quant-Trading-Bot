@@ -6,10 +6,12 @@ import {
   Shield,
   Zap,
   BarChart2,
-  AlertTriangle
+  AlertTriangle,
+  Link2
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
+import { ExchangeLogo } from "@/components/ExchangeLogos";
 
 function AnimatedPrice({ symbol, basePrice }: { symbol: string; basePrice: number }) {
   const [price, setPrice] = useState(basePrice);
@@ -68,6 +70,7 @@ export function Landing() {
           <div className="hidden md:flex items-center gap-8">
             <a href="#how-it-works" className="text-sm text-gray-400 hover:text-white transition-colors">How it Works</a>
             <a href="#features" className="text-sm text-gray-400 hover:text-white transition-colors">Features</a>
+            <a href="#brokers" className="text-sm text-gray-400 hover:text-white transition-colors">Supported Brokers</a>
           </div>
           <Button 
             asChild 
@@ -274,6 +277,48 @@ export function Landing() {
                 See live charts with entry points, stop-loss, and take-profit levels marked clearly.
               </p>
             </Card>
+          </div>
+        </div>
+      </section>
+
+      <section id="brokers" className="py-24 px-6 relative z-10 bg-[#0a0a0f]/50">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 mb-6">
+              <Link2 className="w-4 h-4 text-blue-400" />
+              <span className="text-sm text-blue-400 font-medium">Multi-Exchange Support</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Connect Your Favorite Exchange</h2>
+            <p className="text-gray-400 max-w-2xl mx-auto">
+              TradeX AI supports 8 major cryptocurrency exchanges plus our virtual TradeX Broker for paper trading.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-3 md:grid-cols-5 gap-4 mb-8">
+            {[
+              { id: 'tradex', name: 'TradeX Broker', desc: 'AI Paper Trading' },
+              { id: 'binance', name: 'Binance', desc: 'Largest Exchange' },
+              { id: 'bybit', name: 'Bybit', desc: 'Derivatives Leader' },
+              { id: 'okx', name: 'OKX', desc: 'Advanced Trading' },
+              { id: 'kucoin', name: 'KuCoin', desc: '700+ Coins' },
+              { id: 'bitget', name: 'Bitget', desc: 'Top Derivatives' },
+              { id: 'gateio', name: 'Gate.io', desc: 'Secure & Reliable' },
+              { id: 'kraken', name: 'Kraken', desc: 'US Trusted' },
+              { id: 'mexc', name: 'MEXC', desc: 'Global Exchange' },
+            ].map(exchange => (
+              <div 
+                key={exchange.id}
+                className="flex flex-col items-center p-4 rounded-xl bg-[#12121a] border border-white/5 hover:border-blue-500/30 transition-colors"
+              >
+                <ExchangeLogo exchange={exchange.id} className="w-10 h-10 mb-2" />
+                <span className="text-sm font-medium text-white">{exchange.name}</span>
+                <span className="text-[10px] text-gray-500">{exchange.desc}</span>
+              </div>
+            ))}
+          </div>
+          
+          <div className="text-center text-sm text-gray-500">
+            Connect exchanges to enable auto-trading with AI signals. Use TradeX Broker for risk-free paper trading.
           </div>
         </div>
       </section>
