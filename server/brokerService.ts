@@ -707,3 +707,57 @@ export async function getTradexTradeById(tradeId: string, userId: string): Promi
   );
   return trade || null;
 }
+
+export async function getAllOpenTradexTrades(): Promise<TradexTrade[]> {
+  return db.select()
+    .from(tradexTrades)
+    .where(eq(tradexTrades.status, 'OPEN'))
+    .orderBy(desc(tradexTrades.createdAt));
+}
+
+export async function closeTradexTradeBySystem(
+  tradeId: string,
+  exitPrice: number,
+  closeReason: string
+): Promise<{ success: boolean; trade?: TradexTrade; error?: string }> {
+  try {
+    const [trade] = await db.select().from(tradexTrades).where(eq(tradexTrades.id, tradeId));
+
+    if (!trade) {
+      return { success: false, error: 'Trade not found' };
+    }
+
+    if (trade.status !== 'OPEN') {
+      return { success: false, error: 'Trade is already closed' };
+    }
+
+    const priceDiff = trade.signal === 'BUY' 
+      ? exitPrice - trade.entryPrice 
+      : trade.entryPrice - exitPrice;
+    const percentChange = (priceDiff / trade.entryPrice) * 100 * trade.leverage;
+    const profitLoss = trade.amount * (percentChange / 100);
+    
+    const balance = await getTradexBalance(trade.userId);
+    const returnAmount = trade.amount + profitLoss;
+    await createOrUpdateTradexBalance(trade.userId, (balance?.balance || 0) + Math.max(0, returnAmount));
+
+    const [closedTrade] = await db.update(tradexTrades)
+      .set({
+        status: profitLoss >= 0 ? 'PROFIT_TAKEN' : 'STOPPED',
+        currentPrice: exitPrice,
+        profitLoss,
+        profitLossPercent: percentChange,
+        closeReason,
+        aiRecommendation: 'AUTO_CLOSE',
+        closedAt: new Date(),
+        lastUpdated: new Date(),
+      })
+      .where(eq(tradexTrades.id, tradeId))
+      .returning();
+
+    console.log(`[TradeX] Auto-closed trade ${tradeId}: P/L $${profitLoss.toFixed(2)} (${percentChange.toFixed(2)}%)`);
+    return { success: true, trade: closedTrade };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}

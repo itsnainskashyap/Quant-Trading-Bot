@@ -5,6 +5,7 @@ import OpenAI from "openai";
 import { tradingPairs, type TradingPair, type TradingSignal } from "@shared/schema";
 import { getMultiAIConsensus, generateConsensusExplanation } from "./consensus";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
+import { startTradeMonitor } from "./tradeAI";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -18,6 +19,8 @@ export async function registerRoutes(
   
   await setupAuth(app);
   registerAuthRoutes(app);
+  
+  startTradeMonitor();
   
   const handleDashboard = async (pair: TradingPair, res: any) => {
     try {
