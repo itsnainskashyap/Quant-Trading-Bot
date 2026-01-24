@@ -353,16 +353,19 @@ export default function Dashboard() {
   if (isLoading || authLoading) {
     return (
       <div className="min-h-screen bg-[#0a0a0f]">
-        <div className="max-w-7xl mx-auto p-6">
-          <Skeleton className="h-16 mb-6 bg-white/5" />
-          <div className="grid lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-              <Skeleton className="h-24 bg-white/5" />
-              <Skeleton className="h-80 bg-white/5" />
+        <div className="w-full px-4 lg:px-8 py-6">
+          <Skeleton className="h-16 mb-6 bg-white/5 rounded-xl" />
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-4">
+            {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="h-20 bg-white/5 rounded-xl" />)}
+          </div>
+          <Skeleton className="h-16 mb-4 bg-white/5 rounded-xl" />
+          <div className="grid xl:grid-cols-5 gap-4">
+            <div className="xl:col-span-4 space-y-4">
+              <Skeleton className="h-[550px] bg-white/5 rounded-xl" />
             </div>
-            <div className="space-y-6">
-              <Skeleton className="h-48 bg-white/5" />
-              <Skeleton className="h-32 bg-white/5" />
+            <div className="space-y-4">
+              <Skeleton className="h-48 bg-white/5 rounded-xl" />
+              <Skeleton className="h-32 bg-white/5 rounded-xl" />
             </div>
           </div>
         </div>
@@ -373,30 +376,54 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white font-sans" data-testid="dashboard">
       <header className="border-b border-white/5 bg-[#0a0a0f]/90 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="w-full px-4 lg:px-8 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-4">
             <img src={logoImage} alt="TradeX AI" className="h-10 w-auto" />
+            <div className="hidden lg:flex items-center gap-1 text-xs text-gray-500">
+              <Activity className="w-3 h-3 text-emerald-400" />
+              <span>Multi-AI Consensus Trading</span>
+            </div>
           </div>
           
           <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#12121a] border border-white/5">
-              <Wallet className="w-4 h-4 text-emerald-400" />
-              <span className="text-xs text-gray-400">Capital:</span>
-              <span className="text-sm font-medium text-white">${capital.toLocaleString()}</span>
+            <div className="hidden md:flex items-center gap-4 px-4 py-2 rounded-xl bg-gradient-to-r from-[#12121a] to-[#0d0d14] border border-white/5">
+              <div className="flex items-center gap-2">
+                <Wallet className="w-4 h-4 text-cyan-400" />
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-gray-500 uppercase">TradeX Balance</span>
+                  <span className="text-sm font-semibold text-white font-mono">${capital.toLocaleString()}</span>
+                </div>
+              </div>
+              <div className="w-px h-8 bg-white/10" />
+              <div className="flex items-center gap-2">
+                <Brain className="w-4 h-4 text-purple-400" />
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-gray-500 uppercase">AI Analyses</span>
+                  <span className="text-sm font-semibold text-white font-mono">
+                    {isPro ? '∞' : `${dailyAnalysesRemaining}/${dailyLimit}`}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-              <div className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span className="text-xs text-emerald-400 font-medium">FREE</span>
-            </div>
+            {isPro ? (
+              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-black font-semibold">
+                <Crown className="w-3 h-3 mr-1" />
+                PRO
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-gray-400 border-gray-700">
+                FREE
+              </Badge>
+            )}
             
-            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white" asChild>
+            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white" asChild>
               <a href="/profile" data-testid="link-profile">
                 <User className="w-4 h-4" />
               </a>
             </Button>
             
-            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white" asChild>
+            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white" asChild>
               <a href="/api/logout" data-testid="button-logout">
                 <LogOut className="w-4 h-4" />
               </a>
@@ -405,122 +432,136 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-        {/* Subscription Status Bar */}
-        <div className="mb-4 flex items-center justify-between p-2 rounded-lg bg-gradient-to-r from-[#0d0d14] to-[#12121a] border border-[#1a1a2e]">
-          <div className="flex items-center gap-3">
-            {isPro ? (
-              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-black font-semibold text-xs">
-                <Crown className="w-3 h-3 mr-1" />
-                PRO
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="text-gray-400 border-gray-700 text-xs">
-                FREE
-              </Badge>
-            )}
-            <div className="flex items-center gap-2 text-xs">
-              <Brain className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="text-gray-400">AI Analyses:</span>
-              {isPro ? (
-                <span className="text-cyan-400 font-mono">Unlimited</span>
-              ) : (
-                <span className="font-mono">
-                  <span className={dailyAnalysesRemaining > 3 ? 'text-emerald-400' : dailyAnalysesRemaining > 0 ? 'text-amber-400' : 'text-red-400'}>
-                    {dailyAnalysesRemaining}
-                  </span>
-                  <span className="text-gray-500">/{dailyLimit}</span>
-                </span>
-              )}
+      <main className="w-full px-4 lg:px-8 py-4">
+        {/* Quick Stats Bar */}
+        <div className="mb-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-[#0d0d14] to-[#12121a] border border-[#1a1a2e]">
+            <div className="flex items-center gap-2 mb-1">
+              <Target className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="text-[10px] text-gray-500 uppercase">Selected Pair</span>
             </div>
+            <div className="font-semibold text-white">{selectedPair}</div>
           </div>
-        </div>
-
-        <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="p-3 rounded-lg bg-[#0d0d14] border border-[#1a1a2e]">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500 uppercase tracking-wider">TradeX Balance</span>
-                <Badge variant="outline" className="text-[9px] text-cyan-400 border-cyan-500/30 py-0 px-1.5">Virtual</Badge>
-              </div>
-              <Wallet className="w-4 h-4 text-cyan-500" />
+          
+          <div className="p-3 rounded-xl bg-gradient-to-br from-[#0d0d14] to-[#12121a] border border-[#1a1a2e]">
+            <div className="flex items-center gap-2 mb-1">
+              <Timer className="w-3.5 h-3.5 text-purple-400" />
+              <span className="text-[10px] text-gray-500 uppercase">Duration</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500 text-lg">$</span>
-              <span className="text-xl font-semibold text-white font-mono" data-testid="text-capital">
-                {capital.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                className="ml-auto h-7 px-2 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10"
-                onClick={() => {
-                  // Scroll to TradeX broker section
-                  const tradexSection = document.querySelector('[data-testid="tradex-broker-section"]');
-                  if (tradexSection) {
-                    tradexSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }
-                }}
-                data-testid="button-add-balance"
-              >
-                <Plus className="w-3.5 h-3.5 mr-1" />
-                Add
-              </Button>
+            <div className="font-semibold text-white">{tradeMode} Minutes</div>
+          </div>
+          
+          <div className="p-3 rounded-xl bg-gradient-to-br from-[#0d0d14] to-[#12121a] border border-[#1a1a2e]">
+            <div className="flex items-center gap-2 mb-1">
+              <Shield className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-[10px] text-gray-500 uppercase">Risk Level</span>
             </div>
-            <div className="flex items-center gap-4 mt-2 text-[11px] text-gray-500">
-              <span>Risk: <span className="text-amber-400">{tradeMode === 1 ? '1%' : tradeMode === 3 ? '1.5%' : tradeMode === 5 ? '2%' : '2.5%'}</span></span>
-              <span>Position: <span className="text-cyan-400">{analysis?.positionPercent || '5-15'}%</span> <span className="text-gray-600">(AI-based)</span></span>
+            <div className={`font-semibold ${
+              tradeMode === 1 ? 'text-emerald-400' : 
+              tradeMode === 3 ? 'text-blue-400' :
+              tradeMode === 5 ? 'text-amber-400' : 'text-red-400'
+            }`}>
+              {tradeMode === 1 ? 'Low' : tradeMode === 3 ? 'Low-Med' : tradeMode === 5 ? 'Medium' : 'High'}
             </div>
           </div>
           
-          <div className="p-3 rounded-lg bg-[#0d0d14] border border-[#1a1a2e]">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-gray-500 uppercase tracking-wider">Trade Duration</span>
-              <Timer className="w-4 h-4 text-gray-600" />
+          <div className="p-3 rounded-xl bg-gradient-to-br from-[#0d0d14] to-[#12121a] border border-[#1a1a2e]">
+            <div className="flex items-center gap-2 mb-1">
+              <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-[10px] text-gray-500 uppercase">Position Size</span>
             </div>
-            <div className="grid grid-cols-4 gap-2">
-              {TRADE_MODES.map((mode) => (
-                <button
-                  key={mode.value}
-                  onClick={() => {
-                    setTradeMode(mode.value);
-                    setAnalysis(null);
-                  }}
-                  className={`py-2.5 px-3 rounded-md text-center transition-all ${
-                    tradeMode === mode.value
-                      ? 'bg-cyan-500/20 border border-cyan-500/50 text-cyan-400'
-                      : 'bg-[#12121a] border border-[#1a1a2e] text-gray-400 hover:border-gray-600'
-                  }`}
-                  data-testid={`button-mode-${mode.value}min`}
-                >
-                  <div className="font-semibold text-sm">{mode.label}</div>
-                  <div className={`text-[10px] mt-0.5 ${
-                    mode.risk === 'High' ? 'text-red-400' :
-                    mode.risk === 'Medium' ? 'text-amber-400' :
-                    mode.risk === 'Low' ? 'text-emerald-400' : 'text-cyan-400'
-                  }`}>{mode.risk}</div>
-                </button>
-              ))}
+            <div className="font-semibold text-white">{analysis?.positionPercent || '5-15'}%</div>
+          </div>
+          
+          <div className="hidden lg:block p-3 rounded-xl bg-gradient-to-br from-[#0d0d14] to-[#12121a] border border-[#1a1a2e]">
+            <div className="flex items-center gap-2 mb-1">
+              <Zap className="w-3.5 h-3.5 text-yellow-400" />
+              <span className="text-[10px] text-gray-500 uppercase">Market Status</span>
             </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="font-semibold text-emerald-400">Live</span>
+            </div>
+          </div>
+          
+          <div className="hidden lg:block p-3 rounded-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20">
+            <div className="flex items-center gap-2 mb-1">
+              <Brain className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="text-[10px] text-cyan-400 uppercase">AI Ready</span>
+            </div>
+            <div className="font-semibold text-white">3 Models Active</div>
           </div>
         </div>
 
-        <div className="mb-4">
+        {/* Trade Duration Selection */}
+        <div className="mb-4 p-3 rounded-xl bg-[#0d0d14] border border-[#1a1a2e]">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-medium text-gray-300">Crypto Futures</h2>
+            <div className="flex items-center gap-2">
+              <Timer className="w-4 h-4 text-purple-400" />
+              <span className="text-sm font-medium">Select Trade Duration</span>
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-cyan-400 hover:text-cyan-300 text-xs"
+              onClick={() => {
+                const tradexSection = document.querySelector('[data-testid="tradex-broker-section"]');
+                if (tradexSection) {
+                  tradexSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }}
+              data-testid="button-add-balance"
+            >
+              <Plus className="w-3.5 h-3.5 mr-1" />
+              Add Balance
+            </Button>
+          </div>
+          <div className="grid grid-cols-4 gap-3">
+            {TRADE_MODES.map((mode) => (
+              <button
+                key={mode.value}
+                onClick={() => {
+                  setTradeMode(mode.value);
+                  setAnalysis(null);
+                }}
+                className={`py-3 px-4 rounded-xl text-center transition-all ${
+                  tradeMode === mode.value
+                    ? 'bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/50 text-cyan-400 shadow-lg shadow-cyan-500/10'
+                    : 'bg-[#12121a] border border-[#1a1a2e] text-gray-400 hover:border-gray-600 hover:bg-[#15151f]'
+                }`}
+                data-testid={`button-mode-${mode.value}min`}
+              >
+                <div className="font-bold text-lg">{mode.label}</div>
+                <div className={`text-xs mt-1 ${
+                  mode.risk === 'High' ? 'text-red-400' :
+                  mode.risk === 'Medium' ? 'text-amber-400' :
+                  mode.risk === 'Low' ? 'text-emerald-400' : 'text-cyan-400'
+                }`}>{mode.risk} Risk</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mb-4 p-4 rounded-xl bg-[#0d0d14] border border-[#1a1a2e]">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Activity className="w-4 h-4 text-cyan-400" />
+              <h2 className="text-sm font-medium text-white">Select Trading Pair</h2>
+              <Badge variant="outline" className="text-[10px] text-gray-500 border-gray-700">15 Pairs</Badge>
+            </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => refetch()}
               disabled={isRefetching}
-              className="text-gray-400 hover:text-white text-xs"
+              className="text-cyan-400 hover:text-cyan-300 text-xs"
             >
               <RefreshCw className={`w-3 h-3 mr-1 ${isRefetching ? 'animate-spin' : ''}`} />
-              Refresh
+              Refresh Prices
             </Button>
           </div>
           
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10 gap-2">
             {displayedPairs?.map((price) => {
               const symbol = price.pair.split('-')[0];
               return (
@@ -571,19 +612,19 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="grid lg:grid-cols-4 gap-4">
-          <div className="lg:col-span-3 space-y-4">
+        <div className="grid xl:grid-cols-5 gap-4">
+          <div className="xl:col-span-4 space-y-4">
             <Card className="bg-[#0d0d14] border-[#1a1a2e] overflow-hidden">
               <CardContent className="p-0">
-                <div className="px-4 py-3 border-b border-[#1a1a2e] flex items-center justify-between">
+                <div className="px-4 py-3 border-b border-[#1a1a2e] flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-3">
                     <CryptoIcon symbol={selectedPair.split('-')[0]} />
                     <div>
-                      <div className="font-semibold text-sm">{selectedPair}</div>
-                      <div className="text-[10px] text-gray-500 uppercase tracking-wider">Perpetual</div>
+                      <div className="font-semibold text-lg">{selectedPair}</div>
+                      <div className="text-[10px] text-gray-500 uppercase tracking-wider">Perpetual Futures</div>
                     </div>
                     {analysis && analysis.signal !== 'SKIP' && (
-                      <div className={`ml-2 px-2.5 py-1 rounded text-xs font-semibold ${
+                      <div className={`ml-2 px-3 py-1.5 rounded-lg text-sm font-semibold ${
                         analysis.signal === 'BUY' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/10 text-red-400 border border-red-500/30'
                       }`}>
                         {analysis.signal} @ ${analysis.entryPrice.toLocaleString()}
@@ -591,14 +632,14 @@ export default function Dashboard() {
                     )}
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-[#12121a] border border-[#1a1a2e]">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-[10px] text-gray-400 uppercase">Live</span>
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#12121a] border border-[#1a1a2e]">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-xs text-gray-400 uppercase">Live Data</span>
                     </div>
                     <CandleTimer />
                   </div>
                 </div>
-                <div className="h-[300px] md:h-[500px]">
+                <div className="h-[350px] md:h-[550px]">
                   <TradingViewChart 
                     pair={selectedPair} 
                     entryPrice={analysis?.entryPrice}
@@ -816,7 +857,20 @@ export default function Dashboard() {
             )}
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-4 xl:col-span-1">
+            {/* Trade History Card */}
+            <Card className="bg-[#0d0d14] border-[#1a1a2e]">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <History className="w-4 h-4 text-cyan-400" />
+                    <h3 className="text-sm font-medium text-white">Your Trades</h3>
+                  </div>
+                </div>
+                <TradeHistory currentPrices={new Map(data?.prices?.map((p: any) => [p.pair, p.price]) || [])} />
+              </CardContent>
+            </Card>
+
             <TradexBroker 
               selectedPair={selectedPair} 
               currentPrice={data?.prices?.find((p: any) => p.pair === selectedPair)?.price || 0}
@@ -826,35 +880,29 @@ export default function Dashboard() {
             <PortfolioDashboard confidence={data?.signal?.confidence || 75} />
             <ActiveTradeMonitor selectedPair={selectedPair} currentPrice={data?.prices?.find((p: any) => p.pair === selectedPair)?.price} />
             <TradeAutomationSettings />
-            
-            <Card className="bg-[#12121a] border-white/5">
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-medium text-gray-300">Your Trades</h3>
-                  <History className="w-4 h-4 text-gray-500" />
-                </div>
-                <TradeHistory currentPrices={new Map(data?.prices?.map((p: any) => [p.pair, p.price]) || [])} />
-              </CardContent>
-            </Card>
 
-            <Card className="bg-[#12121a] border-white/5">
-              <CardContent className="p-3">
-                <h3 className="text-sm font-medium text-gray-300 mb-2">How It Works</h3>
-                <ol className="space-y-1.5 text-[11px] text-gray-400">
-                  <li className="flex gap-2">
-                    <span className="w-4 h-4 rounded-full bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-[10px] font-medium">1</span>
+            {/* How It Works Card */}
+            <Card className="bg-gradient-to-br from-[#0d0d14] to-[#12121a] border-[#1a1a2e]">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="w-4 h-4 text-cyan-400" />
+                  <h3 className="text-sm font-medium text-white">How It Works</h3>
+                </div>
+                <ol className="space-y-2 text-xs text-gray-400">
+                  <li className="flex gap-3 items-center">
+                    <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-[10px] font-bold">1</span>
                     <span>Set your capital above</span>
                   </li>
-                  <li className="flex gap-2">
-                    <span className="w-4 h-4 rounded-full bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-[10px] font-medium">2</span>
+                  <li className="flex gap-3 items-center">
+                    <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-[10px] font-bold">2</span>
                     <span>Select any crypto pair</span>
                   </li>
-                  <li className="flex gap-2">
-                    <span className="w-4 h-4 rounded-full bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-[10px] font-medium">3</span>
-                    <span>Click "Analyze Now"</span>
+                  <li className="flex gap-3 items-center">
+                    <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-[10px] font-bold">3</span>
+                    <span>Click "Analyze"</span>
                   </li>
-                  <li className="flex gap-2">
-                    <span className="w-4 h-4 rounded-full bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-[10px] font-medium">4</span>
+                  <li className="flex gap-3 items-center">
+                    <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-[10px] font-bold">4</span>
                     <span>Follow exact SL/TP levels</span>
                   </li>
                 </ol>
