@@ -215,80 +215,113 @@ export default function Profile() {
           </Card>
         )}
 
-        <Card className="bg-[#12121a] border-white/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold">Subscription</h2>
-              <Badge 
-                variant="outline" 
-                className={isPro 
-                  ? "bg-amber-500/10 text-amber-400 border-amber-500/30" 
-                  : "bg-white/5 text-gray-400 border-white/10"
-                }
-              >
-                {isPro ? 'Pro Plan' : 'Free Plan'}
-              </Badge>
+        {/* Pro Subscription Card */}
+        {isPro ? (
+          <Card className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/20 overflow-hidden">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
+                  <Crown className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-lg text-amber-400">Pro Member</h2>
+                  <p className="text-sm text-gray-400">Unlimited access activated</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span className="text-sm text-gray-300">Unlimited Analyses</span>
+                </div>
+                <div className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span className="text-sm text-gray-300">Auto-Trade</span>
+                </div>
+                <div className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span className="text-sm text-gray-300">Priority Support</span>
+                </div>
+                <div className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span className="text-sm text-gray-300">All Features</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="bg-gradient-to-br from-[#12121a] via-[#0d0d14] to-[#0a0a0f] border-white/10 overflow-hidden relative">
+            <div className="absolute top-0 right-0 bg-gradient-to-l from-red-500 to-red-600 text-white text-xs font-bold px-4 py-1 rounded-bl-lg">
+              95% OFF
             </div>
-            
-            {isPro ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
-                  <Crown className="w-8 h-8 text-amber-400" />
-                  <div>
-                    <p className="font-medium text-amber-400">Pro Member</p>
-                    <p className="text-xs text-gray-500">Unlimited AI analyses</p>
-                  </div>
+            <CardContent className="p-5">
+              <div className="text-center mb-5">
+                <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-xl shadow-amber-500/30">
+                  <Crown className="w-8 h-8 text-white" />
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="flex items-center gap-2 text-gray-400">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                    <span>Unlimited Analyses</span>
+                <h2 className="text-2xl font-bold text-white mb-1">TradeX Pro</h2>
+                <p className="text-gray-400 text-sm">Unlock unlimited AI trading power</p>
+              </div>
+              
+              <div className="flex items-center justify-center gap-3 mb-5">
+                <div className="text-center">
+                  <span className="text-3xl text-gray-500 line-through font-bold">$199</span>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">10</span>
+                    <span className="text-xl font-bold text-amber-400">USDT</span>
                   </div>
-                  <div className="flex items-center gap-2 text-gray-400">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                    <span>Auto-Trade</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-400">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                    <span>Priority Support</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-400">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                    <span>All Features</span>
-                  </div>
+                  <span className="text-xs text-emerald-400 font-medium">One-time payment</span>
                 </div>
               </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/5">
-                  <div className="flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-gray-500" />
-                    <span className="text-sm text-gray-400">Daily AI Analyses</span>
-                  </div>
-                  <span className="text-sm font-mono">
-                    <span className={subscription?.remaining && subscription.remaining > 3 ? 'text-emerald-400' : 'text-amber-400'}>
-                      {subscription?.remaining ?? 10}
-                    </span>
-                    <span className="text-gray-600">/{subscription?.dailyLimit ?? 10}</span>
+              
+              <div className="space-y-2 mb-5">
+                <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.03] border border-white/5">
+                  <Infinity className="w-5 h-5 text-cyan-400" />
+                  <span className="text-sm text-gray-300">Unlimited AI Analyses</span>
+                </div>
+                <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.03] border border-white/5">
+                  <Zap className="w-5 h-5 text-amber-400" />
+                  <span className="text-sm text-gray-300">Auto-Trade with AI</span>
+                </div>
+                <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.03] border border-white/5">
+                  <Target className="w-5 h-5 text-emerald-400" />
+                  <span className="text-sm text-gray-300">Multi-AI Consensus Signals</span>
+                </div>
+                <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.03] border border-white/5">
+                  <Link2 className="w-5 h-5 text-purple-400" />
+                  <span className="text-sm text-gray-300">8+ Exchange Integration</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/5 mb-4">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-amber-400" />
+                  <span className="text-sm text-gray-400">Today's AI Analyses</span>
+                </div>
+                <span className="text-sm font-mono">
+                  <span className={subscription?.remaining && subscription.remaining > 3 ? 'text-emerald-400' : 'text-amber-400'}>
+                    {subscription?.remaining ?? 10}
                   </span>
-                </div>
-                
-                <Button 
-                  onClick={() => setShowPaymentModal(true)}
-                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black font-medium"
-                  data-testid="button-upgrade-pro"
-                >
-                  <Crown className="w-4 h-4 mr-2" />
-                  Upgrade to Pro
-                </Button>
-                
-                <p className="text-xs text-gray-500 text-center">
-                  Pay once with crypto, unlock unlimited features
-                </p>
+                  <span className="text-gray-600">/{subscription?.dailyLimit ?? 10}</span>
+                </span>
               </div>
-            )}
-          </CardContent>
-        </Card>
+              
+              <Button 
+                onClick={() => setShowPaymentModal(true)}
+                className="w-full h-12 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 text-black font-bold text-base shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 transition-all"
+                data-testid="button-upgrade-pro"
+              >
+                <Crown className="w-5 h-5 mr-2" />
+                Upgrade to Pro - 10 USDT
+              </Button>
+              
+              <p className="text-xs text-gray-500 text-center mt-3">
+                Pay with TRC20 (TRON) or BEP20 (BSC) network
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="bg-[#12121a] border-white/5">
           <CardContent className="p-4">
