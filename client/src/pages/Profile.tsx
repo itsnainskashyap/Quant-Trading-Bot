@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { 
@@ -15,10 +17,14 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-  Link2
+  Link2,
+  Crown,
+  Zap,
+  Infinity
 } from "lucide-react";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 import { ExchangeLogo } from "@/components/ExchangeLogos";
+import { PaymentModal } from "@/components/PaymentModal";
 
 interface PredictionData {
   predictions: Array<{
@@ -52,6 +58,7 @@ interface SubscriptionData {
 
 export default function Profile() {
   const { user, logout, isLoggingOut, isLoading: authLoading } = useAuth();
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   
   const { data: predictions, isLoading: predictionsLoading } = useQuery<PredictionData>({
     queryKey: ["/api/predictions"],
@@ -62,6 +69,8 @@ export default function Profile() {
     queryKey: ["/api/subscription"],
     enabled: !!user,
   });
+
+  const isPro = subscription?.plan === 'pro';
 
   if (authLoading) {
     return (
@@ -130,8 +139,17 @@ export default function Profile() {
                 </h1>
                 <p className="text-gray-400 text-sm truncate" data-testid="text-user-email">{user.email}</p>
               </div>
-              <div className="px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
-                FREE
+              <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                isPro 
+                  ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' 
+                  : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+              }`}>
+                {isPro ? (
+                  <span className="flex items-center gap-1">
+                    <Crown className="w-3 h-3" />
+                    PRO
+                  </span>
+                ) : 'FREE'}
               </div>
             </div>
           </CardContent>
@@ -196,6 +214,81 @@ export default function Profile() {
             </CardContent>
           </Card>
         )}
+
+        <Card className="bg-[#12121a] border-white/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold">Subscription</h2>
+              <Badge 
+                variant="outline" 
+                className={isPro 
+                  ? "bg-amber-500/10 text-amber-400 border-amber-500/30" 
+                  : "bg-white/5 text-gray-400 border-white/10"
+                }
+              >
+                {isPro ? 'Pro Plan' : 'Free Plan'}
+              </Badge>
+            </div>
+            
+            {isPro ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                  <Crown className="w-8 h-8 text-amber-400" />
+                  <div>
+                    <p className="font-medium text-amber-400">Pro Member</p>
+                    <p className="text-xs text-gray-500">Unlimited AI analyses</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    <span>Unlimited Analyses</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    <span>Auto-Trade</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    <span>Priority Support</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    <span>All Features</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/5">
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-gray-500" />
+                    <span className="text-sm text-gray-400">Daily AI Analyses</span>
+                  </div>
+                  <span className="text-sm font-mono">
+                    <span className={subscription?.remaining && subscription.remaining > 3 ? 'text-emerald-400' : 'text-amber-400'}>
+                      {subscription?.remaining ?? 10}
+                    </span>
+                    <span className="text-gray-600">/{subscription?.dailyLimit ?? 10}</span>
+                  </span>
+                </div>
+                
+                <Button 
+                  onClick={() => setShowPaymentModal(true)}
+                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black font-medium"
+                  data-testid="button-upgrade-pro"
+                >
+                  <Crown className="w-4 h-4 mr-2" />
+                  Upgrade to Pro
+                </Button>
+                
+                <p className="text-xs text-gray-500 text-center">
+                  Pay once with crypto, unlock unlimited features
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Card className="bg-[#12121a] border-white/5">
           <CardContent className="p-4">
@@ -327,6 +420,11 @@ export default function Profile() {
           </div>
         </div>
       </main>
+
+      <PaymentModal 
+        isOpen={showPaymentModal} 
+        onClose={() => setShowPaymentModal(false)} 
+      />
     </div>
   );
 }

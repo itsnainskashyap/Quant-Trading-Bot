@@ -1,24 +1,12 @@
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { CryptoLogo } from "./CryptoLogos";
-import { 
-  Copy, 
-  CheckCircle, 
-  Loader2, 
-  ExternalLink,
-  QrCode,
-  Shield,
-  Zap,
-  Clock
-} from "lucide-react";
+import { Copy, CheckCircle, Loader2, ExternalLink } from "lucide-react";
 import QRCode from "react-qr-code";
 
 interface PaymentModalProps {
@@ -39,7 +27,7 @@ export function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const [copied, setCopied] = useState(false);
   const [verifying, setVerifying] = useState(false);
 
-  const { data: settings, isLoading } = useQuery<AdminSettings>({
+  const { data: settings } = useQuery<AdminSettings>({
     queryKey: ["/api/admin/settings"],
     enabled: isOpen,
   });
@@ -56,10 +44,9 @@ export function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       setVerifying(true);
       toast({
         title: "Payment Submitted",
-        description: "Verifying your transaction on the blockchain...",
+        description: "Verifying your transaction...",
       });
       
-      // Poll for verification status
       const checkStatus = async () => {
         try {
           const response = await fetch(`/api/payment/status/${txHash}`);
@@ -68,7 +55,7 @@ export function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           if (data.status === 'verified') {
             setVerifying(false);
             toast({
-              title: "Payment Verified!",
+              title: "Payment Verified",
               description: "Your Pro subscription is now active.",
             });
             queryClient.invalidateQueries({ queryKey: ["/api/subscription"] });
@@ -77,11 +64,10 @@ export function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             setVerifying(false);
             toast({
               title: "Verification Failed",
-              description: "Could not verify the transaction. Please check the transaction hash.",
+              description: "Could not verify the transaction.",
               variant: "destructive",
             });
           } else {
-            // Still pending, check again in 5 seconds
             setTimeout(checkStatus, 5000);
           }
         } catch (error) {
@@ -105,10 +91,6 @@ export function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       navigator.clipboard.writeText(walletAddress);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-      toast({
-        title: "Address Copied",
-        description: "Wallet address copied to clipboard",
-      });
     }
   };
 
@@ -124,260 +106,150 @@ export function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     submitPayment.mutate({ network: selectedNetwork, txHash: txHash.trim() });
   };
 
-  const networkConfig = {
-    trc20: {
-      name: 'TRC20',
-      network: 'TRON Network',
-      explorer: 'https://tronscan.org/#/transaction/',
-      color: 'from-red-500/20 to-red-600/20',
-      borderColor: 'border-red-500/30',
-    },
-    bep20: {
-      name: 'BEP20',
-      network: 'BSC (BNB Chain)',
-      explorer: 'https://bscscan.com/tx/',
-      color: 'from-yellow-500/20 to-amber-500/20',
-      borderColor: 'border-yellow-500/30',
-    },
-  };
-
-  const currentNetwork = networkConfig[selectedNetwork];
+  const price = settings?.proPrice || 10;
+  const hasTrc20 = !!settings?.trc20Address;
+  const hasBep20 = !!settings?.bep20Address;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg bg-[#0f1117] border-blue-500/20">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <CryptoLogo type="usdt" className="w-6 h-6" />
+      <DialogContent className="sm:max-w-md bg-[#0f1117] border-white/10 p-0 overflow-hidden">
+        <DialogHeader className="p-5 pb-0">
+          <DialogTitle className="text-lg font-medium">
             Upgrade to Pro
           </DialogTitle>
-          <DialogDescription>
-            Pay with USDT to unlock unlimited AI analyses and premium features
-          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          <div className="p-4 rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-muted-foreground">Pro Subscription</span>
-              <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/30">
-                <Zap className="w-3 h-3 mr-1" />
-                Lifetime Access
-              </Badge>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold">{settings?.proPrice || 10}</span>
-              <span className="text-lg text-muted-foreground">USDT</span>
-            </div>
-            <div className="mt-3 space-y-2 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                <span>Unlimited AI Analyses</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                <span>Auto-Trade Execution</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                <span>Priority Support</span>
-              </div>
+        <div className="p-5 pt-3 space-y-5">
+          {/* Price display */}
+          <div className="flex items-center justify-between p-4 rounded-lg bg-white/[0.03] border border-white/5">
+            <span className="text-gray-400 text-sm">Amount</span>
+            <div className="flex items-center gap-2">
+              <CryptoLogo type="usdt" className="w-5 h-5" />
+              <span className="text-xl font-semibold">{price} USDT</span>
             </div>
           </div>
 
-          <Tabs value={selectedNetwork} onValueChange={(v) => setSelectedNetwork(v as 'trc20' | 'bep20')}>
-            <TabsList className="grid w-full grid-cols-2 bg-background/50">
-              <TabsTrigger 
-                value="trc20" 
-                className="flex items-center gap-2"
-                disabled={!settings?.trc20Address}
+          {/* Network selector */}
+          <div className="space-y-2">
+            <span className="text-xs text-gray-500 uppercase tracking-wide">Select Network</span>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => hasTrc20 && setSelectedNetwork('trc20')}
+                disabled={!hasTrc20}
+                className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
+                  selectedNetwork === 'trc20' 
+                    ? 'bg-red-500/10 border-red-500/30 text-white' 
+                    : 'bg-white/[0.02] border-white/5 text-gray-400 hover:bg-white/[0.04]'
+                } ${!hasTrc20 ? 'opacity-40 cursor-not-allowed' : ''}`}
                 data-testid="tab-trc20"
               >
-                <CryptoLogo type="trc20" className="w-4 h-4" />
-                TRC20
-              </TabsTrigger>
-              <TabsTrigger 
-                value="bep20" 
-                className="flex items-center gap-2"
-                disabled={!settings?.bep20Address}
+                <CryptoLogo type="trc20" className="w-5 h-5" />
+                <span className="text-sm font-medium">TRC20</span>
+              </button>
+              <button
+                onClick={() => hasBep20 && setSelectedNetwork('bep20')}
+                disabled={!hasBep20}
+                className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
+                  selectedNetwork === 'bep20' 
+                    ? 'bg-yellow-500/10 border-yellow-500/30 text-white' 
+                    : 'bg-white/[0.02] border-white/5 text-gray-400 hover:bg-white/[0.04]'
+                } ${!hasBep20 ? 'opacity-40 cursor-not-allowed' : ''}`}
                 data-testid="tab-bep20"
               >
-                <CryptoLogo type="bep20" className="w-4 h-4" />
-                BEP20
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="trc20" className="mt-4">
-              <PaymentDetails 
-                network="trc20"
-                address={settings?.trc20Address}
-                price={settings?.proPrice || 10}
-                onCopy={handleCopyAddress}
-                copied={copied}
-              />
-            </TabsContent>
-
-            <TabsContent value="bep20" className="mt-4">
-              <PaymentDetails 
-                network="bep20"
-                address={settings?.bep20Address}
-                price={settings?.proPrice || 10}
-                onCopy={handleCopyAddress}
-                copied={copied}
-              />
-            </TabsContent>
-          </Tabs>
-
-          {walletAddress && (
-            <div className="space-y-3">
-              <Label className="text-sm">
-                After sending payment, paste your transaction hash below:
-              </Label>
-              <Input
-                value={txHash}
-                onChange={(e) => setTxHash(e.target.value)}
-                placeholder={selectedNetwork === 'trc20' ? "e.g., a1b2c3d4..." : "e.g., 0xa1b2c3d4..."}
-                className="font-mono text-sm bg-background"
-                data-testid="input-tx-hash"
-              />
-              
-              <Button 
-                onClick={handleSubmitPayment}
-                disabled={submitPayment.isPending || verifying || !txHash.trim()}
-                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-semibold"
-                data-testid="button-submit-payment"
-              >
-                {verifying ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Verifying on Blockchain...
-                  </>
-                ) : submitPayment.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    <Shield className="w-4 h-4 mr-2" />
-                    Verify Payment
-                  </>
-                )}
-              </Button>
-
-              <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
-                <Clock className="w-3 h-3" />
-                Automatic blockchain verification (1-3 minutes)
-              </p>
+                <CryptoLogo type="bep20" className="w-5 h-5" />
+                <span className="text-sm font-medium">BEP20</span>
+              </button>
             </div>
-          )}
+          </div>
 
-          {!settings?.trc20Address && !settings?.bep20Address && (
-            <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-center">
-              <p className="text-sm text-yellow-400">
-                Payment is not available at the moment. Please try again later.
-              </p>
+          {/* QR and address */}
+          {walletAddress ? (
+            <div className="space-y-4">
+              <div className="flex justify-center p-4 bg-white rounded-lg">
+                <QRCode 
+                  value={walletAddress} 
+                  size={140}
+                  level="H"
+                  data-testid={`qr-${selectedNetwork}`}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <span className="text-xs text-gray-500">Wallet Address</span>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 p-2.5 rounded-lg bg-white/[0.03] border border-white/5 font-mono text-xs text-gray-300 break-all">
+                    {walletAddress}
+                  </div>
+                  <Button 
+                    size="icon" 
+                    variant="ghost" 
+                    onClick={handleCopyAddress}
+                    className="flex-shrink-0 h-10 w-10"
+                    data-testid={`button-copy-${selectedNetwork}`}
+                  >
+                    {copied ? <CheckCircle className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <a 
+                href={selectedNetwork === 'trc20' 
+                  ? `https://tronscan.org/#/address/${walletAddress}`
+                  : `https://bscscan.com/address/${walletAddress}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                View on Explorer
+              </a>
+
+              <div className="pt-2 border-t border-white/5 space-y-3">
+                <div className="space-y-1.5">
+                  <span className="text-xs text-gray-500">Transaction Hash</span>
+                  <Input
+                    value={txHash}
+                    onChange={(e) => setTxHash(e.target.value)}
+                    placeholder="Paste your transaction hash here"
+                    className="font-mono text-sm bg-white/[0.03] border-white/5"
+                    data-testid="input-tx-hash"
+                  />
+                </div>
+                
+                <Button 
+                  onClick={handleSubmitPayment}
+                  disabled={submitPayment.isPending || verifying || !txHash.trim()}
+                  className="w-full bg-white text-black hover:bg-gray-100 font-medium"
+                  data-testid="button-submit-payment"
+                >
+                  {verifying ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : submitPayment.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    'Confirm Payment'
+                  )}
+                </Button>
+
+                <p className="text-[11px] text-gray-600 text-center">
+                  Verification usually takes 1-3 minutes
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="p-6 text-center text-gray-500 text-sm">
+              Payment is not available at the moment.
             </div>
           )}
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
-
-interface PaymentDetailsProps {
-  network: 'trc20' | 'bep20';
-  address?: string;
-  price: number;
-  onCopy: () => void;
-  copied: boolean;
-}
-
-function PaymentDetails({ network, address, price, onCopy, copied }: PaymentDetailsProps) {
-  if (!address) {
-    return (
-      <div className="p-4 rounded-lg bg-muted/20 text-center text-muted-foreground">
-        {network.toUpperCase()} payment is not configured
-      </div>
-    );
-  }
-
-  const networkInfo = {
-    trc20: {
-      name: 'TRC20',
-      network: 'TRON Network',
-      explorer: 'https://tronscan.org/#/address/',
-      bgColor: 'bg-gradient-to-br from-red-500/10 to-red-600/10',
-      borderColor: 'border-red-500/20',
-    },
-    bep20: {
-      name: 'BEP20',
-      network: 'BSC (BNB Chain)',
-      explorer: 'https://bscscan.com/address/',
-      bgColor: 'bg-gradient-to-br from-yellow-500/10 to-amber-500/10',
-      borderColor: 'border-yellow-500/20',
-    },
-  };
-
-  const info = networkInfo[network];
-
-  return (
-    <div className={`p-4 rounded-lg ${info.bgColor} ${info.borderColor} border space-y-4`}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <CryptoLogo type={network} className="w-5 h-5" />
-          <span className="font-medium">{info.network}</span>
-        </div>
-        <Badge variant="outline" className="text-xs">
-          <CryptoLogo type="usdt" className="w-3 h-3 mr-1" />
-          USDT
-        </Badge>
-      </div>
-
-      <div className="flex justify-center p-4 bg-white rounded-lg">
-        <QRCode 
-          value={address} 
-          size={160}
-          level="H"
-          data-testid={`qr-${network}`}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">Wallet Address</Label>
-        <div className="flex items-center gap-2">
-          <div className="flex-1 p-2 rounded bg-background/50 font-mono text-xs break-all">
-            {address}
-          </div>
-          <Button 
-            size="icon" 
-            variant="outline" 
-            onClick={onCopy}
-            className="flex-shrink-0"
-            data-testid={`button-copy-${network}`}
-          >
-            {copied ? <CheckCircle className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between p-2 rounded bg-background/30">
-        <span className="text-sm text-muted-foreground">Send exactly:</span>
-        <span className="font-bold text-lg flex items-center gap-1">
-          <CryptoLogo type="usdt" className="w-4 h-4" />
-          {price} USDT
-        </span>
-      </div>
-
-      <a 
-        href={`${info.explorer}${address}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-center gap-1 text-xs text-primary hover:underline"
-      >
-        <ExternalLink className="w-3 h-3" />
-        View on Explorer
-      </a>
-    </div>
   );
 }
