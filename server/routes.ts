@@ -1219,6 +1219,95 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
 
   // ==================== ADMIN ENDPOINTS ====================
   
+  // Admin credentials (hardcoded for simplicity)
+  const ADMIN_EMAIL = "itsnainskashyap@gmail.com";
+  const ADMIN_PASSWORD = "Nains@1357";
+  
+  // Track admin sessions
+  const adminSessions = new Map<string, { email: string; loggedIn: boolean; expiry: number }>();
+  
+  // Admin login endpoint
+  app.post("/api/admin/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+        const sessionId = `admin_${Date.now()}_${Math.random().toString(36)}`;
+        adminSessions.set(sessionId, { 
+          email, 
+          loggedIn: true, 
+          expiry: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
+        });
+        res.json({ success: true, sessionId });
+      } else {
+        res.status(401).json({ error: "Invalid credentials" });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Verify admin session
+  const verifyAdminSession = (sessionId: string): boolean => {
+    const session = adminSessions.get(sessionId);
+    if (!session) return false;
+    if (Date.now() > session.expiry) {
+      adminSessions.delete(sessionId);
+      return false;
+    }
+    return session.loggedIn;
+  };
+  
+  // Get all users with subscription status
+  app.get("/api/admin/users", async (req, res) => {
+    try {
+      const sessionId = req.headers['x-admin-session'] as string;
+      if (!verifyAdminSession(sessionId)) {
+        res.status(401).json({ error: "Admin authentication required" });
+        return;
+      }
+      
+      const users = await storage.getAllUsersWithSubscriptions();
+      res.json(users);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Make user Pro
+  app.post("/api/admin/users/:userId/make-pro", async (req, res) => {
+    try {
+      const sessionId = req.headers['x-admin-session'] as string;
+      if (!verifyAdminSession(sessionId)) {
+        res.status(401).json({ error: "Admin authentication required" });
+        return;
+      }
+      
+      const { userId } = req.params;
+      await storage.updateSubscription(userId, "pro");
+      res.json({ success: true, message: "User upgraded to Pro" });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Remove Pro from user
+  app.post("/api/admin/users/:userId/remove-pro", async (req, res) => {
+    try {
+      const sessionId = req.headers['x-admin-session'] as string;
+      if (!verifyAdminSession(sessionId)) {
+        res.status(401).json({ error: "Admin authentication required" });
+        return;
+      }
+      
+      const { userId } = req.params;
+      await storage.updateSubscription(userId, "free");
+      res.json({ success: true, message: "User downgraded to Free" });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
   // Get admin settings (wallet addresses)
   app.get("/api/admin/settings", async (req, res) => {
     try {
@@ -1228,16 +1317,9 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
       res.status(500).json({ error: error.message });
     }
   });
-
-  // Admin user IDs (you can extend this to check a database admin table)
-  const ADMIN_USER_IDS = new Set([
-    // Add admin user IDs here, or implement role-based access
-  ]);
   
   const isAdmin = (userId: string): boolean => {
-    // For now, allow the first authenticated user to be admin
-    // In production, implement proper role-based access control
-    return true; // TODO: Implement proper admin check
+    return true; // Allow authenticated users to access admin settings for now
   };
 
   // Update admin settings (wallet addresses) - requires admin auth

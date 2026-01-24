@@ -1,10 +1,8 @@
-import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
 import { useState, useEffect } from "react";
@@ -18,19 +16,20 @@ import {
   Wallet,
   Save,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  LogIn,
+  LogOut,
+  Search,
+  Crown,
+  UserCheck,
+  UserX,
+  Mail,
+  Calendar,
+  Loader2
 } from "lucide-react";
 import { CryptoLogo } from "@/components/CryptoLogos";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 import { useToast } from "@/hooks/use-toast";
-
-interface AdminStats {
-  totalUsers: number;
-  freeUsers: number;
-  proUsers: number;
-  totalPredictions: number;
-  avgWinRate: number;
-}
 
 interface AdminSettings {
   trc20Address?: string;
@@ -38,23 +37,40 @@ interface AdminSettings {
   proPrice: number;
 }
 
+interface UserData {
+  id: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  plan: string;
+  createdAt: string | null;
+}
+
 export default function Admin() {
-  const { user, logout, isLoggingOut } = useAuth();
   const { toast } = useToast();
+  
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [processingUserId, setProcessingUserId] = useState<string | null>(null);
   
   const [trc20Address, setTrc20Address] = useState('');
   const [bep20Address, setBep20Address] = useState('');
   const [proPrice, setProPrice] = useState(10);
-  
-  const { data: stats, isLoading: statsLoading } = useQuery<AdminStats>({
-    queryKey: ["/api/admin/stats"],
-    enabled: !!user,
-  });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [settings, setSettings] = useState<AdminSettings | null>(null);
 
-  const { data: settings, isLoading: settingsLoading } = useQuery<AdminSettings>({
-    queryKey: ["/api/admin/settings"],
-    enabled: !!user,
-  });
+  useEffect(() => {
+    if (isLoggedIn) {
+      fetchSettings();
+    }
+  }, [isLoggedIn]);
 
   useEffect(() => {
     if (settings) {
@@ -64,27 +80,99 @@ export default function Admin() {
     }
   }, [settings]);
 
-  const updateSettings = useMutation({
-    mutationFn: async (data: { trc20Address: string; bep20Address: string; proPrice: number }) => {
-      return apiRequest('POST', '/api/admin/settings', data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
-      toast({
-        title: "Settings Updated",
-        description: "Payment wallet addresses have been saved successfully.",
+  const handleLogin = async () => {
+    setIsLoggingIn(true);
+    try {
+      const response = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update settings",
-        variant: "destructive",
-      });
-    },
-  });
 
-  const handleSaveSettings = () => {
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setSessionId(data.sessionId);
+        setIsLoggedIn(true);
+        toast({ title: "Login successful", description: "Welcome to Admin Panel" });
+        fetchUsers(data.sessionId);
+      } else {
+        toast({ title: "Login failed", description: data.error || "Invalid credentials", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to login", variant: "destructive" });
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch("/api/admin/settings");
+      const data = await response.json();
+      if (response.ok) {
+        setSettings(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch settings");
+    }
+  };
+
+  const fetchUsers = async (sid: string) => {
+    setIsLoadingUsers(true);
+    try {
+      const response = await fetch("/api/admin/users", {
+        headers: { "x-admin-session": sid },
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setUsers(data);
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to fetch users", variant: "destructive" });
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
+  const handleMakePro = async (userId: string) => {
+    if (!sessionId) return;
+    setProcessingUserId(userId);
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/make-pro`, {
+        method: "POST",
+        headers: { "x-admin-session": sessionId },
+      });
+      if (response.ok) {
+        toast({ title: "Success", description: "User upgraded to Pro" });
+        fetchUsers(sessionId);
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to upgrade user", variant: "destructive" });
+    } finally {
+      setProcessingUserId(null);
+    }
+  };
+
+  const handleRemovePro = async (userId: string) => {
+    if (!sessionId) return;
+    setProcessingUserId(userId);
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/remove-pro`, {
+        method: "POST",
+        headers: { "x-admin-session": sessionId },
+      });
+      if (response.ok) {
+        toast({ title: "Success", description: "User downgraded to Free" });
+        fetchUsers(sessionId);
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to downgrade user", variant: "destructive" });
+    } finally {
+      setProcessingUserId(null);
+    }
+  };
+
+  const handleSaveSettings = async () => {
     if (!trc20Address && !bep20Address) {
       toast({
         title: "Error",
@@ -93,108 +181,313 @@ export default function Admin() {
       });
       return;
     }
-    updateSettings.mutate({ trc20Address, bep20Address, proPrice });
+    
+    setIsSavingSettings(true);
+    try {
+      await apiRequest('POST', '/api/admin/settings', { trc20Address, bep20Address, proPrice });
+      toast({
+        title: "Settings Updated",
+        description: "Payment wallet addresses have been saved successfully.",
+      });
+      fetchSettings();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update settings",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingSettings(false);
+    }
   };
 
-  if (!user) {
-    return null;
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setSessionId(null);
+    setUsers([]);
+    setEmail("");
+    setPassword("");
+  };
+
+  const filteredUsers = users.filter(user => 
+    user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const proCount = users.filter(u => u.plan === 'pro').length;
+  const freeCount = users.filter(u => u.plan !== 'pro').length;
+
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-gradient-to-br from-[#12121a] to-[#0d0d14] border-white/10">
+          <CardContent className="p-8">
+            <div className="text-center mb-6">
+              <img src={logoImage} alt="TradeX AI" className="h-12 w-auto mx-auto mb-4" />
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Shield className="w-6 h-6 text-red-500" />
+                <h1 className="text-xl font-bold text-white">Admin Panel</h1>
+              </div>
+              <p className="text-gray-400 text-sm">Login with admin credentials</p>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-gray-400 mb-1 block">Email</label>
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@email.com"
+                  className="bg-[#0a0a0f] border-white/10"
+                  data-testid="input-admin-email"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-1 block">Password</label>
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="bg-[#0a0a0f] border-white/10"
+                  data-testid="input-admin-password"
+                  onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                />
+              </div>
+              <Button
+                onClick={handleLogin}
+                disabled={isLoggingIn || !email || !password}
+                className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+                data-testid="button-admin-login"
+              >
+                {isLoggingIn ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <LogIn className="w-4 h-4 mr-2" />
+                )}
+                Login to Admin
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Link href="/">
-                <Button variant="ghost" size="icon" data-testid="button-back">
-                  <ArrowLeft className="w-4 h-4" />
-                </Button>
-              </Link>
-              <img src={logoImage} alt="TradeX AI" className="h-8 w-auto" data-testid="img-logo" />
-              <Badge variant="destructive" data-testid="badge-admin">
-                <Shield className="w-3 h-3 mr-1" />
-                Admin
-              </Badge>
-            </div>
-            <Button 
-              variant="outline" 
-              onClick={() => logout()}
-              disabled={isLoggingOut}
-              data-testid="button-logout"
-            >
-              {isLoggingOut ? "Logging out..." : "Logout"}
-            </Button>
+    <div className="min-h-screen bg-[#0a0a0f] text-white">
+      <header className="border-b border-white/5 bg-[#0a0a0f]/95 backdrop-blur-xl sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link href="/">
+              <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white" data-testid="button-back">
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+            </Link>
+            <img src={logoImage} alt="TradeX AI" className="h-8 w-auto" />
+            <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+              <Shield className="w-3 h-3 mr-1" />
+              Admin
+            </Badge>
           </div>
+          <Button 
+            variant="ghost" 
+            onClick={handleLogout}
+            className="text-gray-400 hover:text-red-400"
+            data-testid="button-admin-logout"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Logout
+          </Button>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6" data-testid="text-admin-title">Admin Dashboard</h1>
+      <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
         
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card data-testid="card-stat-users">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Users</p>
-                  <p className="text-2xl font-bold">{stats?.totalUsers || 0}</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-blue-400" />
                 </div>
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Users className="w-5 h-5 text-primary" />
+                <div>
+                  <div className="text-2xl font-bold">{users.length}</div>
+                  <div className="text-sm text-gray-400">Total Users</div>
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card data-testid="card-stat-free">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Free Users</p>
-                  <p className="text-2xl font-bold">{stats?.freeUsers || 0}</p>
+          <Card className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                  <Crown className="w-6 h-6 text-amber-400" />
                 </div>
-                <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center">
-                  <Users className="w-5 h-5 text-success" />
+                <div>
+                  <div className="text-2xl font-bold">{proCount}</div>
+                  <div className="text-sm text-gray-400">Pro Users</div>
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card data-testid="card-stat-pro">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
+          <Card className="bg-gradient-to-br from-emerald-500/10 to-green-500/10 border-emerald-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                  <UserCheck className="w-6 h-6 text-emerald-400" />
+                </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Pro Users</p>
-                  <p className="text-2xl font-bold">{stats?.proUsers || 0}</p>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center">
-                  <CreditCard className="w-5 h-5 text-warning" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card data-testid="card-stat-predictions">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Predictions</p>
-                  <p className="text-2xl font-bold">{stats?.totalPredictions || 0}</p>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
-                  <Activity className="w-5 h-5 text-destructive" />
+                  <div className="text-2xl font-bold">{freeCount}</div>
+                  <div className="text-sm text-gray-400">Free Users</div>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
+        <Card className="bg-[#12121a] border-white/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Users className="w-5 h-5 text-cyan-400" />
+                All Users
+              </h2>
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                <Input
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search users..."
+                  className="pl-10 bg-[#0a0a0f] border-white/10 w-64"
+                  data-testid="input-search-users"
+                />
+              </div>
+            </div>
+
+            {isLoadingUsers ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-white/5 text-left">
+                      <th className="py-3 px-4 text-xs text-gray-500 uppercase">User</th>
+                      <th className="py-3 px-4 text-xs text-gray-500 uppercase">Email</th>
+                      <th className="py-3 px-4 text-xs text-gray-500 uppercase">User ID</th>
+                      <th className="py-3 px-4 text-xs text-gray-500 uppercase">Subscription</th>
+                      <th className="py-3 px-4 text-xs text-gray-500 uppercase">Joined</th>
+                      <th className="py-3 px-4 text-xs text-gray-500 uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredUsers.map((user) => (
+                      <tr key={user.id} className="border-b border-white/5 hover:bg-white/[0.02]">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-xs font-bold">
+                              {(user.firstName?.[0] || user.email?.[0] || 'U').toUpperCase()}
+                            </div>
+                            <span className="font-medium">
+                              {user.firstName || user.lastName ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Unknown'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-1 text-sm text-gray-400">
+                            <Mail className="w-3 h-3" />
+                            {user.email || 'N/A'}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <code className="text-xs text-gray-500 bg-white/5 px-2 py-1 rounded">
+                            {user.id.slice(0, 12)}...
+                          </code>
+                        </td>
+                        <td className="py-3 px-4">
+                          {user.plan === 'pro' ? (
+                            <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-black">
+                              <Crown className="w-3 h-3 mr-1" />
+                              PRO
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-gray-400 border-gray-600">
+                              FREE
+                            </Badge>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-1 text-sm text-gray-400">
+                            <Calendar className="w-3 h-3" />
+                            {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          {user.plan === 'pro' ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleRemovePro(user.id)}
+                              disabled={processingUserId === user.id}
+                              className="text-red-400 border-red-500/30 hover:bg-red-500/10"
+                              data-testid={`button-remove-pro-${user.id}`}
+                            >
+                              {processingUserId === user.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <>
+                                  <UserX className="w-3 h-3 mr-1" />
+                                  Remove Pro
+                                </>
+                              )}
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => handleMakePro(user.id)}
+                              disabled={processingUserId === user.id}
+                              className="bg-gradient-to-r from-amber-500 to-orange-500 text-black"
+                              data-testid={`button-make-pro-${user.id}`}
+                            >
+                              {processingUserId === user.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <>
+                                  <Crown className="w-3 h-3 mr-1" />
+                                  Make Pro
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                
+                {filteredUsers.length === 0 && (
+                  <div className="text-center py-12 text-gray-500">
+                    No users found
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <div className="grid lg:grid-cols-2 gap-6">
-          <Card data-testid="card-payment-settings">
+          <Card className="bg-[#12121a] border-white/5">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Wallet className="w-5 h-5" />
+                <Wallet className="w-5 h-5 text-cyan-400" />
                 Payment Wallet Settings
               </CardTitle>
             </CardHeader>
@@ -209,17 +502,17 @@ export default function Admin() {
                     type="number"
                     value={proPrice}
                     onChange={(e) => setProPrice(Number(e.target.value))}
-                    className="w-24 bg-background"
+                    className="w-24 bg-[#0a0a0f] border-white/10"
                     min={1}
                     data-testid="input-pro-price"
                   />
-                  <span className="text-muted-foreground">USDT</span>
+                  <span className="text-gray-400">USDT / month</span>
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
+                  <Label className="flex items-center gap-2 text-gray-400">
                     <CryptoLogo type="trc20" className="w-5 h-5" />
                     TRC20 (TRON) Wallet Address
                   </Label>
@@ -227,11 +520,11 @@ export default function Admin() {
                     value={trc20Address}
                     onChange={(e) => setTrc20Address(e.target.value)}
                     placeholder="Enter your TRC20 USDT address (starts with T)"
-                    className="font-mono text-sm"
+                    className="font-mono text-sm bg-[#0a0a0f] border-white/10"
                     data-testid="input-trc20-address"
                   />
                   {trc20Address && trc20Address.startsWith('T') && (
-                    <div className="flex items-center gap-1 text-xs text-green-500">
+                    <div className="flex items-center gap-1 text-xs text-emerald-400">
                       <CheckCircle className="w-3 h-3" />
                       Valid TRC20 format
                     </div>
@@ -239,7 +532,7 @@ export default function Admin() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
+                  <Label className="flex items-center gap-2 text-gray-400">
                     <CryptoLogo type="bep20" className="w-5 h-5" />
                     BEP20 (BSC) Wallet Address
                   </Label>
@@ -247,11 +540,11 @@ export default function Admin() {
                     value={bep20Address}
                     onChange={(e) => setBep20Address(e.target.value)}
                     placeholder="Enter your BEP20 USDT address (starts with 0x)"
-                    className="font-mono text-sm"
+                    className="font-mono text-sm bg-[#0a0a0f] border-white/10"
                     data-testid="input-bep20-address"
                   />
                   {bep20Address && bep20Address.startsWith('0x') && (
-                    <div className="flex items-center gap-1 text-xs text-green-500">
+                    <div className="flex items-center gap-1 text-xs text-emerald-400">
                       <CheckCircle className="w-3 h-3" />
                       Valid BEP20 format
                     </div>
@@ -261,22 +554,20 @@ export default function Admin() {
 
               <Button 
                 onClick={handleSaveSettings}
-                disabled={updateSettings.isPending}
-                className="w-full"
+                disabled={isSavingSettings}
+                className="w-full bg-cyan-600 hover:bg-cyan-700"
                 data-testid="button-save-settings"
               >
-                {updateSettings.isPending ? (
-                  <>Saving...</>
+                {isSavingSettings ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Payment Settings
-                  </>
+                  <Save className="w-4 h-4 mr-2" />
                 )}
+                Save Payment Settings
               </Button>
 
               {(!trc20Address && !bep20Address) && (
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-sm">
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
                   <span>Add at least one wallet address to receive Pro subscription payments</span>
                 </div>
@@ -284,54 +575,54 @@ export default function Admin() {
             </CardContent>
           </Card>
           
-          <Card data-testid="card-system-health">
+          <Card className="bg-[#12121a] border-white/5">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
+                <TrendingUp className="w-5 h-5 text-emerald-400" />
                 System Health
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">AI Services</span>
-                  <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+                <div className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02]">
+                  <span className="text-sm text-gray-400">AI Services</span>
+                  <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
                     Operational
                   </Badge>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Database</span>
-                  <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+                <div className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02]">
+                  <span className="text-sm text-gray-400">Database</span>
+                  <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
                     Operational
                   </Badge>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Market Data Feed</span>
-                  <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+                <div className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02]">
+                  <span className="text-sm text-gray-400">Market Data Feed</span>
+                  <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
                     Operational
                   </Badge>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Blockchain Verification</span>
-                  <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+                <div className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02]">
+                  <span className="text-sm text-gray-400">Blockchain Verification</span>
+                  <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
                     Active
                   </Badge>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm flex items-center gap-2">
+                <div className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02]">
+                  <span className="text-sm flex items-center gap-2 text-gray-400">
                     <CryptoLogo type="trc20" className="w-4 h-4" />
                     TRC20 Payments
                   </span>
-                  <Badge variant="outline" className={trc20Address ? "bg-success/10 text-success border-success/20" : "bg-muted/50 text-muted-foreground"}>
+                  <Badge className={trc20Address ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-gray-500/20 text-gray-400 border-gray-500/30"}>
                     {trc20Address ? "Enabled" : "Not Configured"}
                   </Badge>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm flex items-center gap-2">
+                <div className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02]">
+                  <span className="text-sm flex items-center gap-2 text-gray-400">
                     <CryptoLogo type="bep20" className="w-4 h-4" />
                     BEP20 Payments
                   </span>
-                  <Badge variant="outline" className={bep20Address ? "bg-success/10 text-success border-success/20" : "bg-muted/50 text-muted-foreground"}>
+                  <Badge className={bep20Address ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-gray-500/20 text-gray-400 border-gray-500/30"}>
                     {bep20Address ? "Enabled" : "Not Configured"}
                   </Badge>
                 </div>

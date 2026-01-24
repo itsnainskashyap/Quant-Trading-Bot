@@ -271,7 +271,7 @@ export default function Profile() {
                     <span className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">10</span>
                     <span className="text-xl font-bold text-amber-400">USDT</span>
                   </div>
-                  <span className="text-xs text-emerald-400 font-medium">One-time payment</span>
+                  <span className="text-xs text-emerald-400 font-medium">Per month</span>
                 </div>
               </div>
               
@@ -317,7 +317,7 @@ export default function Profile() {
               </Button>
               
               <p className="text-xs text-gray-500 text-center mt-3">
-                Pay with TRC20 (TRON) or BEP20 (BSC) network
+                Monthly subscription - Pay with TRC20 or BEP20 network
               </p>
             </CardContent>
           </Card>

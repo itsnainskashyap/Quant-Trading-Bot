@@ -42,6 +42,8 @@ export interface IStorage {
   
   getUserSubscription(userId: string): Promise<Subscription | null>;
   createOrUpdateSubscription(userId: string, plan: string): Promise<Subscription>;
+  updateSubscription(userId: string, plan: string): Promise<void>;
+  getAllUsersWithSubscriptions(): Promise<Array<{ id: string; email: string | null; firstName: string | null; lastName: string | null; plan: string; createdAt: Date | null }>>;
   getTotalUserCount(): Promise<number>;
   getUserDailyPredictionCount(userId: string): Promise<number>;
   canUserTrade(userId: string): Promise<{ allowed: boolean; reason?: string; remaining?: number }>;
@@ -679,6 +681,41 @@ export class MemStorage implements IStorage {
   async getTotalUserCount(): Promise<number> {
     const result = await db.select({ count: count() }).from(users);
     return result[0]?.count || 0;
+  }
+
+  async updateSubscription(userId: string, plan: string): Promise<void> {
+    const existing = await this.getUserSubscription(userId);
+    if (existing) {
+      await db.update(subscriptions)
+        .set({ plan, status: "active" })
+        .where(eq(subscriptions.userId, userId));
+    } else {
+      await db.insert(subscriptions).values({
+        userId,
+        plan,
+        status: "active",
+      });
+    }
+  }
+
+  async getAllUsersWithSubscriptions(): Promise<Array<{ id: string; email: string | null; firstName: string | null; lastName: string | null; plan: string; createdAt: Date | null }>> {
+    const allUsers = await db.select({
+      id: users.id,
+      email: users.email,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      createdAt: users.createdAt,
+    }).from(users);
+    
+    const result = await Promise.all(allUsers.map(async (user) => {
+      const subscription = await this.getUserSubscription(user.id);
+      return {
+        ...user,
+        plan: subscription?.plan || 'free',
+      };
+    }));
+    
+    return result;
   }
 
   async getUserDailyPredictionCount(userId: string): Promise<number> {
