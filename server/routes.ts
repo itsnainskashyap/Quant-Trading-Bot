@@ -296,11 +296,24 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
           takeProfit,
         });
         
+        // Execute auto-trade if enabled
+        let autoTradeResult = null;
+        try {
+          const { executeAutoTrade } = await import('./brokerService');
+          autoTradeResult = await executeAutoTrade(userId, pair, signalType, tradeSize || 0, entryPrice);
+          if (autoTradeResult.orders.length > 0) {
+            console.log(`[AutoTrade] Executed ${autoTradeResult.orders.length} orders for user ${userId}`);
+          }
+        } catch (autoTradeError) {
+          console.error("Auto-trade error (non-blocking):", autoTradeError);
+        }
+        
         res.json({
           prediction,
           signal,
           message: `Trade recorded. Exit window: ${exitWindow} minutes.`,
           remaining: canTrade.remaining !== undefined ? canTrade.remaining - 1 : undefined,
+          autoTrade: autoTradeResult,
         });
       } catch (dbError: any) {
         console.error("Database error creating prediction:", dbError?.message || dbError);
@@ -448,6 +461,148 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
     } catch (error) {
       console.error("Indicators error:", error);
       res.status(500).json({ error: "Failed to fetch indicators" });
+    }
+  });
+
+  // Broker connection routes
+  app.get("/api/brokers/supported", async (req, res) => {
+    const { SUPPORTED_EXCHANGES } = await import('./brokerService');
+    res.json(SUPPORTED_EXCHANGES);
+  });
+
+  app.get("/api/brokers", async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+      
+      const userId = user.claims?.sub;
+      if (!userId) {
+        res.status(401).json({ error: "Invalid session" });
+        return;
+      }
+
+      const { getUserBrokerConnections } = await import('./brokerService');
+      const connections = await getUserBrokerConnections(userId);
+      
+      const safeConnections = connections.map(c => ({
+        id: c.id,
+        exchange: c.exchange,
+        isActive: c.isActive,
+        autoTrade: c.autoTrade,
+        testMode: c.testMode,
+        lastConnected: c.lastConnected,
+        createdAt: c.createdAt,
+        apiKeyPreview: c.apiKey.substring(0, 8) + '****',
+      }));
+      
+      res.json(safeConnections);
+    } catch (error) {
+      console.error("Get brokers error:", error);
+      res.status(500).json({ error: "Failed to fetch broker connections" });
+    }
+  });
+
+  app.post("/api/brokers/connect", async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+      
+      const userId = user.claims?.sub;
+      if (!userId) {
+        res.status(401).json({ error: "Invalid session" });
+        return;
+      }
+
+      const { exchange, apiKey, apiSecret, passphrase, testMode } = req.body;
+      
+      if (!exchange || !apiKey || !apiSecret) {
+        res.status(400).json({ error: "Exchange, API Key, and API Secret are required" });
+        return;
+      }
+
+      const { addBrokerConnection } = await import('./brokerService');
+      const result = await addBrokerConnection(userId, exchange, apiKey, apiSecret, passphrase, testMode ?? true);
+      
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          connection: {
+            id: result.connection!.id,
+            exchange: result.connection!.exchange,
+            isActive: result.connection!.isActive,
+            autoTrade: result.connection!.autoTrade,
+            testMode: result.connection!.testMode,
+          }
+        });
+      } else {
+        res.status(400).json({ success: false, error: result.error });
+      }
+    } catch (error: any) {
+      console.error("Connect broker error:", error);
+      res.status(500).json({ error: error.message || "Failed to connect broker" });
+    }
+  });
+
+  app.post("/api/brokers/:id/test", async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+
+      const { testBrokerConnection } = await import('./brokerService');
+      const result = await testBrokerConnection(req.params.id);
+      res.json(result);
+    } catch (error: any) {
+      console.error("Test broker error:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.patch("/api/brokers/:id", async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+
+      const { autoTrade, isActive, testMode } = req.body;
+      const { updateBrokerConnection } = await import('./brokerService');
+      const updated = await updateBrokerConnection(req.params.id, { autoTrade, isActive, testMode });
+      
+      if (updated) {
+        res.json({ success: true, connection: updated });
+      } else {
+        res.status(404).json({ error: "Connection not found" });
+      }
+    } catch (error: any) {
+      console.error("Update broker error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/brokers/:id", async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+
+      const { deleteBrokerConnection } = await import('./brokerService');
+      await deleteBrokerConnection(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Delete broker error:", error);
+      res.status(500).json({ error: error.message });
     }
   });
 

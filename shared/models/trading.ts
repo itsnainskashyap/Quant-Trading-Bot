@@ -35,7 +35,23 @@ export const predictions = pgTable("predictions", {
   completedAt: timestamp("completed_at"),
 });
 
+export const brokerConnections = pgTable("broker_connections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  exchange: varchar("exchange").notNull(), // binance, bybit, okx, kucoin, etc.
+  apiKey: text("api_key").notNull(),
+  apiSecret: text("api_secret").notNull(),
+  passphrase: text("passphrase"), // Some exchanges like OKX need this
+  isActive: boolean("is_active").default(true),
+  autoTrade: boolean("auto_trade").default(false), // Enable/disable auto trading
+  testMode: boolean("test_mode").default(true), // Use sandbox/testnet
+  lastConnected: timestamp("last_connected"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export type Subscription = typeof subscriptions.$inferSelect;
 export type InsertSubscription = typeof subscriptions.$inferInsert;
 export type Prediction = typeof predictions.$inferSelect;
 export type InsertPrediction = typeof predictions.$inferInsert;
+export type BrokerConnection = typeof brokerConnections.$inferSelect;
+export type InsertBrokerConnection = typeof brokerConnections.$inferInsert;

@@ -38,6 +38,7 @@ import { TradingViewChart } from "@/components/TradingViewChart";
 import { BacktestStats } from "@/components/BacktestStats";
 import { TechnicalIndicators } from "@/components/TechnicalIndicators";
 import { NotificationBanner, NotificationButton } from "@/components/NotificationBanner";
+import { BrokerSettings } from "@/components/BrokerSettings";
 import type { TradingPair, ConsensusResult, MarketMetrics } from "@shared/schema";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 
@@ -709,6 +710,8 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-4">
+            <BrokerSettings />
+            
             <Card className="bg-[#12121a] border-white/5">
               <CardContent className="p-3">
                 <div className="flex items-center justify-between mb-3">
