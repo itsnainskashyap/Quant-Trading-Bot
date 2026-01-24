@@ -175,26 +175,30 @@ Reliability:     ${metrics.reliability ?? 50}%
 Overall Signal:  ${metrics.overallTechnicalSignal ?? 'NEUTRAL'}
 
 ═══════════════════════════════════════════════════════════════
-                    TRADING DECISION RULES
+                    DECISIVE TRADING RULES
 ═══════════════════════════════════════════════════════════════
-1. WEIGH ALL INDICATORS - Use the complete technical picture above
-2. CONFLUENCE IS KEY - More aligned indicators = higher confidence
-3. RESPECT TREND STRENGTH - ADX > 25 means follow the trend
-4. CHECK OSCILLATOR EXTREMES - Oversold/overbought zones are reversal areas
-5. VOLUME CONFIRMS - Volume should support price direction
-6. SUPPORT/RESISTANCE - Price near S/R levels = high probability zones
+IMPORTANT: You MUST give a BUY or SELL signal. NO_TRADE should be EXTREMELY RARE (max 5% of cases).
 
-SIGNAL DECISION:
-- BUY: Majority bullish indicators + rising momentum + volume confirmation
-- SELL: Majority bearish indicators + falling momentum + volume confirmation  
-- NO_TRADE: ONLY when indicators are genuinely split 50/50 with no edge
+DECISION FRAMEWORK:
+- If RSI < 50 + bearish MACD + price below MA → SELL
+- If RSI > 50 + bullish MACD + price above MA → BUY
+- ADX > 20 = valid trend, follow it
+- Stochastic oversold (<30) = BUY opportunity
+- Stochastic overbought (>70) = SELL opportunity
+- Strong volume confirms direction
 
-BE DECISIVE: Professional traders make decisions. Pick a direction unless truly uncertain.
+SIGNAL RULES:
+- BUY: 3+ bullish signals OR strong momentum up OR oversold bounce
+- SELL: 3+ bearish signals OR strong momentum down OR overbought rejection
+- NO_TRADE: ONLY if indicators are exactly 50/50 split with zero edge (VERY RARE!)
+
+BE AGGRESSIVE: Markets reward action. Pick a direction based on the dominant signals.
+Professional traders don't hesitate - they trade the edge they see.
 
 Respond in EXACT JSON format:
 {
   "signal": "BUY" | "SELL" | "NO_TRADE",
-  "confidence": 55-90 (be realistic based on confluence),
+  "confidence": 60-85 (realistic based on indicator alignment),
   "risk": "LOW" | "MEDIUM" | "HIGH",
   "holdMinutes": ${tradeMode},
   "technicalScore": 0-100,
@@ -393,50 +397,53 @@ function calculateConsensus(results: AIAnalysisResult[]): ConsensusResult {
   let finalSignal: SignalType = dominantSignal;
   let hasConsensus = true;
 
-  // Need at least 2/3 providers to agree for a signal
-  if (agreementCount < 2 && finalSignal !== "NO_TRADE") {
-    // Check if there's no direct conflict (BUY vs SELL)
-    const hasBuy = signalCounts["BUY"] > 0;
-    const hasSell = signalCounts["SELL"] > 0;
-    
-    if (hasBuy && hasSell) {
-      // Direct conflict - stay out
-      finalSignal = "NO_TRADE";
-      hasConsensus = false;
-      warnings.push("BUY/SELL conflict between providers - staying out");
-    } else if (agreementCount === 1) {
-      // Only 1 provider has a direction, others say NO_TRADE
-      // Keep the directional signal but add warning
-      warnings.push("Only 1 provider gave directional signal - lower conviction");
+  // Check for direct BUY vs SELL conflict first
+  const hasBuy = signalCounts["BUY"] > 0;
+  const hasSell = signalCounts["SELL"] > 0;
+  const signalMismatch = hasBuy && hasSell;
+
+  if (signalMismatch) {
+    // Count which direction is stronger
+    if (signalCounts["BUY"] > signalCounts["SELL"]) {
+      finalSignal = "BUY";
+      warnings.push("Mixed signals - going with majority BUY consensus");
+    } else if (signalCounts["SELL"] > signalCounts["BUY"]) {
+      finalSignal = "SELL";
+      warnings.push("Mixed signals - going with majority SELL consensus");
+    } else {
+      // Exactly equal - use confidence to decide
+      const buyConf = successfulResults.filter(r => r.signal === "BUY").reduce((s, r) => s + r.confidence, 0);
+      const sellConf = successfulResults.filter(r => r.signal === "SELL").reduce((s, r) => s + r.confidence, 0);
+      if (buyConf >= sellConf) {
+        finalSignal = "BUY";
+        warnings.push("Tie-breaker: BUY wins on confidence");
+      } else {
+        finalSignal = "SELL";
+        warnings.push("Tie-breaker: SELL wins on confidence");
+      }
     }
   }
 
-  // Require 55%+ average confidence for actionable signals (relaxed from 60%)
-  if (avgConfidence < 55 && finalSignal !== "NO_TRADE") {
-    warnings.push(`Confidence at ${Math.round(avgConfidence)}% - borderline setup`);
-    // Only block if very low confidence
-    if (avgConfidence < 45) {
-      finalSignal = "NO_TRADE";
-      hasConsensus = false;
-    }
+  // If only 1 provider has direction, still use it (less conservative)
+  if (agreementCount === 1 && finalSignal !== "NO_TRADE") {
+    warnings.push("Single provider conviction - moderate position size recommended");
+  }
+
+  // Only block if VERY low confidence (below 40%)
+  if (avgConfidence < 40 && finalSignal !== "NO_TRADE") {
+    finalSignal = "NO_TRADE";
+    hasConsensus = false;
+    warnings.push(`Very low confidence ${Math.round(avgConfidence)}% - no clear edge`);
+  } else if (avgConfidence < 55 && finalSignal !== "NO_TRADE") {
+    warnings.push(`Confidence ${Math.round(avgConfidence)}% - smaller position recommended`);
   }
 
   // Only block if ALL providers flag HIGH risk
   if (highRiskCount >= 3) {
-    finalSignal = "NO_TRADE";
-    hasConsensus = false;
-    warnings.push("All providers flagged high risk - capital protection engaged");
+    warnings.push("All providers flagged high risk - use tight stop-loss");
+    // Don't block - still allow signal but with warning
   } else if (highRiskCount >= 2) {
     warnings.push("Elevated risk detected - use smaller position size");
-  }
-  
-  // Check for direct BUY vs SELL conflict
-  const signalMismatch = signalCounts["BUY"] > 0 && signalCounts["SELL"] > 0;
-
-  if (signalMismatch) {
-    finalSignal = "NO_TRADE";
-    hasConsensus = false;
-    warnings.push("CRITICAL: Conflicting BUY/SELL signals detected - staying out");
   }
 
   const riskCounts: Record<RiskGrade, number> = { LOW: 0, MEDIUM: 0, HIGH: 0 };
