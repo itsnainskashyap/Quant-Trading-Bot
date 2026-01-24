@@ -296,24 +296,34 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
           takeProfit,
         });
         
-        // Execute auto-trade if enabled
-        let autoTradeResult = null;
-        try {
-          const { executeAutoTrade } = await import('./brokerService');
-          autoTradeResult = await executeAutoTrade(userId, pair, signalType, tradeSize || 0, entryPrice);
-          if (autoTradeResult.orders.length > 0) {
-            console.log(`[AutoTrade] Executed ${autoTradeResult.orders.length} orders for user ${userId}`);
+        // Execute auto-trade with SL/TP if enabled (fire-and-forget, non-blocking)
+        (async () => {
+          try {
+            const { executeTradeWithStopLoss } = await import('./brokerService');
+            const autoTradeResult = await executeTradeWithStopLoss(
+              userId, 
+              pair, 
+              signalType, 
+              tradeSize || 0, 
+              entryPrice,
+              stopLoss || entryPrice * (signalType === 'BUY' ? 0.98 : 1.02),
+              takeProfit || entryPrice * (signalType === 'BUY' ? 1.03 : 0.97),
+              1 // default leverage
+            );
+            if (autoTradeResult.orders.length > 0) {
+              console.log(`[AutoTrade] Executed ${autoTradeResult.orders.length} orders (with SL/TP) for user ${userId}`);
+            }
+          } catch (autoTradeError) {
+            console.error("[AutoTrade] Error (non-blocking):", autoTradeError);
           }
-        } catch (autoTradeError) {
-          console.error("Auto-trade error (non-blocking):", autoTradeError);
-        }
+        })();
         
         res.json({
           prediction,
           signal,
           message: `Trade recorded. Exit window: ${exitWindow} minutes.`,
           remaining: canTrade.remaining !== undefined ? canTrade.remaining - 1 : undefined,
-          autoTrade: autoTradeResult,
+          autoTrade: { queued: true },
         });
       } catch (dbError: any) {
         console.error("Database error creating prediction:", dbError?.message || dbError);
@@ -557,7 +567,18 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
         return;
       }
 
-      const { testBrokerConnection } = await import('./brokerService');
+      const userId = user.claims?.sub;
+      if (!userId) {
+        res.status(401).json({ error: "Invalid session" });
+        return;
+      }
+
+      const { testBrokerConnection, verifyBrokerOwnership } = await import('./brokerService');
+      if (!await verifyBrokerOwnership(req.params.id, userId)) {
+        res.status(403).json({ error: "Access denied" });
+        return;
+      }
+
       const result = await testBrokerConnection(req.params.id);
       res.json(result);
     } catch (error: any) {
@@ -574,8 +595,19 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
         return;
       }
 
+      const userId = user.claims?.sub;
+      if (!userId) {
+        res.status(401).json({ error: "Invalid session" });
+        return;
+      }
+
+      const { updateBrokerConnection, verifyBrokerOwnership } = await import('./brokerService');
+      if (!await verifyBrokerOwnership(req.params.id, userId)) {
+        res.status(403).json({ error: "Access denied" });
+        return;
+      }
+
       const { autoTrade, isActive, testMode } = req.body;
-      const { updateBrokerConnection } = await import('./brokerService');
       const updated = await updateBrokerConnection(req.params.id, { autoTrade, isActive, testMode });
       
       if (updated) {
@@ -597,11 +629,106 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
         return;
       }
 
-      const { deleteBrokerConnection } = await import('./brokerService');
+      const userId = user.claims?.sub;
+      if (!userId) {
+        res.status(401).json({ error: "Invalid session" });
+        return;
+      }
+
+      const { deleteBrokerConnection, verifyBrokerOwnership } = await import('./brokerService');
+      if (!await verifyBrokerOwnership(req.params.id, userId)) {
+        res.status(403).json({ error: "Access denied" });
+        return;
+      }
+
       await deleteBrokerConnection(req.params.id);
       res.json({ success: true });
     } catch (error: any) {
       console.error("Delete broker error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Portfolio and positions routes
+  app.get("/api/portfolio", async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+
+      const userId = user.claims?.sub;
+      if (!userId) {
+        res.status(401).json({ error: "Invalid session" });
+        return;
+      }
+
+      const { getPortfolioBalances } = await import('./brokerService');
+      const portfolio = await getPortfolioBalances(userId);
+      res.json(portfolio);
+    } catch (error: any) {
+      console.error("Portfolio error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/positions", async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+
+      const userId = user.claims?.sub;
+      if (!userId) {
+        res.status(401).json({ error: "Invalid session" });
+        return;
+      }
+
+      const { getOpenPositions } = await import('./brokerService');
+      const positions = await getOpenPositions(userId);
+      res.json(positions);
+    } catch (error: any) {
+      console.error("Positions error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/trade-suggestion", async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+
+      const userId = user.claims?.sub;
+      if (!userId) {
+        res.status(401).json({ error: "Invalid session" });
+        return;
+      }
+
+      const { confidence, maxLeverage } = req.body;
+      
+      const { getPortfolioBalances, calculateOptimalTradeSize } = await import('./brokerService');
+      const portfolio = await getPortfolioBalances(userId);
+      
+      const suggestion = calculateOptimalTradeSize(
+        portfolio.totalBalance || 0,
+        2, // 2% risk
+        maxLeverage || 10,
+        confidence || 75
+      );
+
+      res.json({
+        ...suggestion,
+        totalBalance: portfolio.totalBalance,
+        exchanges: portfolio.exchanges.length,
+      });
+    } catch (error: any) {
+      console.error("Trade suggestion error:", error);
       res.status(500).json({ error: error.message });
     }
   });

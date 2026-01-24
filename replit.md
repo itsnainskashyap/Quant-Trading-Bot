@@ -40,6 +40,10 @@ client/
       BacktestStats.tsx       # Backtesting performance statistics
       TechnicalIndicators.tsx # Real-time technical indicators display
       NotificationBanner.tsx  # Signal notifications with browser alerts
+      BrokerSettings.tsx      # Exchange connection management (8 exchanges supported)
+      PortfolioDashboard.tsx  # Multi-exchange portfolio with balance aggregation
+      LiveTradeAnalyzer.tsx   # Real-time trade monitoring with P&L tracking
+      TradeAutomationSettings.tsx # User trading preferences (leverage, SL/TP, risk)
     pages/
       Landing.tsx             # Public landing page
       Dashboard.tsx           # Main trading dashboard (auth required)
@@ -79,6 +83,15 @@ shared/
 - `GET /api/history` - Get signal history
 - `GET /api/backtest-stats` - Get backtesting performance statistics
 - `GET /api/indicators/:pair` - Get technical indicators for a specific pair
+- `GET /api/brokers/supported` - Get list of supported exchanges
+- `GET /api/brokers` - Get user's broker connections (masked API keys)
+- `POST /api/brokers/connect` - Add new exchange connection
+- `POST /api/brokers/:id/test` - Test broker connection and get balance
+- `PATCH /api/brokers/:id` - Update broker settings (autoTrade, isActive, testMode)
+- `DELETE /api/brokers/:id` - Remove broker connection
+- `GET /api/portfolio` - Get aggregated portfolio balances from all exchanges
+- `GET /api/positions` - Get open positions across all exchanges
+- `POST /api/trade-suggestion` - Get AI-powered trade size and leverage suggestions
 
 ## Key Features
 
@@ -160,6 +173,43 @@ shared/
 - Permission request on first interaction
 - Notification history in dashboard
 - Real-time signal change detection
+
+### 12. Multi-Exchange Broker Integration
+- CCXT library integration supporting 8 major exchanges
+- Supported: Binance, Bybit, OKX, KuCoin, Bitget, Gate.io, Kraken, MEXC
+- Secure API key storage with masked preview in UI
+- Test mode (sandbox) support for safe testing
+- Auto-trade execution when user takes signals
+- Automatic stop-loss and take-profit order placement
+- Ownership verification for all broker operations
+
+### 13. Portfolio Dashboard
+- Aggregated balance view across all connected exchanges
+- Real-time balance fetching from each exchange
+- Total portfolio value in USDT
+- Per-exchange balance breakdown
+- Open positions tracking with unrealized P&L
+
+### 14. Live Trade Analyzer
+- Real-time P&L tracking after taking trades
+- Visual progress bar showing position relative to SL/TP
+- AI-powered trade recommendations (HOLD, TRAILING_STOP, CLOSE_PROFIT, CLOSE_LOSS)
+- Time-in-trade monitoring
+- Risk/reward ratio calculation
+
+### 15. AI Trade Suggestions
+- Portfolio-based trade size calculation
+- Risk-adjusted position sizing (2% max risk)
+- Confidence-based leverage suggestions
+- Automatic trade size optimization
+
+### 16. Trade Automation Settings
+- Configurable default leverage (1x-20x)
+- Auto stop-loss with customizable percentage
+- Auto take-profit with customizable percentage
+- Trailing stop support
+- Maximum daily trades limit
+- Minimum confidence threshold
 
 ## Design System
 - **Theme**: Dark mode by default (professional trading aesthetic)

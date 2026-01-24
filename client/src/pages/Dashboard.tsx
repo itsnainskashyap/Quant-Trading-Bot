@@ -39,6 +39,9 @@ import { BacktestStats } from "@/components/BacktestStats";
 import { TechnicalIndicators } from "@/components/TechnicalIndicators";
 import { NotificationBanner, NotificationButton } from "@/components/NotificationBanner";
 import { BrokerSettings } from "@/components/BrokerSettings";
+import { PortfolioDashboard } from "@/components/PortfolioDashboard";
+import { LiveTradeAnalyzer } from "@/components/LiveTradeAnalyzer";
+import { TradeAutomationSettings } from "@/components/TradeAutomationSettings";
 import type { TradingPair, ConsensusResult, MarketMetrics } from "@shared/schema";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 
@@ -711,6 +714,9 @@ export default function Dashboard() {
 
           <div className="space-y-4">
             <BrokerSettings />
+            <PortfolioDashboard confidence={data?.signal?.confidence || 75} />
+            <ActiveTradeMonitor selectedPair={selectedPair} currentPrice={data?.prices?.find((p: any) => p.pair === selectedPair)?.price} />
+            <TradeAutomationSettings />
             
             <Card className="bg-[#12121a] border-white/5">
               <CardContent className="p-3">
@@ -1046,5 +1052,35 @@ function TradeHistory({ currentPrices }: { currentPrices?: Map<string, number> }
         })}
       </div>
     </div>
+  );
+}
+
+function ActiveTradeMonitor({ selectedPair, currentPrice }: { selectedPair: string; currentPrice?: number }) {
+  const { data } = useQuery<{ predictions: any[]; stats: any }>({
+    queryKey: ['/api/predictions'],
+    refetchInterval: 3000,
+  });
+
+  const activeTrade = data?.predictions?.find(
+    (pred: any) => pred.outcome === 'PENDING' && pred.pair === selectedPair
+  );
+
+  if (!activeTrade || !currentPrice) {
+    return null;
+  }
+
+  return (
+    <LiveTradeAnalyzer
+      activeTrade={{
+        pair: activeTrade.pair,
+        entryPrice: activeTrade.entryPrice,
+        stopLoss: activeTrade.stopLoss || activeTrade.entryPrice * (activeTrade.signal === 'BUY' ? 0.98 : 1.02),
+        takeProfit: activeTrade.takeProfit || activeTrade.entryPrice * (activeTrade.signal === 'BUY' ? 1.03 : 0.97),
+        signal: activeTrade.signal,
+        tradeSize: activeTrade.tradeSize || 100,
+        createdAt: activeTrade.createdAt,
+      }}
+      currentPrice={currentPrice}
+    />
   );
 }

@@ -61,6 +61,13 @@ export async function getUserBrokerConnections(userId: string): Promise<BrokerCo
   return db.select().from(brokerConnections).where(eq(brokerConnections.userId, userId));
 }
 
+export async function verifyBrokerOwnership(connectionId: string, userId: string): Promise<boolean> {
+  const [connection] = await db.select()
+    .from(brokerConnections)
+    .where(and(eq(brokerConnections.id, connectionId), eq(brokerConnections.userId, userId)));
+  return !!connection;
+}
+
 export async function addBrokerConnection(
   userId: string,
   exchange: string,
@@ -217,5 +224,292 @@ export async function executeAutoTrade(
     success: orders.length > 0 || errors.length === 0,
     orders,
     errors,
+  };
+}
+
+export async function getPortfolioBalances(userId: string): Promise<{
+  exchanges: Array<{
+    exchange: string;
+    testMode: boolean;
+    balances: Record<string, { free: number; used: number; total: number }>;
+    totalUSDT: number;
+    error?: string;
+  }>;
+  totalBalance: number;
+}> {
+  const connections = await db.select()
+    .from(brokerConnections)
+    .where(and(eq(brokerConnections.userId, userId), eq(brokerConnections.isActive, true)));
+
+  const results: Array<{
+    exchange: string;
+    testMode: boolean;
+    balances: Record<string, { free: number; used: number; total: number }>;
+    totalUSDT: number;
+    error?: string;
+  }> = [];
+  let totalBalance = 0;
+
+  for (const connection of connections) {
+    try {
+      const exchange = createExchange(
+        connection.exchange,
+        connection.apiKey,
+        connection.apiSecret,
+        connection.passphrase || undefined,
+        connection.testMode || false
+      );
+
+      const balance = await exchange.fetchBalance();
+      const usdtBalance = balance.USDT?.total || 0;
+      
+      const filteredBalances: Record<string, { free: number; used: number; total: number }> = {};
+      for (const [currency, bal] of Object.entries(balance)) {
+        if (bal && typeof bal === 'object' && 'total' in bal && (bal as any).total > 0) {
+          filteredBalances[currency] = bal as any;
+        }
+      }
+
+      results.push({
+        exchange: connection.exchange,
+        testMode: connection.testMode || false,
+        balances: filteredBalances,
+        totalUSDT: usdtBalance,
+      });
+      totalBalance += usdtBalance;
+    } catch (error: any) {
+      results.push({
+        exchange: connection.exchange,
+        testMode: connection.testMode || false,
+        balances: {},
+        totalUSDT: 0,
+        error: error.message,
+      });
+    }
+  }
+
+  return { exchanges: results, totalBalance };
+}
+
+export async function executeTradeWithStopLoss(
+  userId: string,
+  pair: string,
+  signal: 'BUY' | 'SELL',
+  tradeSize: number,
+  entryPrice: number,
+  stopLossPrice: number,
+  takeProfitPrice: number,
+  leverage?: number
+): Promise<{ success: boolean; orders: any[]; errors: string[] }> {
+  const orders: any[] = [];
+  const errors: string[] = [];
+
+  const connections = await db.select()
+    .from(brokerConnections)
+    .where(
+      and(
+        eq(brokerConnections.userId, userId),
+        eq(brokerConnections.isActive, true),
+        eq(brokerConnections.autoTrade, true)
+      )
+    );
+
+  if (connections.length === 0) {
+    return { success: true, orders: [], errors: [] };
+  }
+
+  const ccxtSymbol = PAIR_MAPPING[pair] || pair.replace('-', '/');
+
+  for (const connection of connections) {
+    try {
+      const exchange = createExchange(
+        connection.exchange,
+        connection.apiKey,
+        connection.apiSecret,
+        connection.passphrase || undefined,
+        connection.testMode || false
+      );
+
+      await exchange.loadMarkets();
+      
+      const amount = tradeSize / entryPrice;
+      
+      // Set leverage if supported
+      if (leverage && leverage > 1) {
+        try {
+          await (exchange as any).setLeverage(leverage, ccxtSymbol);
+        } catch (e) {
+          console.log(`[AutoTrade] ${connection.exchange}: Leverage not supported or failed`);
+        }
+      }
+
+      // Place main market order
+      const mainOrder = await exchange.createMarketOrder(
+        ccxtSymbol,
+        signal.toLowerCase() as 'buy' | 'sell',
+        amount
+      );
+
+      orders.push({
+        exchange: connection.exchange,
+        type: 'ENTRY',
+        orderId: mainOrder.id,
+        symbol: ccxtSymbol,
+        side: signal,
+        amount: mainOrder.amount,
+        price: mainOrder.price || entryPrice,
+        status: mainOrder.status,
+      });
+
+      // Place stop-loss order
+      try {
+        const slSide = signal === 'BUY' ? 'sell' : 'buy';
+        const slOrder = await exchange.createOrder(
+          ccxtSymbol,
+          'stop_market',
+          slSide,
+          amount,
+          undefined,
+          { stopPrice: stopLossPrice, reduceOnly: true }
+        );
+        orders.push({
+          exchange: connection.exchange,
+          type: 'STOP_LOSS',
+          orderId: slOrder.id,
+          symbol: ccxtSymbol,
+          side: slSide.toUpperCase(),
+          amount: slOrder.amount,
+          stopPrice: stopLossPrice,
+          status: slOrder.status,
+        });
+      } catch (slError: any) {
+        console.log(`[AutoTrade] ${connection.exchange}: Stop-loss order failed - ${slError.message}`);
+      }
+
+      // Place take-profit order
+      try {
+        const tpSide = signal === 'BUY' ? 'sell' : 'buy';
+        const tpOrder = await exchange.createOrder(
+          ccxtSymbol,
+          'take_profit_market',
+          tpSide,
+          amount,
+          undefined,
+          { stopPrice: takeProfitPrice, reduceOnly: true }
+        );
+        orders.push({
+          exchange: connection.exchange,
+          type: 'TAKE_PROFIT',
+          orderId: tpOrder.id,
+          symbol: ccxtSymbol,
+          side: tpSide.toUpperCase(),
+          amount: tpOrder.amount,
+          stopPrice: takeProfitPrice,
+          status: tpOrder.status,
+        });
+      } catch (tpError: any) {
+        console.log(`[AutoTrade] ${connection.exchange}: Take-profit order failed - ${tpError.message}`);
+      }
+
+      console.log(`[AutoTrade] ${connection.exchange}: ${signal} ${amount} ${ccxtSymbol} with SL/TP`);
+    } catch (error: any) {
+      console.error(`[AutoTrade] ${connection.exchange} error:`, error);
+      errors.push(`${connection.exchange}: ${error.message}`);
+    }
+  }
+
+  return { success: orders.length > 0 || errors.length === 0, orders, errors };
+}
+
+export async function getOpenPositions(userId: string): Promise<{
+  positions: Array<{
+    exchange: string;
+    symbol: string;
+    side: string;
+    amount: number;
+    entryPrice: number;
+    markPrice: number;
+    unrealizedPnl: number;
+    leverage: number;
+  }>;
+  totalPnl: number;
+}> {
+  const connections = await db.select()
+    .from(brokerConnections)
+    .where(and(eq(brokerConnections.userId, userId), eq(brokerConnections.isActive, true)));
+
+  const positions: Array<{
+    exchange: string;
+    symbol: string;
+    side: string;
+    amount: number;
+    entryPrice: number;
+    markPrice: number;
+    unrealizedPnl: number;
+    leverage: number;
+  }> = [];
+  let totalPnl = 0;
+
+  for (const connection of connections) {
+    try {
+      const exchange = createExchange(
+        connection.exchange,
+        connection.apiKey,
+        connection.apiSecret,
+        connection.passphrase || undefined,
+        connection.testMode || false
+      );
+
+      if (exchange.has['fetchPositions']) {
+        const openPositions = await exchange.fetchPositions();
+        for (const pos of openPositions) {
+          if (pos.contracts && pos.contracts > 0) {
+            const unrealizedPnl = pos.unrealizedPnl || 0;
+            positions.push({
+              exchange: connection.exchange,
+              symbol: pos.symbol,
+              side: pos.side || 'long',
+              amount: pos.contracts,
+              entryPrice: pos.entryPrice || 0,
+              markPrice: pos.markPrice || 0,
+              unrealizedPnl,
+              leverage: pos.leverage || 1,
+            });
+            totalPnl += unrealizedPnl;
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error(`[Positions] ${connection.exchange} error:`, error.message);
+    }
+  }
+
+  return { positions, totalPnl };
+}
+
+export function calculateOptimalTradeSize(
+  totalBalance: number,
+  riskPercent: number = 2,
+  leverage: number = 1,
+  confidence: number = 75
+): { tradeSize: number; suggestedLeverage: number; riskAmount: number } {
+  // Risk-based position sizing
+  const riskAmount = totalBalance * (riskPercent / 100);
+  const baseSize = totalBalance * 0.1; // 10% max position size
+  
+  // Adjust based on confidence
+  const confidenceMultiplier = Math.min(confidence / 100, 1);
+  const adjustedSize = baseSize * confidenceMultiplier;
+  
+  // Suggest leverage based on confidence
+  let suggestedLeverage = 1;
+  if (confidence >= 85) suggestedLeverage = Math.min(leverage, 5);
+  else if (confidence >= 80) suggestedLeverage = Math.min(leverage, 3);
+  else if (confidence >= 75) suggestedLeverage = Math.min(leverage, 2);
+  
+  return {
+    tradeSize: Math.min(adjustedSize, totalBalance * 0.15),
+    suggestedLeverage,
+    riskAmount,
   };
 }
