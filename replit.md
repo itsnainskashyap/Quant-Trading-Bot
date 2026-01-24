@@ -107,14 +107,17 @@ shared/
 - Calculate and display profit/loss percentage
 - Store outcome with AI-generated reasoning
 
-### 3. 100% FREE Platform
-- Completely free access for all users
-- Unlimited trading signals with no daily limits
-- No subscription plans or Pro tiers required
+### 3. Free & Pro Subscription Tiers
+- **Free Tier**: 10 AI analyses per day, basic features
+- **Pro Tier**: Unlimited AI analyses, auto-trade execution, priority support
+- Anonymous users get unlimited analyses to try the platform
+- Subscription tracked via daily_usage table in database
 
 ### 4. Capital Management & Risk Protection
-- User sets their trading capital amount
-- AI calculates exact trade size (10% of capital)
+- Capital linked to TradeX virtual broker balance
+- Dynamic AI-based position sizing (5-15% based on confidence)
+  - 85%+ confidence = 15% position
+  - 75-84% = 12%, 65-74% = 10%, 55-64% = 8%, <55% = 5%
 - Stop-loss at 2% risk per trade
 - Take-profit targets with 1:1.5 risk-reward ratio
 - Floating AI help bubble for trading assistance

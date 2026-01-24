@@ -45,6 +45,8 @@ export interface IStorage {
   getTotalUserCount(): Promise<number>;
   getUserDailyPredictionCount(userId: string): Promise<number>;
   canUserTrade(userId: string): Promise<{ allowed: boolean; reason?: string; remaining?: number }>;
+  getDailyUsage(userId: string, date: string): Promise<{ analysisCount: number } | null>;
+  incrementDailyUsage(userId: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -712,6 +714,57 @@ export class MemStorage implements IStorage {
   async canUserTrade(userId: string): Promise<{ allowed: boolean; reason?: string; remaining?: number; isEarlyAdopter?: boolean }> {
     // Platform is now 100% FREE - no limits, no Pro plan required
     return { allowed: true, remaining: -1, isEarlyAdopter: true };
+  }
+
+  async getDailyUsage(userId: string, date: string): Promise<{ analysisCount: number } | null> {
+    try {
+      const { dailyUsage } = await import("@shared/models/trading");
+      const result = await db.select()
+        .from(dailyUsage)
+        .where(and(
+          eq(dailyUsage.userId, userId),
+          eq(dailyUsage.date, date)
+        ))
+        .limit(1);
+      
+      if (result.length === 0) return null;
+      return { analysisCount: result[0].analysisCount };
+    } catch (error) {
+      console.error("Error getting daily usage:", error);
+      return null;
+    }
+  }
+
+  async incrementDailyUsage(userId: string): Promise<void> {
+    try {
+      const { dailyUsage } = await import("@shared/models/trading");
+      const today = new Date().toISOString().split('T')[0];
+      
+      const existing = await db.select()
+        .from(dailyUsage)
+        .where(and(
+          eq(dailyUsage.userId, userId),
+          eq(dailyUsage.date, today)
+        ))
+        .limit(1);
+      
+      if (existing.length > 0) {
+        await db.update(dailyUsage)
+          .set({ 
+            analysisCount: (existing[0].analysisCount || 0) + 1,
+            updatedAt: new Date()
+          })
+          .where(eq(dailyUsage.id, existing[0].id));
+      } else {
+        await db.insert(dailyUsage).values({
+          userId,
+          date: today,
+          analysisCount: 1
+        });
+      }
+    } catch (error) {
+      console.error("Error incrementing daily usage:", error);
+    }
   }
 }
 

@@ -82,6 +82,16 @@ export const tradexTrades = pgTable("tradex_trades", {
   lastUpdated: timestamp("last_updated").defaultNow(),
 });
 
+// Daily usage tracking for Free/Pro tier limits
+export const dailyUsage = pgTable("daily_usage", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  date: varchar("date").notNull(), // YYYY-MM-DD format
+  analysisCount: integer("analysis_count").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export type Subscription = typeof subscriptions.$inferSelect;
 export type InsertSubscription = typeof subscriptions.$inferInsert;
 export type Prediction = typeof predictions.$inferSelect;
@@ -92,3 +102,5 @@ export type TradexBalance = typeof tradexBalances.$inferSelect;
 export type InsertTradexBalance = typeof tradexBalances.$inferInsert;
 export type TradexTrade = typeof tradexTrades.$inferSelect;
 export type InsertTradexTrade = typeof tradexTrades.$inferInsert;
+export type DailyUsage = typeof dailyUsage.$inferSelect;
+export type InsertDailyUsage = typeof dailyUsage.$inferInsert;

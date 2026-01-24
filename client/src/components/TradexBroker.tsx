@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -20,7 +21,9 @@ import {
   XCircle,
   CheckCircle,
   Sparkles,
-  Brain
+  Brain,
+  Timer,
+  Activity
 } from "lucide-react";
 import { ExchangeLogo } from "./ExchangeLogos";
 
@@ -50,11 +53,29 @@ interface TradexBrokerProps {
   signal?: { signal: string; confidence: number };
 }
 
+// Calculate elapsed time since trade opened
+function formatElapsedTime(createdAt: string): string {
+  const start = new Date(createdAt).getTime();
+  const now = Date.now();
+  const diffMs = now - start;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  
+  if (diffHr > 0) {
+    return `${diffHr}h ${diffMin % 60}m`;
+  } else if (diffMin > 0) {
+    return `${diffMin}m ${diffSec % 60}s`;
+  }
+  return `${diffSec}s`;
+}
+
 export function TradexBroker({ selectedPair, currentPrice, signal }: TradexBrokerProps) {
   const { toast } = useToast();
   const [isAddBalanceOpen, setIsAddBalanceOpen] = useState(false);
   const [addAmount, setAddAmount] = useState("");
-  const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
+  const [elapsedTimes, setElapsedTimes] = useState<Record<string, string>>({});
+  const [isAnalyzing, setIsAnalyzing] = useState<Record<string, boolean>>({});
 
   const { data: balanceData, refetch: refetchBalance } = useQuery<{ balance: number }>({
     queryKey: ['/api/tradex/balance'],
@@ -117,19 +138,40 @@ export function TradexBroker({ selectedPair, currentPrice, signal }: TradexBroke
     },
   });
 
+  // Update elapsed times every second
   useEffect(() => {
     if (tradesData?.trades && tradesData.trades.length > 0) {
-      const interval = setInterval(() => {
+      const timerInterval = setInterval(() => {
+        const newTimes: Record<string, string> = {};
         tradesData.trades.forEach(trade => {
-          if (trade.pair === selectedPair && currentPrice > 0) {
-            analyzeTradeMutation.mutate({ tradeId: trade.id, currentPrice });
+          if (trade.status === 'OPEN' && trade.createdAt) {
+            newTimes[trade.id] = formatElapsedTime(trade.createdAt);
+          }
+        });
+        setElapsedTimes(newTimes);
+      }, 1000);
+      return () => clearInterval(timerInterval);
+    }
+  }, [tradesData?.trades]);
+
+  // Real-time AI analysis every 5 seconds
+  useEffect(() => {
+    if (tradesData?.trades && tradesData.trades.length > 0 && currentPrice > 0) {
+      const analysisInterval = setInterval(() => {
+        tradesData.trades.forEach(trade => {
+          if (trade.status === 'OPEN') {
+            setIsAnalyzing(prev => ({ ...prev, [trade.id]: true }));
+            analyzeTradeMutation.mutate({ tradeId: trade.id, currentPrice }, {
+              onSettled: () => {
+                setIsAnalyzing(prev => ({ ...prev, [trade.id]: false }));
+              }
+            });
           }
         });
       }, 5000);
-      setRefreshInterval(interval);
-      return () => clearInterval(interval);
+      return () => clearInterval(analysisInterval);
     }
-  }, [tradesData?.trades, selectedPair, currentPrice]);
+  }, [tradesData?.trades, currentPrice]);
 
   const balance = balanceData?.balance || 0;
   const openTrades = tradesData?.trades || [];
@@ -157,7 +199,7 @@ export function TradexBroker({ selectedPair, currentPrice, signal }: TradexBroke
   };
 
   return (
-    <Card className="bg-gradient-to-br from-[#12121a] to-[#1a1a2e] border-blue-500/20">
+    <Card className="bg-gradient-to-br from-[#12121a] to-[#1a1a2e] border-blue-500/20" data-testid="tradex-broker-section">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -282,8 +324,14 @@ export function TradexBroker({ selectedPair, currentPrice, signal }: TradexBroke
                       <span className="text-[9px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400">{trade.leverage}x</span>
                     )}
                   </div>
-                  <div className={`text-sm font-bold ${(trade.profitLossPercent || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {(trade.profitLossPercent || 0) >= 0 ? '+' : ''}{(trade.profitLossPercent || 0).toFixed(2)}%
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                      <Timer className="w-3 h-3" />
+                      <span className="font-mono">{elapsedTimes[trade.id] || '0s'}</span>
+                    </div>
+                    <div className={`text-sm font-bold ${(trade.profitLossPercent || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {(trade.profitLossPercent || 0) >= 0 ? '+' : ''}{(trade.profitLossPercent || 0).toFixed(2)}%
+                    </div>
                   </div>
                 </div>
 
@@ -296,23 +344,39 @@ export function TradexBroker({ selectedPair, currentPrice, signal }: TradexBroke
                   </div>
                 </div>
 
-                {trade.aiRecommendation && (
-                  <div className={`p-2 rounded border ${getRecommendationColor(trade.aiRecommendation)} bg-white/5 border-white/10 mb-2`}>
-                    <div className="flex items-center gap-1 text-[10px] font-medium mb-1">
-                      <Brain className="w-3 h-3" />
-                      {getRecommendationIcon(trade.aiRecommendation)}
-                      AI: {trade.aiRecommendation}
+                <div className={`p-2 rounded border ${trade.aiRecommendation ? getRecommendationColor(trade.aiRecommendation) : 'text-gray-400'} bg-white/5 border-white/10 mb-2`}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1 text-[10px] font-medium">
+                      {isAnalyzing[trade.id] ? (
+                        <>
+                          <Loader2 className="w-3 h-3 animate-spin text-purple-400" />
+                          <span className="text-purple-400">AI Analyzing...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Brain className="w-3 h-3" />
+                          {trade.aiRecommendation && getRecommendationIcon(trade.aiRecommendation)}
+                          AI: {trade.aiRecommendation || 'Analyzing...'}
+                        </>
+                      )}
                     </div>
-                    {trade.aiAnalysis && (
-                      <div className="text-[9px] text-gray-400">{trade.aiAnalysis}</div>
-                    )}
+                    <div className="flex items-center gap-1 text-[9px] text-gray-500">
+                      <Activity className="w-2.5 h-2.5" />
+                      <span>Live</span>
+                    </div>
+                  </div>
+                  {trade.aiAnalysis && (
+                    <div className="text-[9px] text-gray-400">{trade.aiAnalysis}</div>
+                  )}
+                  <div className="flex gap-3 mt-1 text-[9px]">
                     {trade.aiStopLoss && (
-                      <div className="text-[9px] text-amber-400 mt-1">
-                        Suggested SL: ${trade.aiStopLoss.toFixed(2)}
-                      </div>
+                      <span className="text-red-400">SL: ${trade.aiStopLoss.toFixed(2)}</span>
+                    )}
+                    {trade.aiTakeProfit && (
+                      <span className="text-emerald-400">TP: ${trade.aiTakeProfit.toFixed(2)}</span>
                     )}
                   </div>
-                )}
+                </div>
 
                 <div className="flex gap-1">
                   <Button

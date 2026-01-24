@@ -143,11 +143,41 @@ export async function registerRoutes(
   app.post("/api/consensus", async (req, res) => {
     try {
       const { pair, tradeMode = 5 } = req.body as { pair: TradingPair; tradeMode?: number };
+      const user = (req as any).user;
       
       if (!tradingPairs.includes(pair)) {
         res.status(400).json({ error: "Invalid trading pair" });
         return;
       }
+      
+      // Track subscription limits for authenticated users
+      // Free tier: 10 analyses/day, Pro: unlimited
+      // Anonymous users: unlimited (to allow testing before login)
+      if (user?.claims?.sub) {
+        const userId = user.claims.sub;
+        const subscription = await storage.getUserSubscription(userId);
+        const isPro = subscription?.plan === 'pro' && subscription?.status === 'active';
+        
+        if (!isPro) {
+          const today = new Date().toISOString().split('T')[0];
+          const usage = await storage.getDailyUsage(userId, today);
+          const usedToday = usage?.analysisCount || 0;
+          
+          if (usedToday >= 10) {
+            res.status(429).json({ 
+              error: "Daily analysis limit reached. Upgrade to Pro for unlimited analyses!",
+              usedToday,
+              dailyLimit: 10,
+              remaining: 0
+            });
+            return;
+          }
+        }
+        
+        // Increment usage only for authenticated users
+        await storage.incrementDailyUsage(userId);
+      }
+      // Note: Anonymous users get unlimited analyses to encourage sign-up
       
       // Validate tradeMode
       const validModes = [1, 3, 5, 10];
@@ -417,13 +447,33 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
         return;
       }
       
-      // Platform is now 100% FREE - unlimited signals for everyone
+      const userId = user.claims?.sub;
+      if (!userId) {
+        res.status(401).json({ error: "Invalid session" });
+        return;
+      }
+
+      // Check subscription plan
+      const subscription = await storage.getUserSubscription(userId);
+      const isPro = subscription?.plan === 'pro' && subscription?.status === 'active';
+      
+      // Free tier: 10 analyses per day, Pro: unlimited
+      const dailyLimit = isPro ? -1 : 10;
+      
+      // Get today's usage
+      const today = new Date().toISOString().split('T')[0];
+      const usage = await storage.getDailyUsage(userId, today);
+      const usedToday = usage?.analysisCount || 0;
+      const remaining = isPro ? -1 : Math.max(0, dailyLimit - usedToday);
+      
       res.json({
-        plan: "free",
+        plan: isPro ? 'pro' : 'free',
+        isPro,
         canTrade: true,
-        remaining: -1, // Unlimited
-        dailyLimit: -1, // Unlimited
-        isEarlyAdopter: true,
+        remaining,
+        dailyLimit,
+        usedToday,
+        isEarlyAdopter: false,
       });
     } catch (error) {
       console.error("Subscription error:", error);

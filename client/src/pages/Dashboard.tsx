@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { 
   TrendingUp, 
   TrendingDown,
@@ -29,7 +31,11 @@ import {
   Send,
   Wallet,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Crown,
+  Sparkles,
+  Brain,
+  Plus
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -137,6 +143,7 @@ interface AnalysisResult {
     psychologyNote: string;
   };
   tradeRecommendation?: TradeRecommendation;
+  positionPercent?: number;
 }
 
 type TradeMode = 1 | 3 | 5 | 10;
@@ -153,10 +160,6 @@ export default function Dashboard() {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [tradeMode, setTradeMode] = useState<TradeMode>(5);
-  const [capital, setCapital] = useState<number>(() => {
-    const saved = localStorage.getItem('userCapital');
-    return saved ? Number(saved) : 10000;
-  });
   const [showAllCoins, setShowAllCoins] = useState(false);
   const [showHelpChat, setShowHelpChat] = useState(false);
   const [helpMessage, setHelpMessage] = useState("");
@@ -166,9 +169,28 @@ export default function Dashboard() {
   const { toast } = useToast();
   const { user, isLoading: authLoading } = useAuth();
 
-  useEffect(() => {
-    localStorage.setItem('userCapital', capital.toString());
-  }, [capital]);
+  // Fetch TradeX balance as capital
+  const { data: tradexBalanceData, refetch: refetchBalance } = useQuery<{ balance: number }>({
+    queryKey: ['/api/tradex/balance'],
+    enabled: !!user,
+    refetchInterval: 5000,
+  });
+  const capital = tradexBalanceData?.balance || 0;
+
+  // Fetch subscription status
+  const { data: subscription } = useQuery<{ 
+    plan: string; 
+    remaining: number; 
+    dailyLimit: number; 
+    isEarlyAdopter?: boolean;
+    isPro?: boolean;
+  }>({
+    queryKey: ['/api/subscription'],
+    enabled: !!user,
+  });
+  const isPro = subscription?.isPro || subscription?.plan === 'pro';
+  const dailyAnalysesRemaining = subscription?.remaining ?? 10;
+  const dailyLimit = subscription?.dailyLimit ?? 10;
 
   const { data, isLoading, refetch, isRefetching } = useQuery<DashboardData>({
     queryKey: ['/api/dashboard', selectedPair],
@@ -177,6 +199,10 @@ export default function Dashboard() {
 
   const analyzeMutation = useMutation({
     mutationFn: async () => {
+      // Check if user has analyses remaining (Free tier: 10/day, Pro: unlimited)
+      if (!isPro && dailyAnalysesRemaining <= 0) {
+        throw new Error("Daily analysis limit reached. Upgrade to Pro for unlimited analyses!");
+      }
       const response = await apiRequest('POST', '/api/consensus', { pair: selectedPair, capital, tradeMode });
       return response.json();
     },
@@ -185,17 +211,27 @@ export default function Dashboard() {
       const entryPrice = data?.prices.find(p => p.pair === selectedPair)?.price || 0;
       const holdDuration = tradeMode;
       
+      // Dynamic position sizing based on AI confidence (5-15% of capital)
+      // Higher confidence = larger position, lower confidence = smaller position
+      const confidence = consensus.consensusConfidence;
+      const positionPercent = confidence >= 85 ? 0.15 : 
+                              confidence >= 75 ? 0.12 : 
+                              confidence >= 65 ? 0.10 : 
+                              confidence >= 55 ? 0.08 : 0.05;
+      
       // Risk/reward based on trade mode - shorter timeframes = MUCH tighter targets for scalping
-      // 1 min: 0.15% risk (very tight scalp), 3 min: 0.25%, 5 min: 0.4%, 10 min: 0.6%
       const riskPercent = tradeMode === 1 ? 0.0015 : tradeMode === 3 ? 0.0025 : tradeMode === 5 ? 0.004 : 0.006;
       const rewardPercent = riskPercent * 1.5;
-      const tradeSize = capital * 0.1;
+      const tradeSize = capital * positionPercent;
       const stopLossPrice = consensus.consensusSignal === 'BUY' 
         ? entryPrice * (1 - riskPercent) 
         : entryPrice * (1 + riskPercent);
       const takeProfitPrice = consensus.consensusSignal === 'BUY'
         ? entryPrice * (1 + rewardPercent)
         : entryPrice * (1 - rewardPercent);
+      
+      // Invalidate subscription to update remaining count
+      queryClient.invalidateQueries({ queryKey: ['/api/subscription'] });
       
       setAnalysis({
         signal: consensus.consensusSignal === 'NO_TRADE' ? 'SKIP' : consensus.consensusSignal,
@@ -206,6 +242,7 @@ export default function Dashboard() {
         consensus,
         technicalAnalysis: (consensus as any).technicalAnalysis,
         sentimentAnalysis: (consensus as any).sentimentAnalysis,
+        positionPercent: Math.round(positionPercent * 100),
         tradeRecommendation: {
           tradeSize,
           stopLoss: stopLossPrice,
@@ -368,25 +405,80 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+        {/* Subscription Status Bar */}
+        <div className="mb-4 flex items-center justify-between p-2 rounded-lg bg-gradient-to-r from-[#0d0d14] to-[#12121a] border border-[#1a1a2e]">
+          <div className="flex items-center gap-3">
+            {isPro ? (
+              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-black font-semibold text-xs">
+                <Crown className="w-3 h-3 mr-1" />
+                PRO
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-gray-400 border-gray-700 text-xs">
+                FREE
+              </Badge>
+            )}
+            <div className="flex items-center gap-2 text-xs">
+              <Brain className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="text-gray-400">AI Analyses:</span>
+              {isPro ? (
+                <span className="text-cyan-400 font-mono">Unlimited</span>
+              ) : (
+                <span className="font-mono">
+                  <span className={dailyAnalysesRemaining > 3 ? 'text-emerald-400' : dailyAnalysesRemaining > 0 ? 'text-amber-400' : 'text-red-400'}>
+                    {dailyAnalysesRemaining}
+                  </span>
+                  <span className="text-gray-500">/{dailyLimit}</span>
+                </span>
+              )}
+            </div>
+          </div>
+          {!isPro && (
+            <Button 
+              size="sm" 
+              className="bg-gradient-to-r from-amber-500 to-orange-500 text-black hover:from-amber-400 hover:to-orange-400 text-xs h-7"
+              data-testid="button-upgrade-pro"
+            >
+              <Sparkles className="w-3 h-3 mr-1" />
+              Upgrade to Pro
+            </Button>
+          )}
+        </div>
+
         <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="p-3 rounded-lg bg-[#0d0d14] border border-[#1a1a2e]">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-gray-500 uppercase tracking-wider">Capital</span>
-              <Wallet className="w-4 h-4 text-gray-600" />
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 uppercase tracking-wider">TradeX Balance</span>
+                <Badge variant="outline" className="text-[9px] text-cyan-400 border-cyan-500/30 py-0 px-1.5">Virtual</Badge>
+              </div>
+              <Wallet className="w-4 h-4 text-cyan-500" />
             </div>
             <div className="flex items-center gap-2">
               <span className="text-gray-500 text-lg">$</span>
-              <Input
-                type="number"
-                value={capital}
-                onChange={(e) => setCapital(Number(e.target.value) || 0)}
-                className="flex-1 h-10 bg-transparent border-0 border-b border-[#1a1a2e] rounded-none text-xl font-semibold text-white font-mono focus-visible:ring-0 focus-visible:border-cyan-500/50 px-0"
-                data-testid="input-capital"
-              />
+              <span className="text-xl font-semibold text-white font-mono" data-testid="text-capital">
+                {capital.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                className="ml-auto h-7 px-2 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10"
+                onClick={() => {
+                  // Scroll to TradeX broker section
+                  const tradexSection = document.querySelector('[data-testid="tradex-broker-section"]');
+                  if (tradexSection) {
+                    tradexSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+                }}
+                data-testid="button-add-balance"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" />
+                Add
+              </Button>
             </div>
             <div className="flex items-center gap-4 mt-2 text-[11px] text-gray-500">
               <span>Risk: <span className="text-amber-400">{tradeMode === 1 ? '1%' : tradeMode === 3 ? '1.5%' : tradeMode === 5 ? '2%' : '2.5%'}</span></span>
-              <span>Position: <span className="text-cyan-400">10%</span></span>
+              <span>Position: <span className="text-cyan-400">{analysis?.positionPercent || '5-15'}%</span> <span className="text-gray-600">(AI-based)</span></span>
             </div>
           </div>
           
