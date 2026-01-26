@@ -12,6 +12,7 @@ import Register from "@/pages/Register";
 import Login from "@/pages/Login";
 import Personalize from "@/pages/Personalize";
 import Plans from "@/pages/Plans";
+import Payment from "@/pages/Payment";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 
@@ -27,7 +28,7 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
     return <Redirect to="/personalize" />;
   }
 
-  if (!user.onboardingCompleted && user.firstName && location !== "/plans") {
+  if (!user.onboardingCompleted && user.firstName && location !== "/plans" && location !== "/payment") {
     return <Redirect to="/plans" />;
   }
 
@@ -62,6 +63,9 @@ function AuthenticatedRoutes() {
       </Route>
       <Route path="/plans">
         <Plans />
+      </Route>
+      <Route path="/payment">
+        <Payment />
       </Route>
       <Route component={NotFound} />
     </Switch>

@@ -12,10 +12,7 @@ import {
   Zap, 
   Shield, 
   Brain, 
-  BarChart2, 
-  Clock,
-  Infinity,
-  TrendingUp
+  Sparkles
 } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
@@ -25,6 +22,7 @@ const plans = [
     id: "free",
     name: "Free",
     price: "$0",
+    oldPrice: null,
     period: "forever",
     description: "Perfect for getting started with AI trading signals",
     features: [
@@ -45,7 +43,8 @@ const plans = [
   {
     id: "pro",
     name: "Pro",
-    price: "$29",
+    price: "10 USDT",
+    oldPrice: "$199",
     period: "/month",
     description: "For serious traders who want every advantage",
     features: [
@@ -76,6 +75,11 @@ export function Plans() {
     setIsLoading(true);
 
     try {
+      if (planId === "pro") {
+        setLocation("/payment");
+        return;
+      }
+
       const response = await fetch("/api/auth/select-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -90,17 +94,10 @@ export function Plans() {
 
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       
-      if (planId === "pro") {
-        toast({ 
-          title: "Pro Plan Selected", 
-          description: "Welcome to TradeX AI Pro! Enjoy unlimited signals." 
-        });
-      } else {
-        toast({ 
-          title: "Free Plan Selected", 
-          description: "You can upgrade anytime to unlock more features." 
-        });
-      }
+      toast({ 
+        title: "Free Plan Selected", 
+        description: "You can upgrade anytime to unlock more features." 
+      });
       
       setLocation("/dashboard");
     } catch (error: any) {
@@ -112,99 +109,125 @@ export function Plans() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-10">
-          <img src={logoImage} alt="TradeX AI" className="h-12 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-white mb-2">Choose Your Plan</h1>
-          <p className="text-gray-400 max-w-lg mx-auto">
-            Start free or unlock the full power of AI-driven trading with Pro
-          </p>
-        </div>
+    <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
+      </div>
 
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {plans.map((plan) => (
-            <Card 
-              key={plan.id}
-              className={`relative bg-[#12121a] overflow-hidden transition-all ${
-                plan.popular 
-                  ? "border-cyan-500 border-2" 
-                  : "border-[#1a1a2e]"
-              }`}
-              data-testid={`card-plan-${plan.id}`}
-            >
-              {plan.popular && (
-                <div className="absolute top-0 right-0">
-                  <Badge className="rounded-none rounded-bl-lg bg-cyan-500 text-white px-3 py-1">
-                    <Crown className="w-3 h-3 mr-1" />
-                    Most Popular
-                  </Badge>
-                </div>
-              )}
-              
-              <CardContent className="p-6">
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold text-white mb-1">{plan.name}</h3>
-                  <div className="flex items-baseline gap-1 mb-2">
-                    <span className="text-4xl font-bold text-white">{plan.price}</span>
-                    <span className="text-gray-500">{plan.period}</span>
+      <div className="relative z-10 py-8 px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-10">
+            <img src={logoImage} alt="TradeX AI" className="h-12 mx-auto mb-4" />
+            <div className="flex items-center justify-center gap-2 text-cyan-400 mb-3">
+              <Sparkles className="w-5 h-5" />
+              <span className="text-sm font-medium">Choose Your Trading Power</span>
+            </div>
+            <h1 className="text-3xl font-bold text-white mb-2">Choose Your Plan</h1>
+            <p className="text-gray-400 max-w-lg mx-auto">
+              Start free or unlock the full power of AI-driven trading with Pro
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            {plans.map((plan) => (
+              <Card 
+                key={plan.id}
+                className={`relative bg-[#12121a]/80 backdrop-blur-xl overflow-hidden transition-all duration-300 ${
+                  plan.popular 
+                    ? "border-cyan-500 border-2 shadow-lg shadow-cyan-500/20" 
+                    : "border-[#1a1a2e]"
+                }`}
+                data-testid={`card-plan-${plan.id}`}
+              >
+                {plan.popular && (
+                  <div className="absolute top-0 right-0">
+                    <Badge className="rounded-none rounded-bl-lg bg-gradient-to-r from-cyan-500 to-purple-500 text-white px-4 py-1.5">
+                      <Crown className="w-3 h-3 mr-1" />
+                      Best Value
+                    </Badge>
                   </div>
-                  <p className="text-sm text-gray-400">{plan.description}</p>
-                </div>
-
-                <div className="space-y-3 mb-6">
-                  {plan.features.map((feature, index) => (
-                    <div 
-                      key={index} 
-                      className="flex items-center gap-3"
-                      data-testid={`feature-${plan.id}-${index}`}
-                    >
-                      {feature.included ? (
-                        <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                      ) : (
-                        <X className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                )}
+                
+                <CardContent className="p-6">
+                  <div className="mb-6">
+                    <h3 className="text-xl font-bold text-white mb-2">{plan.name}</h3>
+                    <div className="flex items-baseline gap-2 mb-2">
+                      {plan.oldPrice && (
+                        <span className="text-2xl text-gray-500 line-through">{plan.oldPrice}</span>
                       )}
-                      <span className={feature.included ? "text-gray-300 text-sm" : "text-gray-600 text-sm"}>
-                        {feature.text}
+                      <span className={`text-4xl font-bold ${plan.popular ? "bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent" : "text-white"}`}>
+                        {plan.price}
                       </span>
+                      <span className="text-gray-500">{plan.period}</span>
                     </div>
-                  ))}
-                </div>
+                    {plan.popular && (
+                      <Badge className="bg-emerald-500/20 text-emerald-400 mb-2">
+                        95% OFF - Limited Time!
+                      </Badge>
+                    )}
+                    <p className="text-sm text-gray-400">{plan.description}</p>
+                  </div>
 
-                <Button
-                  onClick={() => handleSelectPlan(plan.id)}
-                  disabled={isLoading && selectedPlan === plan.id}
-                  className={`w-full ${
-                    plan.popular
-                      ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white"
-                      : "bg-[#1a1a2e] text-white hover:bg-[#2a2a3e]"
-                  }`}
-                  data-testid={`button-select-${plan.id}`}
-                >
-                  {isLoading && selectedPlan === plan.id ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    plan.cta
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  <div className="space-y-3 mb-6">
+                    {plan.features.map((feature, index) => (
+                      <div 
+                        key={index} 
+                        className="flex items-center gap-3"
+                        data-testid={`feature-${plan.id}-${index}`}
+                      >
+                        {feature.included ? (
+                          <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                            <Check className="w-3 h-3 text-emerald-500" />
+                          </div>
+                        ) : (
+                          <div className="w-5 h-5 rounded-full bg-gray-800 flex items-center justify-center">
+                            <X className="w-3 h-3 text-gray-600" />
+                          </div>
+                        )}
+                        <span className={feature.included ? "text-gray-300 text-sm" : "text-gray-600 text-sm"}>
+                          {feature.text}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
 
-        <div className="text-center">
-          <div className="inline-flex items-center gap-6 text-sm text-gray-500">
-            <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-emerald-500" />
-              Cancel anytime
-            </div>
-            <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-amber-500" />
-              Instant access
-            </div>
-            <div className="flex items-center gap-2">
-              <Brain className="w-4 h-4 text-purple-500" />
-              AI-powered
+                  <Button
+                    onClick={() => handleSelectPlan(plan.id)}
+                    disabled={isLoading && selectedPlan === plan.id}
+                    size="lg"
+                    className={`w-full font-medium ${
+                      plan.popular
+                        ? "bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg shadow-cyan-500/20"
+                        : "bg-[#1a1a2e] text-white"
+                    }`}
+                    data-testid={`button-select-${plan.id}`}
+                  >
+                    {isLoading && selectedPlan === plan.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      plan.cta
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <div className="inline-flex items-center gap-6 text-sm text-gray-500">
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-emerald-500" />
+                Secure Payment
+              </div>
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-amber-500" />
+                Instant Access
+              </div>
+              <div className="flex items-center gap-2">
+                <Brain className="w-4 h-4 text-purple-500" />
+                AI-Powered
+              </div>
             </div>
           </div>
         </div>

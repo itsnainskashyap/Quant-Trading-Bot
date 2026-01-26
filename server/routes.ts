@@ -1691,6 +1691,81 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
 
   // ==================== PAYMENT ENDPOINTS ====================
 
+  // Public payment config (for payment page)
+  app.get("/api/payment/config", async (req, res) => {
+    try {
+      const settings = await storage.getAdminSettings();
+      res.json({
+        trc20Address: settings?.trc20Address || "",
+        bep20Address: settings?.bep20Address || "",
+        amount: settings?.proPrice || 10,
+        enabled: !!(settings?.trc20Address || settings?.bep20Address),
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Verify payment (session-based auth)
+  app.post("/api/payment/verify", async (req, res) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        res.status(401).json({ success: false, message: "Please log in first" });
+        return;
+      }
+      
+      const { txHash, network } = req.body;
+      if (!txHash || !network) {
+        res.status(400).json({ success: false, message: "Transaction hash and network required" });
+        return;
+      }
+      
+      const settings = await storage.getAdminSettings();
+      const walletAddress = network === 'trc20' ? settings?.trc20Address : settings?.bep20Address;
+      
+      if (!walletAddress) {
+        res.status(400).json({ success: false, message: `${network.toUpperCase()} payment not configured` });
+        return;
+      }
+      
+      const existingPayment = await storage.getPaymentByTxHash(txHash);
+      if (existingPayment && existingPayment.status === 'completed') {
+        res.status(400).json({ success: false, message: "This transaction has already been used" });
+        return;
+      }
+      
+      let verified = false;
+      if (network === 'trc20') {
+        verified = await verifyTRC20Transaction(txHash, walletAddress, settings?.proPrice || 10);
+      } else if (network === 'bep20') {
+        verified = await verifyBEP20Transaction(txHash, walletAddress, settings?.proPrice || 10);
+      }
+      
+      if (verified) {
+        const payment = await storage.createPaymentRecord(userId, network, txHash, settings?.proPrice || 10, walletAddress);
+        await storage.verifyPayment(payment.id);
+        await storage.updateSubscription(userId, 'pro');
+        
+        const { users } = await import("@shared/models/auth");
+        const { eq } = await import("drizzle-orm");
+        const { db } = await import("./db");
+        await db.update(users).set({
+          selectedPlan: 'pro',
+          onboardingCompleted: true,
+          updatedAt: new Date(),
+        }).where(eq(users.id, userId));
+        
+        res.json({ success: true, message: "Payment verified! Pro plan activated." });
+      } else {
+        res.json({ success: false, message: "Payment not found or amount incorrect. Please wait a few minutes and try again." });
+      }
+    } catch (error: any) {
+      console.error("[Payment] Verification error:", error);
+      res.status(500).json({ success: false, message: "Verification failed. Please try again." });
+    }
+  });
+
   // Submit payment for verification
   app.post("/api/payment/submit", async (req, res) => {
     try {
