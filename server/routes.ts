@@ -1792,7 +1792,7 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
       
       if (promoCode) {
         const promoValidation = await storage.validatePromoCode(promoCode, userId);
-        if (promoValidation.valid) {
+        if (promoValidation.valid && promoValidation.discount) {
           expectedAmount = basePrice * (1 - promoValidation.discount / 100);
           validPromoCode = promoCode;
         }
@@ -1831,6 +1831,56 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
     } catch (error: any) {
       console.error("[Payment] Verification error:", error);
       res.status(500).json({ success: false, message: "Verification failed. Please try again." });
+    }
+  });
+
+  // Activate subscription for free with 100% promo code
+  app.post("/api/payment/activate-free", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        res.status(401).json({ success: false, message: "Please log in first" });
+        return;
+      }
+      
+      const { promoCode } = req.body;
+      if (!promoCode) {
+        res.status(400).json({ success: false, message: "Promo code is required" });
+        return;
+      }
+      
+      // Validate promo code and check if it's 100% discount
+      const promoValidation = await storage.validatePromoCode(promoCode, userId);
+      if (!promoValidation.valid) {
+        res.status(400).json({ success: false, message: promoValidation.message });
+        return;
+      }
+      
+      if (promoValidation.discount !== 100) {
+        res.status(400).json({ success: false, message: "This promo code requires payment. Please use the payment flow." });
+        return;
+      }
+      
+      // Mark promo code as used
+      await storage.usePromoCode(promoCode, userId);
+      
+      // Activate subscription
+      await storage.updateSubscription(userId, 'pro');
+      
+      const { users } = await import("@shared/models/auth");
+      const { eq } = await import("drizzle-orm");
+      const { db } = await import("./db");
+      await db.update(users).set({
+        selectedPlan: 'pro',
+        onboardingCompleted: true,
+        updatedAt: new Date(),
+      }).where(eq(users.id, userId));
+      
+      console.log(`[Payment] Free activation with promo code ${promoCode} for user ${userId}`);
+      res.json({ success: true, message: "Pro subscription activated for free!" });
+    } catch (error: any) {
+      console.error("[Payment] Free activation error:", error);
+      res.status(500).json({ success: false, message: "Activation failed. Please try again." });
     }
   });
 

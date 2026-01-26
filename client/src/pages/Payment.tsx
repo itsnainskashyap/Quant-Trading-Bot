@@ -100,6 +100,48 @@ export function Payment() {
   // Calculate final price
   const basePrice = paymentConfig?.amount || 10;
   const finalPrice = promoDiscount ? basePrice * (1 - promoDiscount / 100) : basePrice;
+  const isFreeActivation = promoDiscount === 100;
+
+  // Activate subscription for 100% discount promo codes
+  const activateFreeSubscription = async () => {
+    if (!promoApplied || !promoCode) return;
+    
+    setIsVerifying(true);
+    setVerificationStatus("pending");
+    
+    try {
+      const response = await fetch("/api/payment/activate-free", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ promoCode }),
+        credentials: "include",
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setVerificationStatus("success");
+        await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        toast({ 
+          title: "Subscription Activated!", 
+          description: "Your Pro plan is now active. Enjoy unlimited signals!" 
+        });
+        setTimeout(() => setLocation("/dashboard"), 2000);
+      } else {
+        setVerificationStatus("failed");
+        toast({ 
+          title: "Activation Failed", 
+          description: data.message || "Could not activate. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error: any) {
+      setVerificationStatus("failed");
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   const verifyPayment = async () => {
     if (!txHash.trim()) {
@@ -275,6 +317,43 @@ export function Payment() {
                 )}
               </div>
 
+              {/* Show FREE activation button for 100% discount */}
+              {isFreeActivation ? (
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3 p-4 bg-emerald-500/10 rounded-xl">
+                    <Sparkles className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-emerald-200">
+                      <p className="font-medium mb-1">100% Discount Applied!</p>
+                      <p className="text-emerald-300/80">No payment required. Click below to activate your Pro subscription instantly.</p>
+                    </div>
+                  </div>
+                  
+                  <Button
+                    onClick={activateFreeSubscription}
+                    disabled={isVerifying || verificationStatus === "success"}
+                    className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-medium h-12 text-lg"
+                    data-testid="button-activate-free"
+                  >
+                    {isVerifying ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Activating...
+                      </>
+                    ) : verificationStatus === "success" ? (
+                      <>
+                        <CheckCircle2 className="w-5 h-5 mr-2" />
+                        Subscription Activated!
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-5 h-5 mr-2" />
+                        Activate Pro for FREE
+                      </>
+                    )}
+                  </Button>
+                </div>
+              ) : (
+              <>
               <div className="flex gap-2 mb-6">
                 <Button
                   onClick={() => setSelectedNetwork("trc20")}
@@ -365,6 +444,8 @@ export function Payment() {
                   )}
                 </Button>
               </div>
+              </>
+              )}
             </CardContent>
           </Card>
 
