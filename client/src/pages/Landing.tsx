@@ -1,5 +1,7 @@
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { 
   ArrowRight,
   ChevronRight,
@@ -7,11 +9,14 @@ import {
   Zap,
   BarChart2,
   AlertTriangle,
-  Link2
+  Link2,
+  Brain
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 import { ExchangeLogo } from "@/components/ExchangeLogos";
+import { PhoneLogin } from "@/components/PhoneLogin";
+import { queryClient } from "@/lib/queryClient";
 
 function AnimatedPrice({ symbol, basePrice }: { symbol: string; basePrice: number }) {
   const [price, setPrice] = useState(basePrice);
@@ -57,6 +62,14 @@ function FloatingOrb({ delay, size, left, top }: { delay: number; size: number; 
 }
 
 export function Landing() {
+  const [loginOpen, setLoginOpen] = useState(false);
+
+  const handleLoginSuccess = () => {
+    setLoginOpen(false);
+    queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    window.location.reload();
+  };
+
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white overflow-hidden">
       <FloatingOrb delay={0} size={400} left="10%" top="20%" />
@@ -68,17 +81,23 @@ export function Landing() {
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <img src={logoImage} alt="TradeX AI" className="h-10 w-auto" />
           <div className="hidden md:flex items-center gap-8">
-            <a href="#how-it-works" className="text-sm text-gray-400 hover:text-white transition-colors">How it Works</a>
-            <a href="#features" className="text-sm text-gray-400 hover:text-white transition-colors">Features</a>
-            <a href="#brokers" className="text-sm text-gray-400 hover:text-white transition-colors">Supported Brokers</a>
+            <a href="#how-it-works" className="text-sm text-gray-400 hover:text-white transition-colors" data-testid="link-how-it-works">How it Works</a>
+            <a href="#ai-agents" className="text-sm text-gray-400 hover:text-white transition-colors" data-testid="link-ai-agents">AI Agents</a>
+            <a href="#brokers" className="text-sm text-gray-400 hover:text-white transition-colors" data-testid="link-brokers">Supported Brokers</a>
           </div>
-          <Button 
-            asChild 
-            className="bg-white text-black hover:bg-gray-200 rounded-full px-6"
-            data-testid="button-get-started"
-          >
-            <a href="/api/login">Start Trading</a>
-          </Button>
+          <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
+            <DialogTrigger asChild>
+              <Button 
+                className="bg-white text-black rounded-full"
+                data-testid="button-get-started"
+              >
+                Start Trading
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-transparent border-0 p-0 max-w-md">
+              <PhoneLogin onSuccess={handleLoginSuccess} />
+            </DialogContent>
+          </Dialog>
         </div>
       </nav>
 
@@ -104,35 +123,34 @@ export function Landing() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Button 
               size="lg" 
-              asChild 
-              className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-full px-8 h-14 text-lg"
+              onClick={() => setLoginOpen(true)}
+              className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full text-lg"
               data-testid="button-hero-start"
             >
-              <a href="/api/login">
-                Start Free Now
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </a>
+              Start Free Now
+              <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
             <Button 
               size="lg" 
               variant="outline" 
               asChild 
-              className="border-white/20 text-white hover:bg-white/10 rounded-full px-8 h-14 text-lg"
+              className="border-white/20 text-white rounded-full text-lg"
+              data-testid="button-hero-how-it-works"
             >
               <a href="#how-it-works">See How It Works</a>
             </Button>
           </div>
           
           <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-500">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" data-testid="badge-unlimited-signals">
               <Shield className="w-4 h-4 text-emerald-500" />
               Unlimited Signals
             </div>
-            <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-yellow-500" />
-              3 AI Models
+            <div className="flex items-center gap-2" data-testid="badge-ai-agents">
+              <Brain className="w-4 h-4 text-purple-500" />
+              5 AI Agents
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" data-testid="badge-crypto-pairs">
               <BarChart2 className="w-4 h-4 text-blue-500" />
               15 Crypto Pairs
             </div>
@@ -140,16 +158,16 @@ export function Landing() {
         </div>
         
         <div className="max-w-4xl mx-auto mt-16 relative z-10">
-          <Card className="bg-[#12121a] border-white/10 overflow-hidden">
+          <Card className="bg-[#12121a] border-white/10 overflow-hidden" data-testid="card-hero-demo">
             <CardContent className="p-0">
               <div className="flex items-center justify-between p-4 border-b border-white/5">
                 <div className="flex items-center gap-4">
                   <AnimatedPrice symbol="BTC/USDT" basePrice={97432.50} />
                   <AnimatedPrice symbol="ETH/USDT" basePrice={3424.80} />
                 </div>
-                <div className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-medium">
+                <Badge className="bg-emerald-500/20 text-emerald-400" data-testid="badge-live-status">
                   Live
-                </div>
+                </Badge>
               </div>
               <div className="p-6">
                 <div className="grid md:grid-cols-3 gap-4">
@@ -182,7 +200,7 @@ export function Landing() {
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
+            <div className="text-center" data-testid="card-step-1">
               <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-blue-500/20 to-blue-500/5 border border-blue-500/20 flex items-center justify-center">
                 <span className="text-2xl font-bold text-blue-400">1</span>
               </div>
@@ -192,7 +210,7 @@ export function Landing() {
               </p>
             </div>
             
-            <div className="text-center">
+            <div className="text-center" data-testid="card-step-2">
               <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 border border-cyan-500/20 flex items-center justify-center">
                 <span className="text-2xl font-bold text-cyan-400">2</span>
               </div>
@@ -202,7 +220,7 @@ export function Landing() {
               </p>
             </div>
             
-            <div className="text-center">
+            <div className="text-center" data-testid="card-step-3">
               <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 border border-emerald-500/20 flex items-center justify-center">
                 <span className="text-2xl font-bold text-emerald-400">3</span>
               </div>
@@ -215,10 +233,72 @@ export function Landing() {
         </div>
       </section>
 
+      <section id="ai-agents" className="py-24 px-6 relative z-10">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 mb-6">
+              <Brain className="w-4 h-4 text-purple-400" />
+              <span className="text-sm text-purple-400 font-medium">5 Specialized AI Agents</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">AI-Powered Analysis</h2>
+            <p className="text-gray-400 max-w-2xl mx-auto">
+              5 specialized AI agents analyze every trade from different perspectives, then vote together for the final decision
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-5 gap-4 mb-8">
+            <Card className="bg-[#12121a] border-white/10 p-4 text-center hover-elevate" data-testid="card-agent-technical">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                <Brain className="w-6 h-6 text-blue-400" />
+              </div>
+              <h3 className="font-semibold text-sm mb-1">Technical AI</h3>
+              <p className="text-xs text-gray-500 mb-2">RSI, MACD, Bollinger</p>
+              <div className="text-xs text-purple-400 font-mono">1.2x weight</div>
+            </Card>
+            <Card className="bg-[#12121a] border-white/10 p-4 text-center hover-elevate" data-testid="card-agent-fundamental">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-green-500/20 flex items-center justify-center">
+                <Brain className="w-6 h-6 text-green-400" />
+              </div>
+              <h3 className="font-semibold text-sm mb-1">Fundamental AI</h3>
+              <p className="text-xs text-gray-500 mb-2">Volume, Order Flow</p>
+              <div className="text-xs text-purple-400 font-mono">1.0x weight</div>
+            </Card>
+            <Card className="bg-[#12121a] border-white/10 p-4 text-center hover-elevate" data-testid="card-agent-psychology">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-yellow-500/20 flex items-center justify-center">
+                <Brain className="w-6 h-6 text-yellow-400" />
+              </div>
+              <h3 className="font-semibold text-sm mb-1">Psychology AI</h3>
+              <p className="text-xs text-gray-500 mb-2">Fear/Greed, Sentiment</p>
+              <div className="text-xs text-purple-400 font-mono">0.8x weight</div>
+            </Card>
+            <Card className="bg-[#12121a] border-white/10 p-4 text-center hover-elevate" data-testid="card-agent-pattern">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-cyan-500/20 flex items-center justify-center">
+                <Brain className="w-6 h-6 text-cyan-400" />
+              </div>
+              <h3 className="font-semibold text-sm mb-1">Pattern AI</h3>
+              <p className="text-xs text-gray-500 mb-2">Chart Patterns</p>
+              <div className="text-xs text-purple-400 font-mono">1.1x weight</div>
+            </Card>
+            <Card className="bg-[#12121a] border-white/10 p-4 text-center hover-elevate" data-testid="card-agent-smart-money">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                <Brain className="w-6 h-6 text-purple-400" />
+              </div>
+              <h3 className="font-semibold text-sm mb-1">Smart Money AI</h3>
+              <p className="text-xs text-gray-500 mb-2">Whale Activity</p>
+              <div className="text-xs text-purple-400 font-mono">1.3x weight</div>
+            </Card>
+          </div>
+          
+          <div className="text-center text-sm text-gray-500">
+            All 5 agents vote with weighted confidence. Smart Money has highest weight (1.3x), Psychology lowest (0.8x).
+          </div>
+        </div>
+      </section>
+
       <section id="features" className="py-24 px-6 relative z-10">
         <div className="max-w-5xl mx-auto">
           <div className="grid md:grid-cols-2 gap-8">
-            <Card className="bg-[#12121a] border-white/10 p-6">
+            <Card className="bg-[#12121a] border-white/10 p-6" data-testid="card-feature-protection">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
                   <Shield className="w-6 h-6 text-emerald-400" />
@@ -233,22 +313,22 @@ export function Landing() {
               </p>
             </Card>
             
-            <Card className="bg-[#12121a] border-white/10 p-6">
+            <Card className="bg-[#12121a] border-white/10 p-6" data-testid="card-feature-timing">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
                   <BarChart2 className="w-6 h-6 text-blue-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">Multi-AI Consensus</h3>
-                  <p className="text-sm text-gray-500">3 models working together</p>
+                  <h3 className="font-semibold text-lg">AI-Controlled Timing</h3>
+                  <p className="text-sm text-gray-500">Smart trade extensions</p>
                 </div>
               </div>
               <p className="text-gray-400 text-sm leading-relaxed">
-                OpenAI GPT-4o, Claude, and Gemini analyze simultaneously for highest accuracy signals.
+                AI monitors your trades and can extend hold time when market conditions are favorable.
               </p>
             </Card>
             
-            <Card className="bg-[#12121a] border-white/10 p-6">
+            <Card className="bg-[#12121a] border-white/10 p-6" data-testid="card-feature-pairs">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 rounded-xl bg-cyan-500/20 flex items-center justify-center">
                   <Zap className="w-6 h-6 text-cyan-400" />
@@ -263,18 +343,18 @@ export function Landing() {
               </p>
             </Card>
             
-            <Card className="bg-[#12121a] border-white/10 p-6">
+            <Card className="bg-[#12121a] border-white/10 p-6" data-testid="card-feature-consensus">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
-                  <BarChart2 className="w-6 h-6 text-purple-400" />
+                  <Brain className="w-6 h-6 text-purple-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">Real-Time Charts</h3>
-                  <p className="text-sm text-gray-500">Professional TradingView charts</p>
+                  <h3 className="font-semibold text-lg">Weighted Consensus</h3>
+                  <p className="text-sm text-gray-500">5 AI agents voting together</p>
                 </div>
               </div>
               <p className="text-gray-400 text-sm leading-relaxed">
-                See live charts with entry points, stop-loss, and take-profit levels marked clearly.
+                Technical, Fundamental, Psychology, Pattern, and Smart Money AI vote for each decision.
               </p>
             </Card>
           </div>
@@ -284,10 +364,10 @@ export function Landing() {
       <section id="brokers" className="py-24 px-6 relative z-10 bg-[#0a0a0f]/50">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 mb-6">
-              <Link2 className="w-4 h-4 text-blue-400" />
-              <span className="text-sm text-blue-400 font-medium">Multi-Exchange Support</span>
-            </div>
+            <Badge className="bg-blue-500/10 border-blue-500/20 text-blue-400 mb-6" data-testid="badge-multi-exchange">
+              <Link2 className="w-4 h-4 mr-2" />
+              Multi-Exchange Support
+            </Badge>
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Connect Your Favorite Exchange</h2>
             <p className="text-gray-400 max-w-2xl mx-auto">
               TradeX AI supports 8 major cryptocurrency exchanges plus our virtual TradeX Broker for paper trading.
@@ -353,13 +433,12 @@ export function Landing() {
             </ul>
             <Button 
               size="lg" 
-              asChild 
-              className="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 rounded-full px-10 h-14 text-lg"
+              onClick={() => setLoginOpen(true)}
+              className="bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full text-lg"
+              data-testid="button-cta-start"
             >
-              <a href="/api/login">
-                Start Free Now
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </a>
+              Start Free Now
+              <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </Card>
         </div>

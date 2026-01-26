@@ -4,7 +4,8 @@ import { storage } from "./storage";
 import OpenAI from "openai";
 import { tradingPairs, type TradingPair, type TradingSignal } from "@shared/schema";
 import { getMultiAIConsensus, generateConsensusExplanation } from "./consensus";
-import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
+import { getEnhancedAIConsensus } from "./enhancedAI";
+import { setupPhoneAuth, getUserById } from "./phoneAuth";
 import { startTradeMonitor } from "./tradeAI";
 
 const openai = new OpenAI({
@@ -17,8 +18,7 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
-  await setupAuth(app);
-  registerAuthRoutes(app);
+  setupPhoneAuth(app);
   
   startTradeMonitor();
   
@@ -198,13 +198,41 @@ export async function registerRoutes(
         return;
       }
       
-      const consensus = await getMultiAIConsensus(pair, metrics, priceData.price, validatedMode);
-      const explanation = generateConsensusExplanation(consensus);
+      const { enhanced = false } = req.body;
       
-      res.json({
-        consensus,
-        explanation,
-      });
+      if (enhanced) {
+        const enhancedResult = await getEnhancedAIConsensus(pair, metrics, priceData.price, validatedMode);
+        res.json({
+          consensus: {
+            consensusSignal: enhancedResult.finalSignal,
+            consensusConfidence: enhancedResult.finalConfidence,
+            consensusRisk: enhancedResult.finalRisk,
+            agreementLevel: enhancedResult.agreementLevel,
+            hasConsensus: enhancedResult.hasStrongConsensus,
+            warnings: enhancedResult.warnings,
+            holdDuration: enhancedResult.holdDuration,
+            reasoning: enhancedResult.reasoning,
+            providers: [],
+            agents: enhancedResult.agents,
+            technicalAnalysis: enhancedResult.technicalAnalysis,
+            fundamentalAnalysis: enhancedResult.fundamentalAnalysis,
+            psychologyAnalysis: enhancedResult.psychologyAnalysis,
+            patternAnalysis: enhancedResult.patternAnalysis,
+            smartMoneyAnalysis: enhancedResult.smartMoneyAnalysis,
+            tradeRecommendation: enhancedResult.tradeRecommendation,
+          },
+          explanation: `5-Agent Enhanced Analysis: ${enhancedResult.agents.filter(a => a.success).map(a => `${a.agent}: ${a.signal}`).join(', ')}`,
+          enhanced: true,
+        });
+      } else {
+        const consensus = await getMultiAIConsensus(pair, metrics, priceData.price, validatedMode);
+        const explanation = generateConsensusExplanation(consensus);
+        res.json({
+          consensus,
+          explanation,
+          enhanced: false,
+        });
+      }
     } catch (error) {
       console.error("Consensus error:", error);
       res.status(500).json({ error: "Failed to generate consensus" });

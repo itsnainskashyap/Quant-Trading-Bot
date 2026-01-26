@@ -60,7 +60,7 @@ TRADE DATA:
 - Take Profit: $${trade.takeProfit || 'Not set'}
 - P/L: ${pnlPercent.toFixed(2)}%
 - Time Remaining: ${timeRemaining} seconds
-- Extensions Used: ${extensionCount}/3
+- Extensions Used: ${extensionCount} (AI-controlled, no limit)
 
 YOUR FOCUS: Capital protection over profit maximization.
 - Maximum acceptable loss: 2%
@@ -110,7 +110,10 @@ async function getExitAIDecision(
   timeRemaining: number,
   extensionCount: number
 ): Promise<AITradeDecision> {
-  const prompt = `You are an EXIT STRATEGY AI for crypto trading. Decide the optimal exit timing.
+  const tradeDuration = Math.floor((Date.now() - new Date(trade.createdAt || Date.now()).getTime()) / 60000);
+  const maxReasonableTime = 60;
+  
+  const prompt = `You are an EXIT STRATEGY AI for crypto trading. You control trade timing - no auto-close.
 
 TRADE DATA:
 - Pair: ${trade.pair}
@@ -119,23 +122,24 @@ TRADE DATA:
 - Current: $${currentPrice}
 - P/L: ${pnlPercent.toFixed(2)}%
 - Time Left: ${timeRemaining} seconds (${(timeRemaining/60).toFixed(1)} min)
-- Extensions: ${extensionCount}/3 used
-- Trade Duration: ${Math.floor((Date.now() - new Date(trade.createdAt || Date.now()).getTime()) / 60000)} minutes
+- Extensions Used: ${extensionCount} (no limit - you control timing)
+- Trade Duration: ${tradeDuration} minutes
 
-EXIT RULES:
-- Time expired & profit > 1.5%: CLOSE_PROFIT (lock gains)
-- Time expired & small profit (0.5-1.5%): EXTEND 1 min if extensions left
-- Time expired & in loss but < 2%: EXTEND 2 min for recovery if extensions left
-- Time expired & loss > 2%: CLOSE_LOSS immediately
-- Time expired & no extensions left: CLOSE at current price
-- Profit > 2%: Consider TRAILING_STOP
+AI-CONTROLLED EXIT RULES (you decide when to close):
+- You have FULL CONTROL over trade timing - extend as long as market conditions warrant
+- Profit > 2%: Consider CLOSE_PROFIT to lock gains OR EXTEND if momentum continues
+- Small profit (0.5-2%) with good momentum: EXTEND for more gains
+- Small loss (0-2%) with recovery potential: EXTEND for recovery
+- Loss > 2%: Consider CLOSE_LOSS to protect capital OR EXTEND if reversal likely
+- Never extend past ${maxReasonableTime} min total duration without strong reason
+- Use TRAILING_STOP when profit > 1.5% to protect gains while allowing upside
 
 Respond in JSON:
 {
   "action": "HOLD" | "EXTEND" | "CLOSE_PROFIT" | "CLOSE_LOSS" | "TRAILING_STOP",
   "reason": "Brief explanation",
   "confidence": 0-100,
-  "extensionMinutes": 1 or 2 (if extending)
+  "extensionMinutes": 1-5 (if extending)
 }`;
 
   try {
@@ -162,7 +166,7 @@ Respond in JSON:
     throw new Error("No valid JSON");
   } catch (error) {
     console.error("[ExitAI] Error:", error);
-    if (timeRemaining <= 0 && extensionCount < 3) {
+    if (timeRemaining <= 0) {
       if (pnlPercent > 1.5) {
         return { action: "CLOSE_PROFIT", reason: "Lock in profit", confidence: 80, agent: "Exit AI (Fallback)" };
       } else if (pnlPercent > 0.5) {
@@ -280,7 +284,8 @@ export async function getMultiAgentTradeDecision(
     finalAction = "CLOSE_PROFIT";
   }
 
-  if (timeRemaining <= 0 && extensionCount >= 3) {
+  const tradeDuration = Math.floor((Date.now() - new Date(trade.createdAt || Date.now()).getTime()) / 60000);
+  if (timeRemaining <= 0 && tradeDuration >= 60 && extensionCount >= 10) {
     finalAction = pnlPercent > 0 ? "CLOSE_PROFIT" : "CLOSE_LOSS";
   }
 
@@ -330,16 +335,17 @@ export async function processOpenTrades(): Promise<void> {
       
       const decision = await getMultiAgentTradeDecision(trade, currentPrice);
       
-      if (decision.finalAction === "EXTEND" && (trade.extensionCount || 0) < 3) {
-        const extendMinutes = 2;
+      if (decision.finalAction === "EXTEND") {
+        const exitDecision = decision.agents.find(a => a.name === "Exit AI");
+        const extendMinutes = exitDecision?.decision.extensionMinutes || 2;
         
-        await extendTradeExitTime(trade.id, extendMinutes);
+        await extendTradeExitTime(trade.id, Math.min(extendMinutes, 5));
         await updateTradexTrade(trade.id, {
           aiRecommendation: "EXTENDED",
           aiAnalysis: decision.finalReason
         });
         
-        console.log(`[TradeMonitor] Extended trade ${trade.id} by ${extendMinutes} min (extension ${(trade.extensionCount || 0) + 1}/3)`);
+        console.log(`[TradeMonitor] AI Extended trade ${trade.id} by ${extendMinutes} min (total extensions: ${(trade.extensionCount || 0) + 1})`);
         
       } else if (decision.finalAction === "CLOSE_PROFIT" || decision.finalAction === "CLOSE_LOSS" || decision.finalAction === "TRAILING_STOP") {
         await closeTradexTradeBySystem(
@@ -348,17 +354,20 @@ export async function processOpenTrades(): Promise<void> {
           `AI Auto-Close: ${decision.finalAction} - ${decision.finalReason}`
         );
         
-      } else if ((trade.extensionCount || 0) >= 3) {
-        const isLong = trade.signal === 'BUY';
-        const pnl = isLong 
-          ? (currentPrice - trade.entryPrice) * trade.amount / trade.entryPrice * (trade.leverage || 1)
-          : (trade.entryPrice - currentPrice) * trade.amount / trade.entryPrice * (trade.leverage || 1);
-        
-        await closeTradexTradeBySystem(
-          trade.id, 
-          currentPrice, 
-          `AI Auto-Close: Max extensions reached - ${pnl > 0 ? 'Profit secured' : 'Loss minimized'}`
-        );
+      } else {
+        const tradeDuration = Math.floor((Date.now() - new Date(trade.createdAt || Date.now()).getTime()) / 60000);
+        if (tradeDuration >= 60 && (trade.extensionCount || 0) >= 10) {
+          const isLong = trade.signal === 'BUY';
+          const pnl = isLong 
+            ? (currentPrice - trade.entryPrice) * trade.amount / trade.entryPrice * (trade.leverage || 1)
+            : (trade.entryPrice - currentPrice) * trade.amount / trade.entryPrice * (trade.leverage || 1);
+          
+          await closeTradexTradeBySystem(
+            trade.id, 
+            currentPrice, 
+            `AI Auto-Close: Maximum trade duration (60 min) reached - ${pnl > 0 ? 'Profit secured' : 'Loss minimized'}`
+          );
+        }
       }
       
     } catch (error) {
