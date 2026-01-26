@@ -129,7 +129,7 @@ export function FindTrade({ pair, isPro }: FindTradeProps) {
     try {
       const response = await apiRequest('POST', '/api/find-trade/start', {
         pair,
-        minConfidence: 90,
+        minConfidence: 75,
       });
       const data = await response.json();
       setScan(data.scan);
@@ -282,7 +282,7 @@ export function FindTrade({ pair, isPro }: FindTradeProps) {
                   {statusMessages[(scan.attempts || 0) % statusMessages.length]}
                 </p>
                 <p className="text-gray-500 text-xs truncate">
-                  Looking for {scan.pair} 90%+ (persists in background)
+                  Looking for {scan.pair} 75%+ (persists in background)
                 </p>
               </div>
             </div>
@@ -369,7 +369,7 @@ export function FindTrade({ pair, isPro }: FindTradeProps) {
               <ServerCog className="w-4 h-4 text-amber-400 flex-shrink-0" />
               <span className="text-xs">Persists even if you close browser</span>
             </div>
-            <p className="text-gray-600 text-xs mt-1">Max: 30 min | 90%+ confidence</p>
+            <p className="text-gray-600 text-xs mt-1">Max: 30 min | 75%+ confidence</p>
           </div>
         )}
 

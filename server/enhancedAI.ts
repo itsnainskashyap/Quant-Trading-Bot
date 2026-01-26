@@ -100,12 +100,12 @@ TECHNICAL INDICATORS:
 - Support: $${metrics.nearestSupport?.toFixed(2) || 'N/A'} (${metrics.distanceToSupport?.toFixed(2) || 0}% away)
 - Resistance: $${metrics.nearestResistance?.toFixed(2) || 'N/A'} (${metrics.distanceToResistance?.toFixed(2) || 0}% away)
 
-STRICT RULES:
-- BUY: RSI <35 + MACD bullish + Stoch oversold + ADX >20 + Price near support
-- SELL: RSI >65 + MACD bearish + Stoch overbought + ADX >20 + Price near resistance
-- NO_TRADE: Mixed signals, ADX <20, RSI 40-60, or any uncertainty
+TRADING RULES (be practical, not overly conservative):
+- BUY: RSI <45 with bullish momentum OR MACD bullish crossover OR Stoch oversold with upturn OR Price near support with bounce
+- SELL: RSI >55 with bearish momentum OR MACD bearish crossover OR Stoch overbought with downturn OR Price near resistance with rejection
+- NO_TRADE: Only when signals are truly conflicting (equal BUY and SELL signals) or no clear direction
 
-CONFIDENCE GUIDE: 80-90 (perfect setup), 70-79 (good), 65-69 (acceptable), <65 (NO_TRADE)
+CONFIDENCE GUIDE: 75-85 (strong setup), 65-74 (good opportunity), 55-64 (moderate), <55 (weak but tradeable)
 
 Respond in JSON:
 {
@@ -135,12 +135,12 @@ ORDER FLOW & MARKET STRUCTURE:
 - Funding Rate: ${(fundingRate * 100).toFixed(4)}% | ${fundingRate > 0.01 ? 'LONGS OVERLEVERAGED' : fundingRate < -0.01 ? 'SHORTS OVERLEVERAGED' : 'NEUTRAL'}
 - ATR: ${metrics.atrPercent?.toFixed(2) || 0}% | Volatility: ${metrics.volatility < 2 ? 'LOW' : metrics.volatility < 4 ? 'MEDIUM' : 'HIGH'}
 
-STRICT RULES:
-- BUY: Strong buying pressure (volume delta >5%) + buyers dominating + positive order flow
-- SELL: Strong selling pressure (volume delta <-5%) + sellers dominating + negative order flow
-- NO_TRADE: Balanced order flow, low volume, mixed signals
+TRADING RULES (be practical):
+- BUY: Positive volume delta (>2%) OR buyers have edge in order book OR bullish order flow trend
+- SELL: Negative volume delta (<-2%) OR sellers have edge in order book OR bearish order flow trend
+- NO_TRADE: Only when completely balanced with no directional bias at all
 
-CONFIDENCE GUIDE: Only 70+ if clear directional order flow with volume confirmation
+CONFIDENCE GUIDE: 70-85 (clear flow), 60-69 (moderate flow), 50-59 (weak but identifiable)
 
 Respond in JSON:
 {
@@ -171,12 +171,12 @@ SENTIMENT INDICATORS:
 - Volume Behavior: ${metrics.volumeTrend || 'STABLE'}
 - Bollinger: ${metrics.bollingerPosition || 'NEUTRAL'} | ${metrics.bollingerPosition === 'BELOW_LOWER' ? 'Oversold sentiment' : metrics.bollingerPosition === 'ABOVE_UPPER' ? 'Overbought sentiment' : 'Neutral'}
 
-CONTRARIAN TRADING RULES:
-- BUY: Extreme fear (RSI <25) + panic selling + funding negative = crowd is wrong, BUY
-- SELL: Extreme greed (RSI >75) + euphoric buying + funding very positive = crowd is wrong, SELL
-- NO_TRADE: Neutral sentiment (RSI 35-65), no crowd extreme
+CONTRARIAN TRADING RULES (be practical):
+- BUY: Fear zone (RSI <40) OR crowd pessimistic OR funding negative - crowd often wrong
+- SELL: Greed zone (RSI >60) OR crowd optimistic OR funding positive - crowd often wrong
+- NO_TRADE: Only when absolutely neutral (RSI 45-55) with no sentiment bias
 
-CRITICAL: Only trade against crowd at TRUE EXTREMES. Neutral = NO_TRADE.
+IMPORTANT: Market sentiment often leads to opportunities. Don't wait for extremes only.
 
 Respond in JSON:
 {
@@ -212,13 +212,12 @@ CONFLUENCE ANALYSIS:
 - Bearish Patterns: ${bearishCount} (${metrics.bearishSignals?.slice(0,4).join(', ') || 'None'})
 - Net Confluence: ${confluenceScore} | Direction: ${confluenceScore > 3 ? 'BULLISH' : confluenceScore < -3 ? 'BEARISH' : 'MIXED'}
 
-PATTERN TRADING RULES:
-- BUY: 4+ bullish patterns + confluence >3 + near support + breakout confirmation
-- SELL: 4+ bearish patterns + confluence <-3 + near resistance + breakdown confirmation
-- NO_TRADE: Mixed patterns, weak confluence, no clear setup
+PATTERN TRADING RULES (be practical):
+- BUY: 2+ bullish patterns OR confluence >1 OR near support OR momentum turning up
+- SELL: 2+ bearish patterns OR confluence <-1 OR near resistance OR momentum turning down
+- NO_TRADE: Only when patterns exactly balanced with no directional bias
 
-HIGH-PROBABILITY PATTERNS ONLY: Double bottom, triple bottom, bull flag, inverse H&S for BUY.
-Double top, triple top, bear flag, H&S for SELL. Ignore weak/unclear patterns.
+PATTERNS TO LOOK FOR: Any bullish/bearish reversal, continuation, or momentum patterns.
 
 Respond in JSON:
 {
@@ -250,12 +249,12 @@ INSTITUTIONAL & WHALE INDICATORS:
 - Volume Confirmation: ${metrics.volumeConfirmation ? 'YES - Institutions confirming move' : 'NO'}
 - ADX: ${metrics.adx?.toFixed(1) || 25} | Trend: ${(metrics.adx ?? 25) > 30 ? 'Institutions riding trend' : 'Weak trend'}
 
-SMART MONEY RULES:
-- BUY: Institutions accumulating (positive volume delta + order book buyers + low funding)
-- SELL: Institutions distributing (negative volume delta + order book sellers + high funding)
-- NO_TRADE: No clear institutional activity, mixed signals, retail-dominated
+SMART MONEY RULES (be practical):
+- BUY: Any accumulation signs (positive volume delta OR order book buyers OR increasing OI during uptrend)
+- SELL: Any distribution signs (negative volume delta OR order book sellers OR decreasing OI during downtrend)
+- NO_TRADE: Only when no institutional activity can be detected at all
 
-FOLLOW SMART MONEY: They have better information. Trade WITH them, not against.
+FOLLOW SMART MONEY: Look for any signs of institutional activity, not just extreme cases.
 
 Respond in JSON:
 {
@@ -465,22 +464,28 @@ function calculateWeightedConsensus(agents: AIAgentResult[], price: number, metr
   const buyCount = successfulAgents.filter(a => a.signal === "BUY").length;
   const sellCount = successfulAgents.filter(a => a.signal === "SELL").length;
   
-  if (buyCount > 0 && sellCount > 0 && Math.abs(buyCount - sellCount) <= 1) {
-    finalSignal = buyCount > sellCount ? "BUY" : (sellCount > buyCount ? "SELL" : "NO_TRADE");
+  // Be more practical: if there's any majority, go with it instead of forcing NO_TRADE
+  if (buyCount > sellCount) {
+    finalSignal = "BUY";
+  } else if (sellCount > buyCount) {
+    finalSignal = "SELL";
+  } else if (buyCount === sellCount && buyCount > 0) {
+    // Equal split - use weighted score to decide
+    finalSignal = normalizedScores.BUY > normalizedScores.SELL ? "BUY" : "SELL";
   }
 
   const avgConfidence = totalConfidence / successfulAgents.length;
   const agreementLevel = (Math.max(buyCount, sellCount, successfulAgents.length - buyCount - sellCount) / successfulAgents.length) * 100;
-  const hasStrongConsensus = agreementLevel >= 60 && avgConfidence >= 60;
+  const hasStrongConsensus = agreementLevel >= 50 && avgConfidence >= 55;
 
   const warnings: string[] = [];
-  if (buyCount > 0 && sellCount > 0) {
-    warnings.push(`Mixed signals: ${buyCount} BUY vs ${sellCount} SELL`);
+  if (buyCount > 0 && sellCount > 0 && Math.abs(buyCount - sellCount) <= 1) {
+    warnings.push(`Close call: ${buyCount} BUY vs ${sellCount} SELL`);
   }
-  if (highRiskCount >= 3) {
-    warnings.push("Multiple agents flagged high risk");
+  if (highRiskCount >= 4) {
+    warnings.push("Several agents flagged high risk");
   }
-  if (avgConfidence < 60) {
+  if (avgConfidence < 50) {
     warnings.push(`Lower confidence: ${avgConfidence.toFixed(0)}%`);
   }
 
