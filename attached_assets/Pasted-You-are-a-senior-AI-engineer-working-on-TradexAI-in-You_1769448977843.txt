@@ -1,0 +1,122 @@
+You are a senior AI engineer working on TradexAI.in.
+
+Your task is to upgrade the trading analysis system to maximize real-world accuracy
+by reducing false signals, not by increasing signal frequency.
+
+STRICT PRINCIPLES:
+- NO TRADE is a valid and preferred output.
+- Accuracy > frequency.
+- Avoid false positives aggressively.
+- This system provides analysis only, not financial advice.
+
+==================================================
+1) ASSET-SPECIFIC INTELLIGENCE (Point 3)
+==================================================
+
+Implement separate intelligence pipelines per asset (BTC, ETH, NIFTY, etc.).
+
+Each asset must have:
+- Its own historical memory and recent performance tracking
+- Asset-specific indicator thresholds (RSI, ATR, volatility, volume)
+- Asset-specific AI weighting logic
+- Session awareness if applicable (Asia / London / NY)
+
+DO NOT reuse the same logic across assets.
+
+Workflow:
+- Detect asset symbol
+- Route data to the correct asset-specific brain
+- Generate prediction ONLY using that asset’s rules
+
+==================================================
+2) CONDITIONAL (TRIGGER-BASED) PREDICTIONS (Point 4)
+==================================================
+
+Do NOT output direct BUY or SELL signals.
+
+All predictions must be condition-based.
+
+Examples:
+- BUY only if next candle closes above resistance with volume confirmation
+- SELL only if support breaks and retest fails
+- Cancel signal if condition does not trigger within expiry time
+
+Rules:
+- AI predicts direction + trigger condition
+- Trade activates only when trigger condition is satisfied
+- If condition never triggers, treat as NO TRADE
+
+Each signal must include:
+- Signal intent (BUY / SELL / NO TRADE)
+- Trigger condition
+- Expiry time
+- Confidence score
+
+==================================================
+3) META-JUDGE AI LAYER (Point 5)
+==================================================
+
+Add a Meta-Judge AI that does NOT predict direction.
+
+Purpose:
+Decide whether a signal is ALLOWED or BLOCKED.
+
+Inputs:
+- Outputs from ChatGPT, Gemini, Claude
+- Market structure and regime (trend, range, chop)
+- Volatility state
+- Candle behavior (fake breakouts, long wicks)
+- Indicator alignment
+- Recent signal performance
+
+Meta-Judge BLOCK rules include:
+- Choppy or sideways market
+- Conflicting indicators
+- Fake breakout patterns
+- High disagreement between AI models
+- Weak volume confirmation
+
+Only APPROVED signals can reach users.
+Rejected signals are silently discarded.
+
+==================================================
+4) LOSS-AVOIDANCE & COOLDOWN ENGINE (Point 6)
+==================================================
+
+Implement a defensive risk system.
+
+Rules:
+- Track recent outcomes per asset.
+- If consecutive losses >= 2:
+  - Reduce confidence weighting
+- If consecutive losses >= 3:
+  - Activate cooldown mode (NO TRADE)
+
+Additional automatic BLOCK conditions:
+- Sudden spread expansion
+- Wick-heavy candles
+- Abnormal volatility spikes
+- Low liquidity periods
+- News or unstable market windows
+
+Cooldown behavior:
+- Disable all signals for that asset
+- Resume only after stability conditions are met
+
+Stability conditions may include:
+- Normalized volatility
+- Clean candle structure
+- Indicator realignment
+
+==================================================
+FINAL OUTPUT RULES
+==================================================
+
+Final system output must be ONE of:
+- BUY (with trigger condition and confidence)
+- SELL (with trigger condition and confidence)
+- NO TRADE (low confidence or blocked)
+
+The system must prefer NO TRADE over low-quality signals.
+
+Blocking a bad trade is considered a SUCCESS.
