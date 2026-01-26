@@ -1899,9 +1899,15 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
     }
   });
 
-  // Admin Analytics
+  // Admin Analytics (requires admin session)
   app.get("/api/admin/analytics", async (req, res) => {
     try {
+      const sessionId = req.headers['x-admin-session'] as string;
+      if (!sessionId || !adminSessions.has(sessionId)) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+      
       const stats = await storage.getPaymentStats();
       const payments = await storage.getAllPayments(20);
       res.json({ stats, payments });

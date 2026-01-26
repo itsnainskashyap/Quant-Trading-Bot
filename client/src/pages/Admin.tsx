@@ -245,9 +245,12 @@ export default function Admin() {
   };
   
   const fetchAnalytics = async () => {
+    if (!sessionId) return;
     setIsLoadingAnalytics(true);
     try {
-      const response = await fetch("/api/admin/analytics");
+      const response = await fetch("/api/admin/analytics", {
+        headers: { "x-admin-session": sessionId },
+      });
       if (response.ok) {
         const data = await response.json();
         setAnalytics(data);
