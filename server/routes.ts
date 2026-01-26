@@ -14,6 +14,19 @@ import { evaluateSignal, getMetaJudgeSummary, type MetaJudgeResult } from "./met
 import { checkLossAvoidance, recordTradeOutcome, getLossAvoidanceSummary, getDefensiveRiskMultiplier, type LossAvoidanceState } from "./lossAvoidance";
 import { getSession } from "./replit_integrations/auth";
 
+// Helper function to get user ID from either Replit Auth or email/password session
+function getUserIdFromRequest(req: any): string | null {
+  // Check email/password session first
+  if (req.session?.userId) {
+    return req.session.userId;
+  }
+  // Check Replit Auth
+  if (req.user?.claims?.sub) {
+    return req.user.claims.sub;
+  }
+  return null;
+}
+
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
@@ -156,7 +169,7 @@ export async function registerRoutes(
   app.post("/api/consensus", async (req, res) => {
     try {
       const { pair, tradeMode = 5 } = req.body as { pair: TradingPair; tradeMode?: number };
-      const user = (req as any).user;
+      const userId = getUserIdFromRequest(req);
       
       if (!tradingPairs.includes(pair)) {
         res.status(400).json({ error: "Invalid trading pair" });
@@ -166,8 +179,7 @@ export async function registerRoutes(
       // Track subscription limits for authenticated users
       // Free tier: 10 analyses/day, Pro: unlimited
       // Anonymous users: unlimited (to allow testing before login)
-      if (user?.claims?.sub) {
-        const userId = user.claims.sub;
+      if (userId) {
         const subscription = await storage.getUserSubscription(userId);
         const isPro = subscription?.plan === 'pro' && subscription?.status === 'active';
         
@@ -568,15 +580,9 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
 
   app.post("/api/predictions/take", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user) {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
-      
-      const userId = user.claims?.sub;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
-        res.status(401).json({ error: "Invalid session - please log in again" });
+        res.status(401).json({ error: "Authentication required" });
         return;
       }
       
@@ -687,15 +693,9 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
 
   app.get("/api/predictions", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user) {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
-      
-      const userId = user.claims?.sub;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
-        res.status(401).json({ error: "Invalid session - please log in again" });
+        res.status(401).json({ error: "Authentication required" });
         return;
       }
       
@@ -759,15 +759,9 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
 
   app.get("/api/subscription", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user) {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
-      
-      const userId = user.claims?.sub;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
-        res.status(401).json({ error: "Invalid session" });
+        res.status(401).json({ error: "Authentication required" });
         return;
       }
 
@@ -850,18 +844,12 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
 
   app.get("/api/brokers", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user) {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
         res.status(401).json({ error: "Authentication required" });
         return;
       }
       
-      const userId = user.claims?.sub;
-      if (!userId) {
-        res.status(401).json({ error: "Invalid session" });
-        return;
-      }
-
       const { getUserBrokerConnections } = await import('./brokerService');
       const connections = await getUserBrokerConnections(userId);
       
@@ -885,15 +873,9 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
 
   app.post("/api/brokers/connect", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user) {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
-      
-      const userId = user.claims?.sub;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
-        res.status(401).json({ error: "Invalid session" });
+        res.status(401).json({ error: "Authentication required" });
         return;
       }
 
@@ -929,15 +911,9 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
 
   app.post("/api/brokers/:id/test", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user) {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
-
-      const userId = user.claims?.sub;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
-        res.status(401).json({ error: "Invalid session" });
+        res.status(401).json({ error: "Authentication required" });
         return;
       }
 
@@ -957,15 +933,9 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
 
   app.patch("/api/brokers/:id", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user) {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
-
-      const userId = user.claims?.sub;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
-        res.status(401).json({ error: "Invalid session" });
+        res.status(401).json({ error: "Authentication required" });
         return;
       }
 
@@ -991,15 +961,9 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
 
   app.delete("/api/brokers/:id", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user) {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
-
-      const userId = user.claims?.sub;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
-        res.status(401).json({ error: "Invalid session" });
+        res.status(401).json({ error: "Authentication required" });
         return;
       }
 
@@ -1020,15 +984,9 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
   // Portfolio and positions routes
   app.get("/api/portfolio", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user) {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
-
-      const userId = user.claims?.sub;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
-        res.status(401).json({ error: "Invalid session" });
+        res.status(401).json({ error: "Authentication required" });
         return;
       }
 
@@ -1043,15 +1001,9 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
 
   app.get("/api/positions", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user) {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
-
-      const userId = user.claims?.sub;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
-        res.status(401).json({ error: "Invalid session" });
+        res.status(401).json({ error: "Authentication required" });
         return;
       }
 
@@ -1066,15 +1018,9 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
 
   app.post("/api/trade-suggestion", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user) {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
-
-      const userId = user.claims?.sub;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
-        res.status(401).json({ error: "Invalid session" });
+        res.status(401).json({ error: "Authentication required" });
         return;
       }
 
@@ -1106,15 +1052,9 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
   // Get TradeX balance
   app.get("/api/tradex/balance", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user) {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
-
-      const userId = user.claims?.sub;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
-        res.status(401).json({ error: "Invalid session" });
+        res.status(401).json({ error: "Authentication required" });
         return;
       }
 
@@ -1129,15 +1069,9 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
   // Set/Update TradeX balance
   app.post("/api/tradex/balance", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user) {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
-
-      const userId = user.claims?.sub;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
-        res.status(401).json({ error: "Invalid session" });
+        res.status(401).json({ error: "Authentication required" });
         return;
       }
 
@@ -1158,15 +1092,9 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
   // Add to TradeX balance
   app.post("/api/tradex/balance/add", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user) {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
-
-      const userId = user.claims?.sub;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
-        res.status(401).json({ error: "Invalid session" });
+        res.status(401).json({ error: "Authentication required" });
         return;
       }
 
@@ -1187,15 +1115,9 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
   // Get open TradeX trades
   app.get("/api/tradex/trades", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user) {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
-
-      const userId = user.claims?.sub;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
-        res.status(401).json({ error: "Invalid session" });
+        res.status(401).json({ error: "Authentication required" });
         return;
       }
 
@@ -1210,15 +1132,9 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
   // Get TradeX trade history
   app.get("/api/tradex/history", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user) {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
-
-      const userId = user.claims?.sub;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
-        res.status(401).json({ error: "Invalid session" });
+        res.status(401).json({ error: "Authentication required" });
         return;
       }
 
@@ -1233,15 +1149,9 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
   // Open new TradeX trade
   app.post("/api/tradex/trade", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user) {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
-
-      const userId = user.claims?.sub;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
-        res.status(401).json({ error: "Invalid session" });
+        res.status(401).json({ error: "Authentication required" });
         return;
       }
 
@@ -1270,15 +1180,9 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
   // Close TradeX trade
   app.post("/api/tradex/trade/:id/close", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user) {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
-
-      const userId = user.claims?.sub;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
-        res.status(401).json({ error: "Invalid session" });
+        res.status(401).json({ error: "Authentication required" });
         return;
       }
 
@@ -1305,15 +1209,9 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
   // Update TradeX trade with AI analysis
   app.patch("/api/tradex/trade/:id", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user) {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
-
-      const userId = user.claims?.sub;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
-        res.status(401).json({ error: "Invalid session" });
+        res.status(401).json({ error: "Authentication required" });
         return;
       }
 
@@ -1336,15 +1234,9 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
   // AI-powered live trade analysis
   app.post("/api/tradex/analyze/:id", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user) {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
-
-      const userId = user.claims?.sub;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
-        res.status(401).json({ error: "Invalid session" });
+        res.status(401).json({ error: "Authentication required" });
         return;
       }
 
@@ -1640,14 +1532,14 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
   // Update admin settings (wallet addresses) - requires admin auth
   app.post("/api/admin/settings", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user?.claims?.sub) {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
         res.status(401).json({ error: "Authentication required" });
         return;
       }
       
       // Admin authorization check
-      if (!isAdmin(user.claims.sub)) {
+      if (!isAdmin(userId)) {
         res.status(403).json({ error: "Admin access required" });
         return;
       }
@@ -1683,8 +1575,8 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
   // Get admin stats
   app.get("/api/admin/stats", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user?.claims?.sub) {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
         res.status(401).json({ error: "Authentication required" });
         return;
       }
@@ -1723,7 +1615,7 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
   // Verify payment (session-based auth)
   app.post("/api/payment/verify", async (req, res) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = getUserIdFromRequest(req);
       if (!userId) {
         res.status(401).json({ success: false, message: "Please log in first" });
         return;
@@ -1783,8 +1675,8 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
   // Submit payment for verification
   app.post("/api/payment/submit", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user?.claims?.sub) {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
         res.status(401).json({ error: "Authentication required" });
         return;
       }
@@ -1819,7 +1711,7 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
       
       // Create payment record
       const payment = await storage.createPaymentRecord(
-        user.claims.sub,
+        userId,
         network,
         txHash,
         settings?.proPrice || 10,
@@ -1827,7 +1719,7 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
       );
       
       // Start blockchain verification in background
-      verifyBlockchainPayment(payment.id, network, txHash, walletAddress, settings?.proPrice || 10, user.claims.sub);
+      verifyBlockchainPayment(payment.id, network, txHash, walletAddress, settings?.proPrice || 10, userId);
       
       res.json({ 
         success: true, 
@@ -1842,8 +1734,8 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
   // Check payment status (requires auth and ownership)
   app.get("/api/payment/status/:txHash", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user?.claims?.sub) {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
         res.status(401).json({ error: "Authentication required" });
         return;
       }
@@ -1855,7 +1747,7 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
       }
       
       // Ownership check - only allow user to see their own payments
-      if (payment.userId !== user.claims.sub) {
+      if (payment.userId !== userId) {
         res.status(403).json({ error: "Access denied" });
         return;
       }
@@ -1869,13 +1761,13 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
   // Get user's payment history
   app.get("/api/payments", async (req, res) => {
     try {
-      const user = (req as any).user;
-      if (!user?.claims?.sub) {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
         res.status(401).json({ error: "Authentication required" });
         return;
       }
       
-      const payments = await storage.getUserPayments(user.claims.sub);
+      const payments = await storage.getUserPayments(userId);
       res.json(payments);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
