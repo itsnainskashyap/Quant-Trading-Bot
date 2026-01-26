@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -8,16 +8,81 @@ import Dashboard from "@/pages/Dashboard";
 import { Landing } from "@/pages/Landing";
 import Profile from "@/pages/Profile";
 import Admin from "@/pages/Admin";
+import Register from "@/pages/Register";
+import Login from "@/pages/Login";
+import Personalize from "@/pages/Personalize";
+import Plans from "@/pages/Plans";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
+
+function OnboardingGuard({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  const [location] = useLocation();
+  
+  if (!user) {
+    return <Redirect to="/login" />;
+  }
+
+  if (!user.firstName && location !== "/personalize") {
+    return <Redirect to="/personalize" />;
+  }
+
+  if (!user.onboardingCompleted && user.firstName && location !== "/plans") {
+    return <Redirect to="/plans" />;
+  }
+
+  return <>{children}</>;
+}
 
 function AuthenticatedRoutes() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/profile" component={Profile} />
-      <Route path="/admin" component={Admin} />
+      <Route path="/">
+        <OnboardingGuard>
+          <Dashboard />
+        </OnboardingGuard>
+      </Route>
+      <Route path="/dashboard">
+        <OnboardingGuard>
+          <Dashboard />
+        </OnboardingGuard>
+      </Route>
+      <Route path="/profile">
+        <OnboardingGuard>
+          <Profile />
+        </OnboardingGuard>
+      </Route>
+      <Route path="/admin">
+        <OnboardingGuard>
+          <Admin />
+        </OnboardingGuard>
+      </Route>
+      <Route path="/personalize">
+        <Personalize />
+      </Route>
+      <Route path="/plans">
+        <Plans />
+      </Route>
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
+
+function UnauthenticatedRoutes() {
+  return (
+    <Switch>
+      <Route path="/" component={Landing} />
+      <Route path="/register" component={Register} />
+      <Route path="/login" component={Login} />
+      <Route path="/personalize">
+        <Redirect to="/login" />
+      </Route>
+      <Route path="/plans">
+        <Redirect to="/login" />
+      </Route>
+      <Route path="/dashboard">
+        <Redirect to="/login" />
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
@@ -38,7 +103,7 @@ function Router() {
   }
   
   if (!user) {
-    return <Landing />;
+    return <UnauthenticatedRoutes />;
   }
   
   return <AuthenticatedRoutes />;

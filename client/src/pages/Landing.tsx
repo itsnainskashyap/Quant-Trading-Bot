@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { 
   ArrowRight,
   ChevronRight,
@@ -13,10 +12,9 @@ import {
   Brain
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link } from "wouter";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 import { ExchangeLogo } from "@/components/ExchangeLogos";
-import { PhoneLogin } from "@/components/PhoneLogin";
-import { queryClient } from "@/lib/queryClient";
 
 function AnimatedPrice({ symbol, basePrice }: { symbol: string; basePrice: number }) {
   const [price, setPrice] = useState(basePrice);
@@ -62,14 +60,6 @@ function FloatingOrb({ delay, size, left, top }: { delay: number; size: number; 
 }
 
 export function Landing() {
-  const [loginOpen, setLoginOpen] = useState(false);
-
-  const handleLoginSuccess = () => {
-    setLoginOpen(false);
-    queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-    window.location.reload();
-  };
-
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white overflow-hidden">
       <FloatingOrb delay={0} size={400} left="10%" top="20%" />
@@ -85,19 +75,25 @@ export function Landing() {
             <a href="#ai-agents" className="text-sm text-gray-400 hover:text-white transition-colors" data-testid="link-ai-agents">AI Agents</a>
             <a href="#brokers" className="text-sm text-gray-400 hover:text-white transition-colors" data-testid="link-brokers">Supported Brokers</a>
           </div>
-          <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
-            <DialogTrigger asChild>
+          <div className="flex items-center gap-3">
+            <Link href="/login">
+              <Button 
+                variant="ghost" 
+                className="text-gray-300 hover:text-white"
+                data-testid="button-login"
+              >
+                Sign In
+              </Button>
+            </Link>
+            <Link href="/register">
               <Button 
                 className="bg-white text-black rounded-full"
                 data-testid="button-get-started"
               >
-                Start Trading
+                Get Started
               </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-transparent border-0 p-0 max-w-md">
-              <PhoneLogin onSuccess={handleLoginSuccess} />
-            </DialogContent>
-          </Dialog>
+            </Link>
+          </div>
         </div>
       </nav>
 
@@ -121,15 +117,16 @@ export function Landing() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button 
-              size="lg" 
-              onClick={() => setLoginOpen(true)}
-              className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full text-lg"
-              data-testid="button-hero-start"
-            >
-              Start Free Now
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
+            <Link href="/register">
+              <Button 
+                size="lg" 
+                className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full text-lg"
+                data-testid="button-hero-start"
+              >
+                Start Free Now
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+            </Link>
             <Button 
               size="lg" 
               variant="outline" 
@@ -431,15 +428,16 @@ export function Landing() {
                 Capital protection
               </li>
             </ul>
-            <Button 
-              size="lg" 
-              onClick={() => setLoginOpen(true)}
-              className="bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full text-lg"
-              data-testid="button-cta-start"
-            >
-              Start Free Now
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
+            <Link href="/register">
+              <Button 
+                size="lg" 
+                className="bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full text-lg"
+                data-testid="button-cta-start"
+              >
+                Start Free Now
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+            </Link>
           </Card>
         </div>
       </section>

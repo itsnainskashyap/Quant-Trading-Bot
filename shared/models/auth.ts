@@ -15,11 +15,12 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)]
 );
 
-// User storage table with phone number support
+// User storage table with email/password support
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   phone: varchar("phone").unique(),
   email: varchar("email").unique(),
+  password: varchar("password"),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
@@ -33,6 +34,9 @@ export const users = pgTable("users", {
   isEarlyAdopter: boolean("is_early_adopter").default(false),
   isAdmin: boolean("is_admin").default(false),
   isPhoneVerified: boolean("is_phone_verified").default(false),
+  isEmailVerified: boolean("is_email_verified").default(false),
+  onboardingCompleted: boolean("onboarding_completed").default(false),
+  selectedPlan: varchar("selected_plan").default("free"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

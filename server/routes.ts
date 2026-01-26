@@ -6,6 +6,7 @@ import { tradingPairs, type TradingPair, type TradingSignal } from "@shared/sche
 import { getMultiAIConsensus, generateConsensusExplanation } from "./consensus";
 import { getEnhancedAIConsensus } from "./enhancedAI";
 import { setupPhoneAuth, getUserById } from "./phoneAuth";
+import { setupEmailAuth } from "./emailAuth";
 import { startTradeMonitor } from "./tradeAI";
 import { getAssetProfile, getAssetMemory, getAssetSpecificThresholds, isAssetInCooldown, getCooldownReason, updateAssetMemory } from "./assetIntelligence";
 import { createConditionalSignal, checkTriggerConditions, formatTriggerConditions, cleanExpiredSignals, type ConditionalSignal } from "./conditionalPredictions";
@@ -23,6 +24,7 @@ export async function registerRoutes(
 ): Promise<Server> {
   
   setupPhoneAuth(app);
+  setupEmailAuth(app);
   
   startTradeMonitor();
   
