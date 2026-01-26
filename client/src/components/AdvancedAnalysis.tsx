@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Shield, Brain, AlertTriangle, CheckCircle, XCircle, Clock, TrendingUp, TrendingDown, Minus, Target, Zap, Activity } from "lucide-react";
+import { Loader2, ShieldCheck, Cpu, AlertTriangle, CheckCircle, XCircle, Clock, TrendingUp, TrendingDown, Minus, Crosshair, Bolt, Activity, Lock, Award } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { TradingPair } from "@shared/schema";
 
@@ -90,9 +91,10 @@ interface AdvancedAnalysisResult {
 interface AdvancedAnalysisProps {
   pair: TradingPair;
   tradeMode?: number;
+  isPro?: boolean;
 }
 
-export function AdvancedAnalysis({ pair, tradeMode = 5 }: AdvancedAnalysisProps) {
+export function AdvancedAnalysis({ pair, tradeMode = 5, isPro = false }: AdvancedAnalysisProps) {
   const [analysisResult, setAnalysisResult] = useState<AdvancedAnalysisResult | null>(null);
 
   const analysisMutation = useMutation({
@@ -141,14 +143,65 @@ export function AdvancedAnalysis({ pair, tradeMode = 5 }: AdvancedAnalysisProps)
     }
   };
 
+  // Pro-only gate
+  if (!isPro) {
+    return (
+      <Card className="bg-gradient-to-br from-[#12121a] to-[#1a1a2e] border-purple-500/20">
+        <CardContent className="py-8">
+          <div className="text-center">
+            <div className="relative inline-block">
+              <Cpu className="w-16 h-16 mx-auto mb-4 text-purple-400/30" />
+              <Lock className="w-6 h-6 absolute -right-1 -bottom-1 text-amber-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-2 flex items-center justify-center gap-2">
+              <Award className="w-5 h-5 text-amber-400" />
+              Pro Feature
+            </h3>
+            <p className="text-gray-400 mb-4 max-w-md mx-auto">
+              Advanced Accuracy Analysis uses 5 specialized AI agents with Meta-Judge verification 
+              for the most accurate trading signals. Available exclusively for Pro users.
+            </p>
+            <div className="flex flex-col gap-2 text-sm text-gray-500">
+              <div className="flex items-center justify-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-400" />
+                <span>5 AI Agents: Technical, Fundamental, Psychology, Pattern, Smart Money</span>
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-400" />
+                <span>Meta-Judge verification layer for signal quality</span>
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-400" />
+                <span>Loss Avoidance system with asset memory</span>
+              </div>
+            </div>
+            <Link href="/plans" data-testid="link-upgrade-pro">
+              <Button 
+                className="mt-6 bg-gradient-to-r from-amber-500 to-orange-500 text-black font-semibold"
+                data-testid="button-upgrade-pro"
+              >
+                <Award className="w-4 h-4 mr-2" />
+                Upgrade to Pro
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <Card className="bg-[#12121a] border-white/10">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <CardTitle className="text-lg flex items-center gap-2">
-              <Brain className="w-5 h-5 text-purple-400" />
+              <Cpu className="w-5 h-5 text-purple-400" />
               Advanced Accuracy Analysis
+              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-black text-[9px]">
+                <Award className="w-3 h-3 mr-1" />
+                PRO
+              </Badge>
             </CardTitle>
             <Button
               onClick={() => analysisMutation.mutate()}
@@ -163,7 +216,7 @@ export function AdvancedAnalysis({ pair, tradeMode = 5 }: AdvancedAnalysisProps)
                 </>
               ) : (
                 <>
-                  <Zap className="w-4 h-4 mr-2" />
+                  <Bolt className="w-4 h-4 mr-2" />
                   Run Analysis
                 </>
               )}
@@ -210,7 +263,7 @@ export function AdvancedAnalysis({ pair, tradeMode = 5 }: AdvancedAnalysisProps)
               <Card className="bg-[#0a0a0f] border-white/5">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <Target className="w-4 h-4 text-blue-400" />
+                    <Crosshair className="w-4 h-4 text-blue-400" />
                     Trigger Conditions
                   </CardTitle>
                 </CardHeader>
@@ -237,7 +290,7 @@ export function AdvancedAnalysis({ pair, tradeMode = 5 }: AdvancedAnalysisProps)
               <Card className="bg-[#0a0a0f] border-white/5">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-purple-400" />
+                    <ShieldCheck className="w-4 h-4 text-purple-400" />
                     Meta-Judge Decision
                   </CardTitle>
                 </CardHeader>
@@ -346,7 +399,7 @@ export function AdvancedAnalysis({ pair, tradeMode = 5 }: AdvancedAnalysisProps)
             <Card className="bg-[#0a0a0f] border-white/5">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Brain className="w-4 h-4 text-purple-400" />
+                  <Cpu className="w-4 h-4 text-purple-400" />
                   AI Agent Votes
                 </CardTitle>
               </CardHeader>
@@ -381,7 +434,7 @@ export function AdvancedAnalysis({ pair, tradeMode = 5 }: AdvancedAnalysisProps)
               <Card className="bg-[#0a0a0f] border-white/5">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <Target className="w-4 h-4 text-blue-400" />
+                    <Crosshair className="w-4 h-4 text-blue-400" />
                     Trade Recommendation
                   </CardTitle>
                 </CardHeader>
@@ -449,7 +502,7 @@ export function AdvancedAnalysis({ pair, tradeMode = 5 }: AdvancedAnalysisProps)
         {!analysisResult && !analysisMutation.isPending && (
           <CardContent>
             <div className="text-center py-8 text-gray-500">
-              <Brain className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <Cpu className="w-12 h-12 mx-auto mb-3 opacity-50" />
               <p>Click "Run Analysis" to get accuracy-focused trading signals</p>
               <p className="text-sm mt-1">NO TRADE is preferred over false signals</p>
             </div>

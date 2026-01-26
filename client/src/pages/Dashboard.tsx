@@ -912,7 +912,7 @@ export default function Dashboard() {
 
             <BacktestStats />
 
-            <AdvancedAnalysis pair={selectedPair} tradeMode={tradeMode} />
+            <AdvancedAnalysis pair={selectedPair} tradeMode={tradeMode} isPro={isPro} />
 
             <TechnicalIndicators pair={selectedPair} metrics={data?.signal ? {
               pair: selectedPair,

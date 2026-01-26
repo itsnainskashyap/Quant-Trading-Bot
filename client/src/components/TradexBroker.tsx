@@ -14,14 +14,14 @@ import {
   TrendingUp, 
   TrendingDown, 
   Clock, 
-  Target, 
+  Crosshair, 
   AlertTriangle,
   Loader2,
   RefreshCw,
   XCircle,
   CheckCircle,
-  Sparkles,
-  Brain,
+  Gem,
+  Cpu,
   Timer,
   Activity
 } from "lucide-react";
@@ -247,7 +247,7 @@ export function TradexBroker({ selectedPair, currentPrice, signal }: TradexBroke
     if (!rec) return null;
     if (rec.includes('PROFIT')) return <TrendingUp className="w-3 h-3" />;
     if (rec.includes('LOSS') || rec === 'AUTO_CLOSE') return <TrendingDown className="w-3 h-3" />;
-    if (rec === 'TRAILING_STOP') return <Target className="w-3 h-3" />;
+    if (rec === 'TRAILING_STOP') return <Crosshair className="w-3 h-3" />;
     if (rec === 'EXTENDED') return <RefreshCw className="w-3 h-3" />;
     return <Clock className="w-3 h-3" />;
   };
@@ -262,7 +262,7 @@ export function TradexBroker({ selectedPair, currentPrice, signal }: TradexBroke
               TradeX Broker
             </span>
             <Badge variant="outline" className="text-[9px] border-purple-500/30 text-purple-400">
-              <Sparkles className="w-2 h-2 mr-1" />
+              <Gem className="w-2 h-2 mr-1" />
               AI Paper Trading
             </Badge>
           </CardTitle>
@@ -356,7 +356,7 @@ export function TradexBroker({ selectedPair, currentPrice, signal }: TradexBroke
         {openTrades.length > 0 ? (
           <div className="space-y-2">
             <div className="text-xs text-gray-400 flex items-center gap-1">
-              <Brain className="w-3 h-3 text-purple-400" />
+              <Cpu className="w-3 h-3 text-purple-400" />
               Active Trades (AI Monitoring)
             </div>
             {openTrades.map((trade) => (
@@ -391,7 +391,7 @@ export function TradexBroker({ selectedPair, currentPrice, signal }: TradexBroke
                             ? 'bg-amber-500/20 text-amber-400 animate-pulse' 
                             : 'bg-blue-500/10 text-blue-400'
                       }`}>
-                        <Target className="w-3 h-3" />
+                        <Crosshair className="w-3 h-3" />
                         <span className="font-mono">{timeRemaining[trade.id]?.text || '-'}</span>
                         {(trade.extensionCount || 0) > 0 && (
                           <span className="text-purple-400">+{trade.extensionCount}</span>
@@ -423,7 +423,7 @@ export function TradexBroker({ selectedPair, currentPrice, signal }: TradexBroke
                         </>
                       ) : (
                         <>
-                          <Brain className="w-3 h-3" />
+                          <Cpu className="w-3 h-3" />
                           {trade.aiRecommendation && getRecommendationIcon(trade.aiRecommendation)}
                           AI: {trade.aiRecommendation || 'Analyzing...'}
                         </>
@@ -484,7 +484,7 @@ export function TradexBroker({ selectedPair, currentPrice, signal }: TradexBroke
           </div>
         ) : (
           <div className="text-center py-4 text-gray-500 text-xs">
-            <Brain className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <Cpu className="w-8 h-8 mx-auto mb-2 opacity-50" />
             No open trades
             <div className="text-[10px] mt-1">Take a signal to start paper trading</div>
           </div>

@@ -261,9 +261,30 @@ export async function registerRoutes(
     }
   });
 
-  // Advanced Accuracy-Focused Analysis (new system)
+  // Advanced Accuracy-Focused Analysis (new system) - PRO ONLY
   app.post("/api/advanced-analysis", async (req, res) => {
     try {
+      // Check authentication
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+      
+      // Check Pro subscription - must be active and not expired
+      const subscription = await storage.getUserSubscription(userId);
+      const isPro = subscription?.plan === 'pro' && 
+                    subscription?.status === 'active' && 
+                    (!subscription?.endDate || new Date(subscription.endDate) > new Date());
+      
+      if (!isPro) {
+        res.status(403).json({ 
+          error: "Pro subscription required",
+          message: "Advanced Analysis is a Pro-only feature. Upgrade to access 5 AI agents with Meta-Judge verification."
+        });
+        return;
+      }
+      
       const { pair, tradeMode = 5 } = req.body as { pair: TradingPair; tradeMode?: number };
       
       if (!tradingPairs.includes(pair)) {
@@ -271,7 +292,7 @@ export async function registerRoutes(
         return;
       }
       
-      console.log(`[AdvancedAnalysis] Running accuracy-focused analysis for ${pair}...`);
+      console.log(`[AdvancedAnalysis] Running accuracy-focused analysis for ${pair} (Pro user: ${userId})...`);
       
       // Clean up expired signals
       cleanExpiredSignals();
@@ -1249,8 +1270,21 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
       }
 
       const { currentPrice } = req.body;
-      if (!currentPrice) {
-        res.status(400).json({ error: "Current price required" });
+      if (!currentPrice || typeof currentPrice !== 'number' || currentPrice <= 0) {
+        res.status(400).json({ error: "Valid current price required" });
+        return;
+      }
+
+      // Validate price is within reasonable range (prevent corrupted data)
+      // Max allowed deviation from entry price: 50% (extreme but handles high volatility)
+      const priceDeviation = Math.abs(currentPrice - trade.entryPrice) / trade.entryPrice * 100;
+      if (priceDeviation > 50) {
+        console.warn(`[TradeX] Suspicious price detected for ${trade.pair}: ${currentPrice} vs entry ${trade.entryPrice} (${priceDeviation.toFixed(1)}% deviation)`);
+        // Use last known good price or entry price if current price seems corrupted
+        res.status(400).json({ 
+          error: `Price deviation too high (${priceDeviation.toFixed(1)}%). Using cached price instead.`,
+          cachedPrice: trade.currentPrice || trade.entryPrice
+        });
         return;
       }
 

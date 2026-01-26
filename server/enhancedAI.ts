@@ -82,135 +82,189 @@ export interface EnhancedConsensusResult {
 }
 
 function buildTechnicalPrompt(pair: TradingPair, metrics: MarketMetrics, price: number, tradeMode: number): string {
-  return `You are a TECHNICAL ANALYSIS AI specializing in chart patterns and indicators.
+  const rsi = metrics.rsi ?? 50;
+  const stochK = metrics.stochasticK ?? 50;
+  const adx = metrics.adx ?? 25;
+  
+  return `You are a PROFESSIONAL TECHNICAL ANALYSIS AI. CAPITAL PROTECTION > PROFITS.
 
 ASSET: ${pair} | PRICE: $${price} | TIMEFRAME: ${tradeMode} MIN
 
-TECHNICAL DATA:
-- RSI: ${metrics.rsi?.toFixed(1) || 'N/A'} | Signal: ${metrics.rsiSignal || 'NEUTRAL'}
-- MACD: ${metrics.macdTrend || 'NEUTRAL'} | Histogram: ${metrics.macdHistogram?.toFixed(2) || 0}
-- Stochastic: K=${metrics.stochasticK?.toFixed(1) || 50} D=${metrics.stochasticD?.toFixed(1) || 50}
-- ADX: ${metrics.adx?.toFixed(1) || 25} | Trend: ${metrics.trendStrength || 'MODERATE'}
-- Bollinger: ${metrics.bollingerPosition || 'NEUTRAL'} | Squeeze: ${metrics.bollingerSqueeze ? 'YES' : 'NO'}
-- SMA20/50/200 vs Price: ${metrics.maTrend || 'NEUTRAL'}
-- Golden Cross: ${metrics.goldenCross ? 'YES' : 'NO'} | Death Cross: ${metrics.deathCross ? 'NO' : 'NO'}
-- Support: $${metrics.nearestSupport?.toFixed(2) || 'N/A'} | Resistance: $${metrics.nearestResistance?.toFixed(2) || 'N/A'}
+TECHNICAL INDICATORS:
+- RSI (14): ${rsi.toFixed(1)} | Zone: ${rsi < 30 ? 'OVERSOLD' : rsi > 70 ? 'OVERBOUGHT' : 'NEUTRAL'}
+- Stochastic: K=${stochK.toFixed(1)} D=${metrics.stochasticD?.toFixed(1) || 50} | Zone: ${stochK < 20 ? 'OVERSOLD' : stochK > 80 ? 'OVERBOUGHT' : 'NEUTRAL'}
+- MACD: ${metrics.macdTrend || 'NEUTRAL'} | Histogram: ${metrics.macdHistogram?.toFixed(3) || 0} | Crossover: ${metrics.macdCrossover || 'NONE'}
+- ADX: ${adx.toFixed(1)} | Trend: ${adx > 40 ? 'STRONG' : adx > 25 ? 'MODERATE' : 'WEAK/NO TREND'}
+- Bollinger: ${metrics.bollingerPosition || 'NEUTRAL'} | Squeeze: ${metrics.bollingerSqueeze ? 'YES - Breakout imminent' : 'NO'}
+- Moving Averages: ${metrics.maTrend || 'NEUTRAL'} | Golden Cross: ${metrics.goldenCross ? 'YES' : 'NO'} | Death Cross: ${metrics.deathCross ? 'YES' : 'NO'}
+- Support: $${metrics.nearestSupport?.toFixed(2) || 'N/A'} (${metrics.distanceToSupport?.toFixed(2) || 0}% away)
+- Resistance: $${metrics.nearestResistance?.toFixed(2) || 'N/A'} (${metrics.distanceToResistance?.toFixed(2) || 0}% away)
 
-Analyze PURELY from technical perspective. Respond in JSON:
+STRICT RULES:
+- BUY: RSI <35 + MACD bullish + Stoch oversold + ADX >20 + Price near support
+- SELL: RSI >65 + MACD bearish + Stoch overbought + ADX >20 + Price near resistance
+- NO_TRADE: Mixed signals, ADX <20, RSI 40-60, or any uncertainty
+
+CONFIDENCE GUIDE: 80-90 (perfect setup), 70-79 (good), 65-69 (acceptable), <65 (NO_TRADE)
+
+Respond in JSON:
 {
   "signal": "BUY" | "SELL" | "NO_TRADE",
-  "confidence": 50-95,
+  "confidence": 60-90 (be conservative),
   "risk": "LOW" | "MEDIUM" | "HIGH",
-  "insight": "Key technical factors for this signal",
-  "keyLevels": ["level1", "level2"],
-  "patternDetected": "pattern name or NONE"
+  "insight": "Which indicators aligned? Why this confidence level?",
+  "keyLevels": ["support level", "resistance level"],
+  "patternDetected": "specific pattern or NONE"
 }`;
 }
 
 function buildFundamentalPrompt(pair: TradingPair, metrics: MarketMetrics, price: number): string {
-  return `You are a FUNDAMENTAL ANALYSIS AI focusing on market structure and order flow.
+  const volumeDelta = metrics.volumeDelta ?? 0;
+  const orderBookImbalance = metrics.orderBookImbalance ?? 0;
+  const fundingRate = metrics.fundingRate ?? 0;
+  
+  return `You are a PROFESSIONAL ORDER FLOW ANALYST. ACCURACY > ACTIVITY.
 
 ASSET: ${pair} | PRICE: $${price}
 
-MARKET DATA:
-- Volume Delta: ${metrics.volumeDelta?.toFixed(2)}% | Trend: ${metrics.volumeTrend || 'STABLE'}
-- Order Book Imbalance: ${metrics.orderBookImbalance?.toFixed(2)}%
+ORDER FLOW & MARKET STRUCTURE:
+- Volume Delta: ${volumeDelta.toFixed(2)}% | Direction: ${volumeDelta > 5 ? 'STRONG BUYING' : volumeDelta < -5 ? 'STRONG SELLING' : 'BALANCED'}
+- Volume Trend: ${metrics.volumeTrend || 'STABLE'} | Confirmation: ${metrics.volumeConfirmation ? 'YES' : 'NO'}
+- Order Book: ${orderBookImbalance.toFixed(2)}% | Bias: ${orderBookImbalance > 10 ? 'BUYERS DOMINATING' : orderBookImbalance < -10 ? 'SELLERS DOMINATING' : 'BALANCED'}
 - Open Interest: $${(metrics.openInterest / 1e9).toFixed(2)}B
-- Funding Rate: ${(metrics.fundingRate * 100).toFixed(4)}%
-- ATR: ${metrics.atrPercent?.toFixed(2)}% | Volatility: ${metrics.volatility?.toFixed(2)}
+- Funding Rate: ${(fundingRate * 100).toFixed(4)}% | ${fundingRate > 0.01 ? 'LONGS OVERLEVERAGED' : fundingRate < -0.01 ? 'SHORTS OVERLEVERAGED' : 'NEUTRAL'}
+- ATR: ${metrics.atrPercent?.toFixed(2) || 0}% | Volatility: ${metrics.volatility < 2 ? 'LOW' : metrics.volatility < 4 ? 'MEDIUM' : 'HIGH'}
 
-Analyze market structure and order flow. Respond in JSON:
+STRICT RULES:
+- BUY: Strong buying pressure (volume delta >5%) + buyers dominating + positive order flow
+- SELL: Strong selling pressure (volume delta <-5%) + sellers dominating + negative order flow
+- NO_TRADE: Balanced order flow, low volume, mixed signals
+
+CONFIDENCE GUIDE: Only 70+ if clear directional order flow with volume confirmation
+
+Respond in JSON:
 {
   "signal": "BUY" | "SELL" | "NO_TRADE",
-  "confidence": 50-95,
+  "confidence": 60-90 (require clear order flow),
   "risk": "LOW" | "MEDIUM" | "HIGH",
-  "insight": "Key fundamental factors",
+  "insight": "Order flow analysis - what is the money doing?",
   "marketSentiment": "BULLISH" | "BEARISH" | "NEUTRAL",
-  "volumeAnalysis": "brief volume insight",
+  "volumeAnalysis": "Volume confirms direction?",
   "orderFlowBias": "BUYERS" | "SELLERS" | "BALANCED"
 }`;
 }
 
 function buildPsychologyPrompt(pair: TradingPair, metrics: MarketMetrics, price: number): string {
   const rsi = metrics.rsi || 50;
-  const fearGreed = rsi < 30 ? "EXTREME_FEAR" : rsi < 40 ? "FEAR" : rsi > 70 ? "EXTREME_GREED" : rsi > 60 ? "GREED" : "NEUTRAL";
+  const fundingRate = metrics.fundingRate ?? 0;
+  const fearGreed = rsi < 25 ? "EXTREME_FEAR" : rsi < 35 ? "FEAR" : rsi > 75 ? "EXTREME_GREED" : rsi > 65 ? "GREED" : "NEUTRAL";
+  const fearGreedScore = rsi;
   
-  return `You are a MARKET PSYCHOLOGY AI analyzing trader sentiment and crowd behavior.
+  return `You are a PROFESSIONAL MARKET PSYCHOLOGY ANALYST. Trade against the crowd at extremes.
 
 ASSET: ${pair} | PRICE: $${price}
 
-PSYCHOLOGY INDICATORS:
-- RSI-Based Fear/Greed: ${fearGreed} (RSI: ${rsi.toFixed(1)})
-- Funding Rate Sentiment: ${metrics.fundingRate > 0 ? 'LONGS PAYING (bullish crowd)' : 'SHORTS PAYING (bearish crowd)'}
+SENTIMENT INDICATORS:
+- Fear/Greed Index: ${fearGreedScore.toFixed(0)} | State: ${fearGreed}
+- RSI (Crowd Emotion): ${rsi.toFixed(1)} | ${rsi < 30 ? 'CROWD PANIC - Contrarian BUY zone' : rsi > 70 ? 'CROWD EUPHORIA - Contrarian SELL zone' : 'NEUTRAL'}
+- Funding Rate: ${(fundingRate * 100).toFixed(4)}% | ${fundingRate > 0.02 ? 'EXTREME GREED - Longs overleveraged' : fundingRate < -0.02 ? 'EXTREME FEAR - Shorts overleveraged' : 'NEUTRAL'}
 - Volume Behavior: ${metrics.volumeTrend || 'STABLE'}
-- Bollinger Position: ${metrics.bollingerPosition || 'NEUTRAL'}
+- Bollinger: ${metrics.bollingerPosition || 'NEUTRAL'} | ${metrics.bollingerPosition === 'BELOW_LOWER' ? 'Oversold sentiment' : metrics.bollingerPosition === 'ABOVE_UPPER' ? 'Overbought sentiment' : 'Neutral'}
 
-Analyze trader psychology and potential reversals. Consider:
-- Contrarian signals (extreme readings often reverse)
-- Crowd behavior patterns
-- Emotional market states
+CONTRARIAN TRADING RULES:
+- BUY: Extreme fear (RSI <25) + panic selling + funding negative = crowd is wrong, BUY
+- SELL: Extreme greed (RSI >75) + euphoric buying + funding very positive = crowd is wrong, SELL
+- NO_TRADE: Neutral sentiment (RSI 35-65), no crowd extreme
+
+CRITICAL: Only trade against crowd at TRUE EXTREMES. Neutral = NO_TRADE.
 
 Respond in JSON:
 {
   "signal": "BUY" | "SELL" | "NO_TRADE",
-  "confidence": 50-95,
+  "confidence": 60-90 (only high when extreme sentiment),
   "risk": "LOW" | "MEDIUM" | "HIGH",
-  "insight": "Psychology-based analysis",
-  "fearGreedScore": 0-100,
+  "insight": "What is the crowd doing wrong? Why fade them?",
+  "fearGreedScore": ${fearGreedScore.toFixed(0)},
   "marketMood": "EUPHORIC" | "OPTIMISTIC" | "NEUTRAL" | "FEARFUL" | "PANIC",
-  "crowdBehavior": "brief crowd analysis",
-  "contraindicator": "any contrarian signal"
+  "crowdBehavior": "What mistake is the crowd making?",
+  "contraindicator": "Specific contrarian signal or NONE"
 }`;
 }
 
 function buildPatternPrompt(pair: TradingPair, metrics: MarketMetrics, price: number): string {
-  return `You are a PATTERN RECOGNITION AI specialized in chart patterns and price action.
+  const bullishCount = metrics.bullishSignals?.length ?? 0;
+  const bearishCount = metrics.bearishSignals?.length ?? 0;
+  const confluenceScore = metrics.confluenceScore ?? 0;
+  
+  return `You are a PROFESSIONAL PATTERN RECOGNITION AI. Only trade clear, high-probability patterns.
 
 ASSET: ${pair} | PRICE: $${price}
 
-PATTERN DATA:
-- Recent Price Action: ${metrics.momentum?.toFixed(2) || 0}% momentum
-- Bollinger Position: ${metrics.bollingerPosition || 'NEUTRAL'} (Width: ${metrics.bollingerWidth?.toFixed(2) || 'N/A'}%)
+PATTERN & PRICE ACTION DATA:
+- Momentum: ${metrics.momentum?.toFixed(2) || 0}% | Direction: ${(metrics.momentum ?? 0) > 1 ? 'BULLISH' : (metrics.momentum ?? 0) < -1 ? 'BEARISH' : 'FLAT'}
+- Bollinger: ${metrics.bollingerPosition || 'NEUTRAL'} | Width: ${metrics.bollingerWidth?.toFixed(2) || 0}% | Squeeze: ${metrics.bollingerSqueeze ? 'YES' : 'NO'}
 - MACD Crossover: ${metrics.macdCrossover || 'NONE'}
-- Distance to Support: ${metrics.distanceToSupport?.toFixed(2) || 'N/A'}%
-- Distance to Resistance: ${metrics.distanceToResistance?.toFixed(2) || 'N/A'}%
-- Confluence Score: ${metrics.confluenceScore || 0}
-- Bullish Signals: ${metrics.bullishSignals?.join(', ') || 'None'}
-- Bearish Signals: ${metrics.bearishSignals?.join(', ') || 'None'}
+- Distance to Support: ${metrics.distanceToSupport?.toFixed(2) || 0}%
+- Distance to Resistance: ${metrics.distanceToResistance?.toFixed(2) || 0}%
 
-Identify chart patterns and predict next move. Respond in JSON:
+CONFLUENCE ANALYSIS:
+- Bullish Patterns: ${bullishCount} (${metrics.bullishSignals?.slice(0,4).join(', ') || 'None'})
+- Bearish Patterns: ${bearishCount} (${metrics.bearishSignals?.slice(0,4).join(', ') || 'None'})
+- Net Confluence: ${confluenceScore} | Direction: ${confluenceScore > 3 ? 'BULLISH' : confluenceScore < -3 ? 'BEARISH' : 'MIXED'}
+
+PATTERN TRADING RULES:
+- BUY: 4+ bullish patterns + confluence >3 + near support + breakout confirmation
+- SELL: 4+ bearish patterns + confluence <-3 + near resistance + breakdown confirmation
+- NO_TRADE: Mixed patterns, weak confluence, no clear setup
+
+HIGH-PROBABILITY PATTERNS ONLY: Double bottom, triple bottom, bull flag, inverse H&S for BUY.
+Double top, triple top, bear flag, H&S for SELL. Ignore weak/unclear patterns.
+
+Respond in JSON:
 {
   "signal": "BUY" | "SELL" | "NO_TRADE",
-  "confidence": 50-95,
+  "confidence": 60-90 (only high for clear patterns),
   "risk": "LOW" | "MEDIUM" | "HIGH",
-  "insight": "Pattern-based prediction",
-  "patternsDetected": ["pattern1", "pattern2"],
-  "patternStrength": 0-100,
-  "patternPrediction": "expected outcome from patterns"
+  "insight": "What pattern is forming? Entry/exit levels?",
+  "patternsDetected": ["specific patterns only"],
+  "patternStrength": 0-100 (based on pattern clarity),
+  "patternPrediction": "Price target based on pattern"
 }`;
 }
 
 function buildSmartMoneyPrompt(pair: TradingPair, metrics: MarketMetrics, price: number): string {
-  return `You are a SMART MONEY AI analyzing institutional and whale activity.
+  const openInterest = metrics.openInterest ?? 0;
+  const orderBookImbalance = metrics.orderBookImbalance ?? 0;
+  const volumeDelta = metrics.volumeDelta ?? 0;
+  const fundingRate = metrics.fundingRate ?? 0;
+  
+  return `You are a PROFESSIONAL INSTITUTIONAL FLOW ANALYST. Follow the smart money.
 
 ASSET: ${pair} | PRICE: $${price}
 
-SMART MONEY INDICATORS:
-- Open Interest: $${(metrics.openInterest / 1e9).toFixed(2)}B
-- Order Book Imbalance: ${metrics.orderBookImbalance?.toFixed(2)}%
-- Volume Delta: ${metrics.volumeDelta?.toFixed(2)}%
-- Funding Rate: ${(metrics.fundingRate * 100).toFixed(4)}%
-- Volume Confirmation: ${metrics.volumeConfirmation ? 'YES' : 'NO'}
-- ADX (Trend Strength): ${metrics.adx?.toFixed(1) || 25}
+INSTITUTIONAL & WHALE INDICATORS:
+- Open Interest: $${(openInterest / 1e9).toFixed(2)}B | ${openInterest > 20e9 ? 'HIGH INSTITUTIONAL ACTIVITY' : 'NORMAL'}
+- Order Book Imbalance: ${orderBookImbalance.toFixed(2)}% | ${Math.abs(orderBookImbalance) > 15 ? 'LARGE ORDERS DETECTED' : 'NORMAL'}
+- Volume Delta: ${volumeDelta.toFixed(2)}% | ${Math.abs(volumeDelta) > 10 ? 'SIGNIFICANT ACCUMULATION/DISTRIBUTION' : 'NORMAL'}
+- Funding Rate: ${(fundingRate * 100).toFixed(4)}% | ${fundingRate > 0.03 ? 'RETAIL LONGS EXTREME' : fundingRate < -0.03 ? 'RETAIL SHORTS EXTREME' : 'NEUTRAL'}
+- Volume Confirmation: ${metrics.volumeConfirmation ? 'YES - Institutions confirming move' : 'NO'}
+- ADX: ${metrics.adx?.toFixed(1) || 25} | Trend: ${(metrics.adx ?? 25) > 30 ? 'Institutions riding trend' : 'Weak trend'}
 
-Analyze what smart money (institutions, whales) is doing. Respond in JSON:
+SMART MONEY RULES:
+- BUY: Institutions accumulating (positive volume delta + order book buyers + low funding)
+- SELL: Institutions distributing (negative volume delta + order book sellers + high funding)
+- NO_TRADE: No clear institutional activity, mixed signals, retail-dominated
+
+FOLLOW SMART MONEY: They have better information. Trade WITH them, not against.
+
+Respond in JSON:
 {
   "signal": "BUY" | "SELL" | "NO_TRADE",
-  "confidence": 50-95,
+  "confidence": 60-90 (only high when clear institutional flow),
   "risk": "LOW" | "MEDIUM" | "HIGH",
-  "insight": "Smart money analysis",
+  "insight": "What are institutions doing? Accumulating or distributing?",
   "institutionalFlow": "ACCUMULATING" | "DISTRIBUTING" | "NEUTRAL",
-  "whaleActivity": "brief whale behavior",
+  "whaleActivity": "What are large players doing?",
   "marketMakerBehavior": "market maker strategy detected"
 }`;
 }

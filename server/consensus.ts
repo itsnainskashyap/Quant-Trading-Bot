@@ -175,37 +175,66 @@ Reliability:     ${metrics.reliability ?? 50}%
 Overall Signal:  ${metrics.overallTechnicalSignal ?? 'NEUTRAL'}
 
 ═══════════════════════════════════════════════════════════════
-                    DECISIVE TRADING RULES
+              PROFESSIONAL TRADING METHODOLOGY
 ═══════════════════════════════════════════════════════════════
-IMPORTANT: You MUST give a BUY or SELL signal. NO_TRADE should be EXTREMELY RARE (max 5% of cases).
 
-DECISION FRAMEWORK:
-- If RSI < 50 + bearish MACD + price below MA → SELL
-- If RSI > 50 + bullish MACD + price above MA → BUY
-- ADX > 20 = valid trend, follow it
-- Stochastic oversold (<30) = BUY opportunity
-- Stochastic overbought (>70) = SELL opportunity
-- Strong volume confirms direction
+CRITICAL: CAPITAL PROTECTION IS PRIORITY #1
+- False signals cause losses - accuracy is more important than frequency
+- A missed trade costs nothing, a wrong trade costs money
+- Only signal when you have HIGH conviction with multiple confirmations
 
-SIGNAL RULES:
-- BUY: 3+ bullish signals OR strong momentum up OR oversold bounce
-- SELL: 3+ bearish signals OR strong momentum down OR overbought rejection
-- NO_TRADE: ONLY if indicators are exactly 50/50 split with zero edge (VERY RARE!)
+MULTI-FACTOR CONFLUENCE REQUIREMENT (Need 4+ for actionable signal):
+1. RSI Confirmation: <30 for BUY, >70 for SELL (with divergence preferred)
+2. Stochastic Agreement: K/D crossover in oversold/overbought zone
+3. MACD Alignment: Signal line crossover + histogram momentum
+4. ADX Trend Strength: >25 confirms trend, >40 strong trend
+5. Price vs Moving Averages: Clear trend bias from SMA20/50/200
+6. Volume Confirmation: Delta supporting the direction
+7. Bollinger Position: Near band + squeeze for breakout
+8. Support/Resistance: Bounce off key level or breakout
 
-BE AGGRESSIVE: Markets reward action. Pick a direction based on the dominant signals.
-Professional traders don't hesitate - they trade the edge they see.
+STRICT SIGNAL RULES:
+BUY ONLY IF ALL:
+  - RSI < 35 OR showing bullish divergence
+  - Stochastic K crossing above D below 30
+  - MACD histogram turning positive OR bullish crossover
+  - Price at/near support OR breaking resistance with volume
+  - ADX > 20 (trend exists)
+  - Volume confirms buying pressure
+
+SELL ONLY IF ALL:
+  - RSI > 65 OR showing bearish divergence
+  - Stochastic K crossing below D above 70
+  - MACD histogram turning negative OR bearish crossover
+  - Price at/near resistance OR breaking support with volume
+  - ADX > 20 (trend exists)
+  - Volume confirms selling pressure
+
+NO_TRADE (PREFER THIS when uncertain):
+  - Indicators conflict or mixed signals
+  - ADX < 20 (no trend / choppy market)
+  - RSI between 40-60 (neutral zone)
+  - Low volume / no confirmation
+  - Price in middle of range (no edge)
+  - ANY doubt = NO_TRADE
+
+CONFIDENCE CALIBRATION (be conservative):
+- 80-90: Perfect alignment, 6+ confluent factors, strong trend
+- 70-79: Good alignment, 4-5 confluent factors
+- 60-69: Acceptable alignment, 3-4 factors, proceed with caution
+- Below 60: DO NOT SIGNAL - default to NO_TRADE
 
 Respond in EXACT JSON format:
 {
   "signal": "BUY" | "SELL" | "NO_TRADE",
-  "confidence": 60-85 (realistic based on indicator alignment),
+  "confidence": 60-90 (be conservative - accuracy over frequency),
   "risk": "LOW" | "MEDIUM" | "HIGH",
   "holdMinutes": ${tradeMode},
   "technicalScore": 0-100,
   "sentimentScore": 0-100,
-  "indicatorsAligned": count of aligned indicators (1-15),
+  "indicatorsAligned": count of aligned indicators (1-8),
   "psychology": "Brief market sentiment assessment",
-  "reasoning": "2-3 sentences: Key readings (RSI, Stoch, MACD, ADX values), why this signal, entry/exit logic"
+  "reasoning": "Explain: Which 4+ factors align? Why is confidence at this level? Key indicator values."
 }`;
 }
 
