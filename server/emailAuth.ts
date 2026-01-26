@@ -2,10 +2,16 @@ import { db } from "./db";
 import { users } from "@shared/models/auth";
 import { eq } from "drizzle-orm";
 import type { Express, Request, Response, RequestHandler } from "express";
-import crypto from "crypto";
+import bcrypt from "bcryptjs";
 
-function hashPassword(password: string): string {
-  return crypto.createHash("sha256").update(password).digest("hex");
+const SALT_ROUNDS = 12;
+
+async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, SALT_ROUNDS);
+}
+
+async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(password, hash);
 }
 
 export async function registerUser(
@@ -18,7 +24,7 @@ export async function registerUser(
       return { success: false, message: "Email already registered" };
     }
 
-    const hashedPassword = hashPassword(password);
+    const hashedPassword = await hashPassword(password);
     const [newUser] = await db
       .insert(users)
       .values({
@@ -41,12 +47,12 @@ export async function loginUser(
 ): Promise<{ success: boolean; userId?: string; message: string }> {
   try {
     const [user] = await db.select().from(users).where(eq(users.email, email));
-    if (!user) {
+    if (!user || !user.password) {
       return { success: false, message: "Invalid email or password" };
     }
 
-    const hashedPassword = hashPassword(password);
-    if (user.password !== hashedPassword) {
+    const isValid = await verifyPassword(password, user.password);
+    if (!isValid) {
       return { success: false, message: "Invalid email or password" };
     }
 
