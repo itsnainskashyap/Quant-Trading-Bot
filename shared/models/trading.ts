@@ -158,3 +158,27 @@ export type PromoCode = typeof promoCodes.$inferSelect;
 export type InsertPromoCode = typeof promoCodes.$inferInsert;
 export type PromoCodeUsage = typeof promoCodeUsage.$inferSelect;
 export type InsertPromoCodeUsage = typeof promoCodeUsage.$inferInsert;
+
+// Active Find Trade scans - runs server-side even when user closes tab
+export const findTradeScans = pgTable("find_trade_scans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  pair: varchar("pair").notNull(),
+  status: varchar("status").notNull().default("scanning"), // scanning, found, timeout, cancelled
+  minConfidence: integer("min_confidence").notNull().default(90),
+  attempts: integer("attempts").notNull().default(0),
+  // Result fields (populated when found)
+  resultSignal: varchar("result_signal"), // BUY or SELL
+  resultConfidence: integer("result_confidence"),
+  resultEntryPrice: real("result_entry_price"),
+  resultStopLoss: real("result_stop_loss"),
+  resultTakeProfit: real("result_take_profit"),
+  resultReasoning: text("result_reasoning"),
+  // Timing
+  startedAt: timestamp("started_at").defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(), // 30 minutes from start
+  completedAt: timestamp("completed_at"),
+});
+
+export type FindTradeScan = typeof findTradeScans.$inferSelect;
+export type InsertFindTradeScan = typeof findTradeScans.$inferInsert;

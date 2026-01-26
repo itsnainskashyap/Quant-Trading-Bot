@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { eq, and, lt, count, gte, sql } from "drizzle-orm";
 import { db } from "./db";
-import { predictions, subscriptions, promoCodes, promoCodeUsage, type Prediction, type Subscription, type PromoCode, type InsertPromoCode } from "@shared/models/trading";
+import { predictions, subscriptions, promoCodes, promoCodeUsage, findTradeScans, paymentRecords, type Prediction, type Subscription, type PromoCode, type InsertPromoCode, type FindTradeScan } from "@shared/models/trading";
 import { users } from "@shared/models/auth";
 import type { 
   TradingSignal, 
@@ -69,6 +69,19 @@ export interface IStorage {
   usePromoCode(code: string, userId: string): Promise<boolean>;
   updatePromoCode(id: string, updates: Partial<InsertPromoCode>): Promise<PromoCode | null>;
   deletePromoCode(id: string): Promise<boolean>;
+  
+  // Find Trade Scans (server-side)
+  createFindTradeScan(userId: string, pair: string, minConfidence: number): Promise<any>;
+  getActiveFindTradeScan(userId: string): Promise<any | null>;
+  updateFindTradeScan(scanId: string, updates: any): Promise<void>;
+  completeFindTradeScan(scanId: string, result: any): Promise<void>;
+  cancelFindTradeScan(scanId: string): Promise<void>;
+  getActiveScans(): Promise<any[]>;
+  getUserScanHistory(userId: string, limit?: number): Promise<any[]>;
+  
+  // Admin Analytics
+  getPaymentStats(): Promise<{ totalIncome: number; totalPayments: number; todayIncome: number; todayPayments: number; last7DaysIncome: number }>;
+  getAllPayments(limit?: number): Promise<any[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -1048,6 +1061,117 @@ export class MemStorage implements IStorage {
       console.error("Error deleting promo code:", error);
       return false;
     }
+  }
+
+  // Find Trade Scans
+  async createFindTradeScan(userId: string, pair: string, minConfidence: number): Promise<FindTradeScan> {
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
+    const [scan] = await db.insert(findTradeScans).values({
+      userId,
+      pair,
+      minConfidence,
+      status: 'scanning',
+      attempts: 0,
+      expiresAt,
+    }).returning();
+    return scan;
+  }
+
+  async getActiveFindTradeScan(userId: string): Promise<FindTradeScan | null> {
+    const [scan] = await db.select().from(findTradeScans)
+      .where(and(
+        eq(findTradeScans.userId, userId),
+        eq(findTradeScans.status, 'scanning')
+      ))
+      .limit(1);
+    return scan || null;
+  }
+
+  async updateFindTradeScan(scanId: string, updates: Partial<FindTradeScan>): Promise<void> {
+    await db.update(findTradeScans).set(updates).where(eq(findTradeScans.id, scanId));
+  }
+
+  async completeFindTradeScan(scanId: string, result: { signal: string; confidence: number; entryPrice: number; stopLoss: number; takeProfit: number; reasoning: string }): Promise<void> {
+    await db.update(findTradeScans).set({
+      status: 'found',
+      resultSignal: result.signal,
+      resultConfidence: result.confidence,
+      resultEntryPrice: result.entryPrice,
+      resultStopLoss: result.stopLoss,
+      resultTakeProfit: result.takeProfit,
+      resultReasoning: result.reasoning,
+      completedAt: new Date(),
+    }).where(eq(findTradeScans.id, scanId));
+  }
+
+  async cancelFindTradeScan(scanId: string): Promise<void> {
+    await db.update(findTradeScans).set({
+      status: 'cancelled',
+      completedAt: new Date(),
+    }).where(eq(findTradeScans.id, scanId));
+  }
+
+  async getActiveScans(): Promise<FindTradeScan[]> {
+    return await db.select().from(findTradeScans)
+      .where(eq(findTradeScans.status, 'scanning'));
+  }
+
+  async getUserScanHistory(userId: string, limit: number = 10): Promise<FindTradeScan[]> {
+    return await db.select().from(findTradeScans)
+      .where(eq(findTradeScans.userId, userId))
+      .orderBy(sql`${findTradeScans.startedAt} DESC`)
+      .limit(limit);
+  }
+
+  // Admin Analytics
+  async getPaymentStats(): Promise<{ totalIncome: number; totalPayments: number; todayIncome: number; todayPayments: number; last7DaysIncome: number }> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const allPayments = await db.select().from(paymentRecords)
+      .where(eq(paymentRecords.status, 'completed'));
+    
+    const totalIncome = allPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const totalPayments = allPayments.length;
+    
+    const todayPayments = allPayments.filter(p => 
+      p.verifiedAt && new Date(p.verifiedAt) >= today
+    );
+    const todayIncome = todayPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    
+    const last7DaysPayments = allPayments.filter(p => 
+      p.verifiedAt && new Date(p.verifiedAt) >= sevenDaysAgo
+    );
+    const last7DaysIncome = last7DaysPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    
+    return {
+      totalIncome,
+      totalPayments,
+      todayIncome,
+      todayPayments: todayPayments.length,
+      last7DaysIncome,
+    };
+  }
+
+  async getAllPayments(limit: number = 50): Promise<any[]> {
+    const payments = await db.select({
+      id: paymentRecords.id,
+      userId: paymentRecords.userId,
+      network: paymentRecords.network,
+      txHash: paymentRecords.txHash,
+      amount: paymentRecords.amount,
+      status: paymentRecords.status,
+      verifiedAt: paymentRecords.verifiedAt,
+      createdAt: paymentRecords.createdAt,
+      userEmail: users.email,
+    })
+    .from(paymentRecords)
+    .leftJoin(users, eq(paymentRecords.userId, users.id))
+    .orderBy(sql`${paymentRecords.createdAt} DESC`)
+    .limit(limit);
+    
+    return payments;
   }
 }
 
