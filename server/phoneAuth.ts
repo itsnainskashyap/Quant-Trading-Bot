@@ -3,6 +3,13 @@ import { users, otpCodes } from "@shared/models/auth";
 import { eq, and, gt } from "drizzle-orm";
 import type { Express, Request, Response, NextFunction, RequestHandler } from "express";
 import crypto from "crypto";
+import twilio from "twilio";
+
+const twilioClient = process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
+  ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+  : null;
+
+const TWILIO_PHONE = process.env.TWILIO_PHONE_NUMBER;
 
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -43,14 +50,27 @@ export async function sendOTP(phone: string): Promise<{ success: boolean; messag
       expiresAt,
     });
 
-    // TODO: Replace with real SMS service (Twilio, etc.)
-    // For now, log OTP and return it for testing
-    console.log(`\n========================================`);
-    console.log(`📱 OTP CODE for ${phone}: ${code}`);
-    console.log(`========================================\n`);
-
-    // Return OTP in response for testing (REMOVE THIS when adding real SMS)
-    return { success: true, message: "OTP sent successfully", testOtp: code };
+    // Send via Twilio if configured
+    if (twilioClient && TWILIO_PHONE) {
+      try {
+        await twilioClient.messages.create({
+          body: `Your TradeX AI verification code is: ${code}. Valid for 5 minutes.`,
+          from: TWILIO_PHONE,
+          to: `+${phone}`,
+        });
+        console.log(`[PhoneAuth] SMS sent to +${phone.slice(0, 3)}***${phone.slice(-4)}`);
+        return { success: true, message: "OTP sent successfully" };
+      } catch (smsError: any) {
+        console.error("[PhoneAuth] Twilio error:", smsError.message);
+        return { success: false, message: "Failed to send SMS. Please try again." };
+      }
+    } else {
+      // Fallback: Show OTP for testing when Twilio is not configured
+      console.log(`\n========================================`);
+      console.log(`📱 OTP CODE for ${phone}: ${code}`);
+      console.log(`========================================\n`);
+      return { success: true, message: "OTP sent successfully", testOtp: code };
+    }
   } catch (error) {
     console.error("[PhoneAuth] Error sending OTP");
     return { success: false, message: "Failed to send OTP" };
