@@ -12,6 +12,7 @@ import { getAssetProfile, getAssetMemory, getAssetSpecificThresholds, isAssetInC
 import { createConditionalSignal, checkTriggerConditions, formatTriggerConditions, cleanExpiredSignals, type ConditionalSignal } from "./conditionalPredictions";
 import { evaluateSignal, getMetaJudgeSummary, type MetaJudgeResult } from "./metaJudge";
 import { checkLossAvoidance, recordTradeOutcome, getLossAvoidanceSummary, getDefensiveRiskMultiplier, type LossAvoidanceState } from "./lossAvoidance";
+import { getSession } from "./replit_integrations/auth";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -22,6 +23,9 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  
+  app.set("trust proxy", 1);
+  app.use(getSession());
   
   setupPhoneAuth(app);
   setupEmailAuth(app);
