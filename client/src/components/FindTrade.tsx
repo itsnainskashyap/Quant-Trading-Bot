@@ -16,7 +16,8 @@ import {
   Award,
   Activity,
   AlertTriangle,
-  Crosshair
+  Crosshair,
+  ServerCog
 } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
@@ -26,49 +27,96 @@ interface FindTradeProps {
   isPro: boolean;
 }
 
-interface TradeResult {
-  found: boolean;
-  signal: 'BUY' | 'SELL' | null;
-  confidence: number;
+interface ScanData {
+  id: string;
+  userId: string;
   pair: string;
-  entryPrice: number;
-  stopLoss: number;
-  takeProfit: number;
-  reasoning: string;
-  searchDuration: number;
+  status: string;
+  minConfidence: number;
   attempts: number;
+  resultSignal: string | null;
+  resultConfidence: number | null;
+  resultEntryPrice: number | null;
+  resultStopLoss: number | null;
+  resultTakeProfit: number | null;
+  resultReasoning: string | null;
+  startedAt: string;
+  expiresAt: string;
+  completedAt: string | null;
 }
 
 export function FindTrade({ pair, isPro }: FindTradeProps) {
-  const [isSearching, setIsSearching] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [scan, setScan] = useState<ScanData | null>(null);
+  const [isActive, setIsActive] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
-  const [currentAttempt, setCurrentAttempt] = useState(0);
-  const [status, setStatus] = useState<string>("Waiting to start...");
-  const [result, setResult] = useState<TradeResult | null>(null);
-  const [cancelled, setCancelled] = useState(false);
-  const searchRef = useRef<boolean>(false);
-  const startTimeRef = useRef<number>(0);
+  const [progress, setProgress] = useState(0);
+  const pollRef = useRef<NodeJS.Timeout | null>(null);
 
   const MAX_SEARCH_TIME = 30 * 60; // 30 minutes in seconds
-  const MIN_CONFIDENCE = 90; // 90% minimum confidence
-  const SCAN_INTERVAL = 15; // 15 seconds between scans
+  const POLL_INTERVAL = 3000; // Poll every 3 seconds
+
+  const statusMessages = [
+    "Scanning market conditions...",
+    "Analyzing price action...",
+    "Checking technical indicators...",
+    "Evaluating trend strength...",
+    "Running AI consensus check...",
+    "Verifying signal quality...",
+    "Calculating entry points...",
+    "Assessing risk levels...",
+  ];
+
+  useEffect(() => {
+    checkScanStatus();
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isActive && scan) {
+      pollRef.current = setInterval(checkScanStatus, POLL_INTERVAL);
+      return () => {
+        if (pollRef.current) clearInterval(pollRef.current);
+      };
+    }
+  }, [isActive]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (isSearching && !cancelled) {
+    if (isActive && scan) {
       timer = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+        const startTime = new Date(scan.startedAt).getTime();
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
         setTimeElapsed(elapsed);
-        setProgress((elapsed / MAX_SEARCH_TIME) * 100);
-        
-        if (elapsed >= MAX_SEARCH_TIME) {
-          stopSearch("timeout");
-        }
+        setProgress(Math.min((elapsed / MAX_SEARCH_TIME) * 100, 100));
       }, 1000);
     }
     return () => clearInterval(timer);
-  }, [isSearching, cancelled]);
+  }, [isActive, scan]);
+
+  const checkScanStatus = async () => {
+    try {
+      const response = await apiRequest('GET', '/api/find-trade/status');
+      const data = await response.json();
+      
+      if (data.scan) {
+        setScan(data.scan);
+        setIsActive(data.active);
+        
+        if (!data.active && data.scan.status !== 'scanning') {
+          if (pollRef.current) clearInterval(pollRef.current);
+        }
+      } else {
+        setScan(null);
+        setIsActive(false);
+      }
+    } catch (error) {
+      console.error("Status check error:", error);
+    }
+  };
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -76,82 +124,43 @@ export function FindTrade({ pair, isPro }: FindTradeProps) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const stopSearch = (reason: "timeout" | "cancelled" | "found") => {
-    searchRef.current = false;
-    setIsSearching(false);
-    if (reason === "timeout") {
-      setStatus("Search timed out - no high-confidence trade found");
-    } else if (reason === "cancelled") {
-      setStatus("Search cancelled");
+  const startScan = async () => {
+    setIsStarting(true);
+    try {
+      const response = await apiRequest('POST', '/api/find-trade/start', {
+        pair,
+        minConfidence: 90,
+      });
+      const data = await response.json();
+      setScan(data.scan);
+      setIsActive(true);
+      setTimeElapsed(0);
+      setProgress(0);
+    } catch (error) {
+      console.error("Start scan error:", error);
+    } finally {
+      setIsStarting(false);
     }
   };
 
-  const runSearch = async () => {
-    setIsSearching(true);
-    setCancelled(false);
-    setResult(null);
-    setCurrentAttempt(0);
-    setProgress(0);
+  const cancelScan = async () => {
+    setIsCancelling(true);
+    try {
+      await apiRequest('POST', '/api/find-trade/cancel');
+      setIsActive(false);
+      await checkScanStatus();
+    } catch (error) {
+      console.error("Cancel error:", error);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const resetSearch = () => {
+    setScan(null);
+    setIsActive(false);
     setTimeElapsed(0);
-    startTimeRef.current = Date.now();
-    searchRef.current = true;
-
-    const statusMessages = [
-      "Scanning market conditions...",
-      "Analyzing price action...",
-      "Checking technical indicators...",
-      "Evaluating trend strength...",
-      "Running AI consensus check...",
-      "Verifying signal quality...",
-      "Calculating entry points...",
-      "Assessing risk levels...",
-    ];
-
-    let attempt = 0;
-    while (searchRef.current && timeElapsed < MAX_SEARCH_TIME) {
-      attempt++;
-      setCurrentAttempt(attempt);
-      setStatus(statusMessages[attempt % statusMessages.length]);
-
-      try {
-        const response = await apiRequest('POST', '/api/find-trade', {
-          pair: pair,
-          minConfidence: MIN_CONFIDENCE,
-        });
-
-        const data = await response.json();
-
-        if (data.found && data.confidence >= MIN_CONFIDENCE) {
-          setResult({
-            found: true,
-            signal: data.signal,
-            confidence: data.confidence,
-            pair: pair,
-            entryPrice: data.entryPrice,
-            stopLoss: data.stopLoss,
-            takeProfit: data.takeProfit,
-            reasoning: data.reasoning,
-            searchDuration: Math.floor((Date.now() - startTimeRef.current) / 1000),
-            attempts: attempt,
-          });
-          setStatus(`Trade found after ${attempt} scans!`);
-          stopSearch("found");
-          return;
-        }
-      } catch (error) {
-        console.error("Find trade error:", error);
-      }
-
-      // Wait before next scan
-      if (searchRef.current) {
-        await new Promise(resolve => setTimeout(resolve, SCAN_INTERVAL * 1000));
-      }
-    }
-  };
-
-  const cancelSearch = () => {
-    setCancelled(true);
-    stopSearch("cancelled");
+    setProgress(0);
   };
 
   if (!isPro) {
@@ -168,7 +177,7 @@ export function FindTrade({ pair, isPro }: FindTradeProps) {
               Find Trade - Pro Feature
             </h3>
             <p className="text-gray-400 text-sm mb-3">
-              Auto-scan until a 90%+ confidence trade is found
+              Server-side auto-scan until 90%+ confidence trade is found
             </p>
             <Link href="/payment">
               <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-500">
@@ -182,14 +191,19 @@ export function FindTrade({ pair, isPro }: FindTradeProps) {
     );
   }
 
+  const showResult = scan && scan.status === 'found' && scan.resultSignal;
+  const showTimeout = scan && scan.status === 'timeout';
+  const showCancelled = scan && scan.status === 'cancelled';
+  const showIdle = !isActive && !showResult && !showTimeout && !showCancelled;
+
   return (
     <Card className="bg-gradient-to-br from-[#12121a] to-[#1a1a2e] border-amber-500/30 overflow-hidden">
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="text-md flex items-center gap-2">
             <div className="relative">
-              <Target className={`w-5 h-5 text-amber-400 ${isSearching ? 'animate-pulse' : ''}`} />
-              {isSearching && (
+              <Target className={`w-5 h-5 text-amber-400 ${isActive ? 'animate-pulse' : ''}`} />
+              {isActive && (
                 <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full animate-ping" />
               )}
             </div>
@@ -197,29 +211,40 @@ export function FindTrade({ pair, isPro }: FindTradeProps) {
               Find Trade
             </span>
             <Badge className="bg-amber-500/20 text-amber-400 text-xs">
-              90%+ Accuracy
+              <ServerCog className="w-3 h-3 mr-1" />
+              Server-Side
             </Badge>
           </CardTitle>
-          {!isSearching && !result && (
+          {showIdle && (
             <Button
-              onClick={runSearch}
+              onClick={startScan}
               size="sm"
+              disabled={isStarting}
               className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
               data-testid="button-find-trade"
             >
-              <Search className="w-4 h-4 mr-1" />
+              {isStarting ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <Search className="w-4 h-4 mr-1" />
+              )}
               Start Search
             </Button>
           )}
-          {isSearching && (
+          {isActive && (
             <Button
-              onClick={cancelSearch}
+              onClick={cancelScan}
               size="sm"
               variant="outline"
+              disabled={isCancelling}
               className="border-red-500/30 text-red-400 hover:bg-red-500/10"
               data-testid="button-cancel-search"
             >
-              <XCircle className="w-4 h-4 mr-1" />
+              {isCancelling ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <XCircle className="w-4 h-4 mr-1" />
+              )}
               Cancel
             </Button>
           )}
@@ -227,10 +252,8 @@ export function FindTrade({ pair, isPro }: FindTradeProps) {
       </CardHeader>
 
       <CardContent className="pt-0">
-        {/* Searching State */}
-        {isSearching && (
+        {isActive && scan && (
           <div className="space-y-4">
-            {/* Progress Bar */}
             <div className="relative h-2 bg-[#0a0a0f] rounded-full overflow-hidden">
               <div 
                 className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-1000"
@@ -239,7 +262,6 @@ export function FindTrade({ pair, isPro }: FindTradeProps) {
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
             </div>
 
-            {/* Timer and Stats */}
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2 text-gray-400">
                 <Clock className="w-4 h-4 text-amber-400" />
@@ -247,22 +269,24 @@ export function FindTrade({ pair, isPro }: FindTradeProps) {
               </div>
               <div className="flex items-center gap-2 text-gray-400">
                 <Activity className="w-4 h-4 text-cyan-400" />
-                <span>Scan #{currentAttempt}</span>
+                <span>Scan #{scan.attempts || 0}</span>
               </div>
             </div>
 
-            {/* Status Message */}
             <div className="flex items-center gap-3 p-3 bg-amber-500/5 rounded-lg border border-amber-500/20">
               <div className="relative">
                 <Crosshair className="w-5 h-5 text-amber-400 animate-pulse" />
               </div>
               <div>
-                <p className="text-amber-200 text-sm font-medium">{status}</p>
-                <p className="text-gray-500 text-xs">Looking for {pair} with 90%+ confidence</p>
+                <p className="text-amber-200 text-sm font-medium">
+                  {statusMessages[(scan.attempts || 0) % statusMessages.length]}
+                </p>
+                <p className="text-gray-500 text-xs">
+                  Looking for {scan.pair} with 90%+ confidence (runs even if you close this tab)
+                </p>
               </div>
             </div>
 
-            {/* Scanning Animation */}
             <div className="flex justify-center gap-1">
               {[...Array(5)].map((_, i) => (
                 <div
@@ -278,57 +302,56 @@ export function FindTrade({ pair, isPro }: FindTradeProps) {
           </div>
         )}
 
-        {/* Result Found */}
-        {result && result.found && (
+        {showResult && scan && (
           <div className="space-y-4">
-            <div className={`p-4 rounded-xl ${result.signal === 'BUY' ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
+            <div className={`p-4 rounded-xl ${scan.resultSignal === 'BUY' ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  {result.signal === 'BUY' ? (
+                  {scan.resultSignal === 'BUY' ? (
                     <TrendingUp className="w-6 h-6 text-emerald-400" />
                   ) : (
                     <TrendingDown className="w-6 h-6 text-red-400" />
                   )}
-                  <span className={`text-2xl font-bold ${result.signal === 'BUY' ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {result.signal}
+                  <span className={`text-2xl font-bold ${scan.resultSignal === 'BUY' ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {scan.resultSignal}
                   </span>
                 </div>
                 <Badge className="bg-emerald-500/20 text-emerald-400 text-lg px-3">
-                  {result.confidence}%
+                  {scan.resultConfidence}%
                 </Badge>
               </div>
 
               <div className="grid grid-cols-3 gap-3 text-sm mb-3">
                 <div className="bg-[#0a0a0f]/50 p-2 rounded-lg text-center">
                   <p className="text-gray-500 text-xs">Entry</p>
-                  <p className="text-white font-mono font-medium">${result.entryPrice.toFixed(4)}</p>
+                  <p className="text-white font-mono font-medium">${scan.resultEntryPrice?.toFixed(4)}</p>
                 </div>
                 <div className="bg-[#0a0a0f]/50 p-2 rounded-lg text-center">
                   <p className="text-gray-500 text-xs">Stop Loss</p>
-                  <p className="text-red-400 font-mono font-medium">${result.stopLoss.toFixed(4)}</p>
+                  <p className="text-red-400 font-mono font-medium">${scan.resultStopLoss?.toFixed(4)}</p>
                 </div>
                 <div className="bg-[#0a0a0f]/50 p-2 rounded-lg text-center">
                   <p className="text-gray-500 text-xs">Take Profit</p>
-                  <p className="text-emerald-400 font-mono font-medium">${result.takeProfit.toFixed(4)}</p>
+                  <p className="text-emerald-400 font-mono font-medium">${scan.resultTakeProfit?.toFixed(4)}</p>
                 </div>
               </div>
 
-              <p className="text-gray-400 text-sm">{result.reasoning}</p>
+              <p className="text-gray-400 text-sm">{scan.resultReasoning}</p>
 
               <div className="flex items-center gap-4 mt-3 pt-3 border-t border-white/10 text-xs text-gray-500">
                 <span className="flex items-center gap-1">
                   <Clock className="w-3 h-3" />
-                  Found in {formatTime(result.searchDuration)}
+                  {scan.completedAt && formatTime(Math.floor((new Date(scan.completedAt).getTime() - new Date(scan.startedAt).getTime()) / 1000))}
                 </span>
                 <span className="flex items-center gap-1">
                   <Activity className="w-3 h-3" />
-                  {result.attempts} scans
+                  {scan.attempts} scans
                 </span>
               </div>
             </div>
 
             <Button
-              onClick={() => setResult(null)}
+              onClick={resetSearch}
               variant="outline"
               size="sm"
               className="w-full border-amber-500/30 text-amber-400"
@@ -340,22 +363,49 @@ export function FindTrade({ pair, isPro }: FindTradeProps) {
           </div>
         )}
 
-        {/* Idle State */}
-        {!isSearching && !result && (
+        {showIdle && (
           <div className="text-center py-4">
             <div className="flex items-center justify-center gap-2 text-gray-500 text-sm">
-              <AlertTriangle className="w-4 h-4 text-amber-400" />
-              <span>Continuous scan until 90%+ confidence trade is found</span>
+              <ServerCog className="w-4 h-4 text-amber-400" />
+              <span>Server-side scan persists even if you close the browser</span>
             </div>
-            <p className="text-gray-600 text-xs mt-1">Maximum search time: 30 minutes</p>
+            <p className="text-gray-600 text-xs mt-1">Maximum search time: 30 minutes | 90%+ confidence required</p>
           </div>
         )}
 
-        {/* Cancelled/Timeout State */}
-        {!isSearching && !result && cancelled && (
-          <div className="flex items-center gap-2 p-3 bg-red-500/10 rounded-lg border border-red-500/20 mt-2">
-            <XCircle className="w-4 h-4 text-red-400" />
-            <span className="text-red-300 text-sm">{status}</span>
+        {showTimeout && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+              <Clock className="w-4 h-4 text-amber-400" />
+              <span className="text-amber-300 text-sm">Search timed out - no high-confidence trade found</span>
+            </div>
+            <Button
+              onClick={resetSearch}
+              variant="outline"
+              size="sm"
+              className="w-full border-amber-500/30 text-amber-400"
+            >
+              <Search className="w-4 h-4 mr-2" />
+              Try Again
+            </Button>
+          </div>
+        )}
+
+        {showCancelled && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 p-3 bg-red-500/10 rounded-lg border border-red-500/20">
+              <XCircle className="w-4 h-4 text-red-400" />
+              <span className="text-red-300 text-sm">Search cancelled</span>
+            </div>
+            <Button
+              onClick={resetSearch}
+              variant="outline"
+              size="sm"
+              className="w-full border-amber-500/30 text-amber-400"
+            >
+              <Search className="w-4 h-4 mr-2" />
+              Start New Search
+            </Button>
           </div>
         )}
       </CardContent>

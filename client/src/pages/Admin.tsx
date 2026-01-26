@@ -89,11 +89,19 @@ export default function Admin() {
   const [newPromoMaxUses, setNewPromoMaxUses] = useState<string>('');
   const [isCreatingPromo, setIsCreatingPromo] = useState(false);
   const [deletingPromoId, setDeletingPromoId] = useState<string | null>(null);
+  
+  // Income analytics state
+  const [analytics, setAnalytics] = useState<{
+    stats: { totalIncome: number; totalPayments: number; todayIncome: number; todayPayments: number; last7DaysIncome: number };
+    payments: Array<{ id: string; userId: string; network: string; txHash: string; amount: number; status: string; verifiedAt: string | null; createdAt: string; userEmail: string | null }>;
+  } | null>(null);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
 
   useEffect(() => {
     if (isLoggedIn) {
       fetchSettings();
       fetchPromoCodes();
+      fetchAnalytics();
     }
   }, [isLoggedIn]);
 
@@ -233,6 +241,22 @@ export default function Admin() {
     setEmail("");
     setPassword("");
     setPromoCodes([]);
+    setAnalytics(null);
+  };
+  
+  const fetchAnalytics = async () => {
+    setIsLoadingAnalytics(true);
+    try {
+      const response = await fetch("/api/admin/analytics");
+      if (response.ok) {
+        const data = await response.json();
+        setAnalytics(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch analytics:", error);
+    } finally {
+      setIsLoadingAnalytics(false);
+    }
   };
 
   // Promo code functions
@@ -463,6 +487,107 @@ export default function Admin() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Income Analytics Section */}
+        <Card className="bg-[#12121a] border-white/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-emerald-400" />
+                Income Dashboard
+              </h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchAnalytics}
+                disabled={isLoadingAnalytics}
+                className="border-white/10"
+                data-testid="button-refresh-analytics"
+              >
+                {isLoadingAnalytics ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Activity className="w-4 h-4" />
+                )}
+                <span className="ml-2">Refresh</span>
+              </Button>
+            </div>
+
+            {isLoadingAnalytics ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+              </div>
+            ) : analytics ? (
+              <div className="space-y-4">
+                {/* Income Stats Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-center">
+                    <div className="text-2xl font-bold text-emerald-400">${analytics.stats.totalIncome.toFixed(2)}</div>
+                    <div className="text-xs text-gray-400 mt-1">Total Income</div>
+                  </div>
+                  <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4 text-center">
+                    <div className="text-2xl font-bold text-cyan-400">{analytics.stats.totalPayments}</div>
+                    <div className="text-xs text-gray-400 mt-1">Total Payments</div>
+                  </div>
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 text-center">
+                    <div className="text-2xl font-bold text-amber-400">${analytics.stats.todayIncome.toFixed(2)}</div>
+                    <div className="text-xs text-gray-400 mt-1">Today's Income</div>
+                  </div>
+                  <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4 text-center">
+                    <div className="text-2xl font-bold text-purple-400">${analytics.stats.last7DaysIncome.toFixed(2)}</div>
+                    <div className="text-xs text-gray-400 mt-1">Last 7 Days</div>
+                  </div>
+                </div>
+
+                {/* Recent Payments Table */}
+                {analytics.payments.length > 0 && (
+                  <div className="mt-4">
+                    <h3 className="text-sm font-medium text-gray-400 mb-2">Recent Payments</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-white/5 text-left">
+                            <th className="py-2 px-3 text-xs text-gray-500 uppercase">User</th>
+                            <th className="py-2 px-3 text-xs text-gray-500 uppercase">Network</th>
+                            <th className="py-2 px-3 text-xs text-gray-500 uppercase">Amount</th>
+                            <th className="py-2 px-3 text-xs text-gray-500 uppercase">Status</th>
+                            <th className="py-2 px-3 text-xs text-gray-500 uppercase">Date</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {analytics.payments.slice(0, 10).map((payment) => (
+                            <tr key={payment.id} className="border-b border-white/5">
+                              <td className="py-2 px-3 text-gray-300">{payment.userEmail || 'Unknown'}</td>
+                              <td className="py-2 px-3">
+                                <Badge className={payment.network === 'TRC20' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'}>
+                                  {payment.network}
+                                </Badge>
+                              </td>
+                              <td className="py-2 px-3 text-emerald-400 font-mono">${payment.amount}</td>
+                              <td className="py-2 px-3">
+                                <Badge className={payment.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-500/20 text-gray-400'}>
+                                  {payment.status}
+                                </Badge>
+                              </td>
+                              <td className="py-2 px-3 text-gray-500 text-xs">
+                                {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : 'N/A'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <CreditCard className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p>No payment data available</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Card className="bg-[#12121a] border-white/5">
           <CardContent className="p-4">

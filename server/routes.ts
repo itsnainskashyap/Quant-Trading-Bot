@@ -8,6 +8,7 @@ import { getEnhancedAIConsensus } from "./enhancedAI";
 import { setupPhoneAuth, getUserById } from "./phoneAuth";
 import { setupEmailAuth } from "./emailAuth";
 import { startTradeMonitor } from "./tradeAI";
+import { startFindTradeScanner } from "./findTradeScanner";
 import { getAssetProfile, getAssetMemory, getAssetSpecificThresholds, isAssetInCooldown, getCooldownReason, updateAssetMemory } from "./assetIntelligence";
 import { createConditionalSignal, checkTriggerConditions, formatTriggerConditions, cleanExpiredSignals, type ConditionalSignal } from "./conditionalPredictions";
 import { evaluateSignal, getMetaJudgeSummary, type MetaJudgeResult } from "./metaJudge";
@@ -44,6 +45,7 @@ export async function registerRoutes(
   setupEmailAuth(app);
   
   startTradeMonitor();
+  startFindTradeScanner();
   
   const handleDashboard = async (pair: TradingPair, res: any) => {
     try {
@@ -1797,6 +1799,114 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
       
       res.json({ success: true });
     } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Find Trade Scan - Server-Side (persists across browser sessions)
+  app.post("/api/find-trade/start", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      const subscription = await storage.getUserSubscription(userId);
+      if (!subscription || subscription.plan !== 'pro') {
+        res.status(403).json({ error: "Pro subscription required" });
+        return;
+      }
+
+      // Check for existing active scan
+      const existingScan = await storage.getActiveFindTradeScan(userId);
+      if (existingScan) {
+        res.json({ scan: existingScan, message: "Scan already in progress" });
+        return;
+      }
+
+      const { pair, minConfidence = 90 } = req.body;
+      const scan = await storage.createFindTradeScan(userId, pair, minConfidence);
+      res.json({ scan, message: "Scan started" });
+    } catch (error: any) {
+      console.error("Start scan error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/find-trade/status", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      const scan = await storage.getActiveFindTradeScan(userId);
+      if (!scan) {
+        // Check for most recent completed scan
+        const history = await storage.getUserScanHistory(userId, 1);
+        if (history.length > 0) {
+          res.json({ scan: history[0], active: false });
+          return;
+        }
+        res.json({ scan: null, active: false });
+        return;
+      }
+
+      res.json({ scan, active: true });
+    } catch (error: any) {
+      console.error("Scan status error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/find-trade/cancel", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      const scan = await storage.getActiveFindTradeScan(userId);
+      if (!scan) {
+        res.status(404).json({ error: "No active scan found" });
+        return;
+      }
+
+      await storage.cancelFindTradeScan(scan.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Cancel scan error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/find-trade/history", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      const history = await storage.getUserScanHistory(userId, 10);
+      res.json(history);
+    } catch (error: any) {
+      console.error("Scan history error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Admin Analytics
+  app.get("/api/admin/analytics", async (req, res) => {
+    try {
+      const stats = await storage.getPaymentStats();
+      const payments = await storage.getAllPayments(20);
+      res.json({ stats, payments });
+    } catch (error: any) {
+      console.error("Admin analytics error:", error);
       res.status(500).json({ error: error.message });
     }
   });
