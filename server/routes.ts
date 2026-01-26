@@ -1606,6 +1606,116 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
     }
   });
 
+  // ==================== PROMO CODE ENDPOINTS ====================
+
+  // Get all promo codes (admin only)
+  app.get("/api/admin/promo-codes", async (req, res) => {
+    try {
+      const promoCodes = await storage.getAllPromoCodes();
+      res.json(promoCodes);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Create promo code (admin only)
+  app.post("/api/admin/promo-codes", async (req, res) => {
+    try {
+      const { code, discountPercent, maxUses, expiresAt } = req.body;
+      
+      if (!code || typeof discountPercent !== 'number') {
+        res.status(400).json({ error: "Code and discount percent are required" });
+        return;
+      }
+      
+      if (discountPercent < 1 || discountPercent > 100) {
+        res.status(400).json({ error: "Discount must be between 1 and 100 percent" });
+        return;
+      }
+      
+      // Check if code already exists
+      const existing = await storage.getPromoCodeByCode(code);
+      if (existing) {
+        res.status(400).json({ error: "Promo code already exists" });
+        return;
+      }
+      
+      const promoCode = await storage.createPromoCode(
+        code,
+        discountPercent,
+        maxUses || undefined,
+        expiresAt ? new Date(expiresAt) : undefined
+      );
+      
+      res.json({ success: true, promoCode });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update promo code (admin only)
+  app.patch("/api/admin/promo-codes/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { isActive, discountPercent, maxUses, expiresAt } = req.body;
+      
+      const updates: any = {};
+      if (typeof isActive === 'boolean') updates.isActive = isActive;
+      if (typeof discountPercent === 'number') updates.discountPercent = discountPercent;
+      if (maxUses !== undefined) updates.maxUses = maxUses || null;
+      if (expiresAt !== undefined) updates.expiresAt = expiresAt ? new Date(expiresAt) : null;
+      
+      const updated = await storage.updatePromoCode(id, updates);
+      if (!updated) {
+        res.status(404).json({ error: "Promo code not found" });
+        return;
+      }
+      
+      res.json({ success: true, promoCode: updated });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Delete promo code (admin only)
+  app.delete("/api/admin/promo-codes/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deletePromoCode(id);
+      
+      if (!deleted) {
+        res.status(404).json({ error: "Promo code not found" });
+        return;
+      }
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Validate promo code (public - for payment page)
+  app.post("/api/promo-codes/validate", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+      
+      const { code } = req.body;
+      if (!code) {
+        res.status(400).json({ valid: false, message: "Promo code is required" });
+        return;
+      }
+      
+      const result = await storage.validatePromoCode(code, userId);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ valid: false, message: error.message });
+    }
+  });
+
   // Get admin stats
   app.get("/api/admin/stats", async (req, res) => {
     try {
@@ -1655,7 +1765,7 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
         return;
       }
       
-      const { txHash, network } = req.body;
+      const { txHash, network, promoCode } = req.body;
       if (!txHash || !network) {
         res.status(400).json({ success: false, message: "Transaction hash and network required" });
         return;
@@ -1675,15 +1785,33 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
         return;
       }
       
+      // Calculate expected amount with promo code discount
+      const basePrice = settings?.proPrice || 10;
+      let expectedAmount = basePrice;
+      let validPromoCode: string | null = null;
+      
+      if (promoCode) {
+        const promoValidation = await storage.validatePromoCode(promoCode, userId);
+        if (promoValidation.valid) {
+          expectedAmount = basePrice * (1 - promoValidation.discount / 100);
+          validPromoCode = promoCode;
+        }
+      }
+      
       let verified = false;
       if (network === 'trc20') {
-        verified = await verifyTRC20Transaction(txHash, walletAddress, settings?.proPrice || 10);
+        verified = await verifyTRC20Transaction(txHash, walletAddress, expectedAmount);
       } else if (network === 'bep20') {
-        verified = await verifyBEP20Transaction(txHash, walletAddress, settings?.proPrice || 10);
+        verified = await verifyBEP20Transaction(txHash, walletAddress, expectedAmount);
       }
       
       if (verified) {
-        const payment = await storage.createPaymentRecord(userId, network, txHash, settings?.proPrice || 10, walletAddress);
+        // Mark promo code as used if valid
+        if (validPromoCode) {
+          await storage.usePromoCode(validPromoCode, userId);
+        }
+        
+        const payment = await storage.createPaymentRecord(userId, network, txHash, expectedAmount, walletAddress);
         await storage.verifyPayment(payment.id);
         await storage.updateSubscription(userId, 'pro');
         

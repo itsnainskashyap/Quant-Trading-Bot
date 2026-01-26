@@ -17,7 +17,7 @@ The platform features a dark mode theme with a professional trading aesthetic. K
 - **Prediction Lifecycle:** Tracks user predictions with entry/exit prices and calculates P/L.
 - **Capital Management & Risk Protection:** Implements dynamic AI-based position sizing (5-15% based on confidence), stop-loss at 2% risk, and take-profit targets with a 1:1.5 risk-reward ratio. Includes a TradeX Virtual Broker for paper trading with dynamic SL/TP and AI position adjustment suggestions.
 - **TradingView Integration:** Provides live charts and candle timers.
-- **Crypto Payment System:** Supports TRC20 (TRON) and BEP20 (BSC) networks for Pro subscription payments, with blockchain verification.
+- **Crypto Payment System:** Supports TRC20 (TRON) and BEP20 (BSC) networks for Pro subscription payments, with blockchain verification. Includes promo code system for discounts (admin-managed codes with percentage discounts, max uses, and usage tracking).
 - **Signal Generation:** Ultra-conservative approach requiring 75%+ average confidence, 65%+ minimum from each provider, no high-risk flags, no conflicting signals, and 5+ technical indicators in confluence.
 - **Real-Time Market Data:** Fetches live cryptocurrency prices from CoinGecko API.
 - **Advanced Technical Indicators:** Calculates and uses RSI, Stochastic, Williams %R, MACD, Bollinger Bands, SMAs, EMAs, ADX, ROC, ATR, and Support/Resistance for multi-confluence scoring.

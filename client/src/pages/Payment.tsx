@@ -15,7 +15,10 @@ import {
   Shield, 
   Sparkles,
   AlertCircle,
-  ExternalLink
+  ExternalLink,
+  Tag,
+  Check,
+  X
 } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
@@ -28,6 +31,13 @@ export function Payment() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState<"idle" | "pending" | "success" | "failed">("idle");
   const [selectedNetwork, setSelectedNetwork] = useState<"trc20" | "bep20">("trc20");
+  
+  // Promo code state
+  const [promoCode, setPromoCode] = useState("");
+  const [promoDiscount, setPromoDiscount] = useState<number | null>(null);
+  const [isValidatingPromo, setIsValidatingPromo] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoApplied, setPromoApplied] = useState(false);
 
   const { data: paymentConfig, isLoading: configLoading } = useQuery<{
     trc20Address: string;
@@ -48,6 +58,49 @@ export function Payment() {
     }
   };
 
+  const validatePromoCode = async () => {
+    if (!promoCode.trim()) return;
+    
+    setIsValidatingPromo(true);
+    setPromoError(null);
+    
+    try {
+      const response = await fetch("/api/promo-codes/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: promoCode }),
+        credentials: "include",
+      });
+      
+      const data = await response.json();
+      
+      if (data.valid) {
+        setPromoDiscount(data.discount);
+        setPromoApplied(true);
+        toast({ title: "Promo Code Applied!", description: `${data.discount}% discount applied` });
+      } else {
+        setPromoError(data.message);
+        setPromoDiscount(null);
+        setPromoApplied(false);
+      }
+    } catch (error: any) {
+      setPromoError("Failed to validate promo code");
+    } finally {
+      setIsValidatingPromo(false);
+    }
+  };
+
+  const removePromoCode = () => {
+    setPromoCode("");
+    setPromoDiscount(null);
+    setPromoApplied(false);
+    setPromoError(null);
+  };
+
+  // Calculate final price
+  const basePrice = paymentConfig?.amount || 10;
+  const finalPrice = promoDiscount ? basePrice * (1 - promoDiscount / 100) : basePrice;
+
   const verifyPayment = async () => {
     if (!txHash.trim()) {
       toast({ title: "Error", description: "Please enter your transaction hash", variant: "destructive" });
@@ -61,7 +114,11 @@ export function Payment() {
       const response = await fetch("/api/payment/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ txHash, network: selectedNetwork }),
+        body: JSON.stringify({ 
+          txHash, 
+          network: selectedNetwork,
+          promoCode: promoApplied ? promoCode : undefined,
+        }),
         credentials: "include",
       });
 
@@ -142,11 +199,80 @@ export function Payment() {
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <span className="text-gray-500 line-through text-lg">$199</span>
                   <Badge className="bg-emerald-500/20 text-emerald-400">95% OFF</Badge>
+                  {promoDiscount && (
+                    <Badge className="bg-purple-500/20 text-purple-400">
+                      +{promoDiscount}% PROMO
+                    </Badge>
+                  )}
                 </div>
                 <div className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-                  10 USDT
+                  {promoDiscount ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="line-through text-2xl text-gray-500">{basePrice} USDT</span>
+                      <span>{finalPrice.toFixed(2)} USDT</span>
+                    </span>
+                  ) : (
+                    `${basePrice} USDT`
+                  )}
                 </div>
                 <p className="text-gray-400 text-sm mt-1">One-time payment for Pro plan</p>
+              </div>
+              
+              {/* Promo Code Input */}
+              <div className="mb-6">
+                <label className="text-gray-300 text-sm mb-2 block flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-purple-400" />
+                  Have a promo code?
+                </label>
+                <div className="flex gap-2">
+                  <div className="flex-1 relative">
+                    <Input
+                      placeholder="Enter promo code"
+                      value={promoCode}
+                      onChange={(e) => {
+                        setPromoCode(e.target.value.toUpperCase());
+                        setPromoError(null);
+                      }}
+                      disabled={promoApplied}
+                      className={`bg-[#0a0a0f] border-[#2a2a3e] text-white font-mono uppercase ${promoApplied ? 'border-emerald-500/50 bg-emerald-500/5' : ''}`}
+                      data-testid="input-promo-code"
+                    />
+                    {promoApplied && (
+                      <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400" />
+                    )}
+                  </div>
+                  {promoApplied ? (
+                    <Button
+                      variant="outline"
+                      onClick={removePromoCode}
+                      className="border-red-500/30 text-red-400"
+                      data-testid="button-remove-promo"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={validatePromoCode}
+                      disabled={isValidatingPromo || !promoCode.trim()}
+                      className="bg-purple-600 hover:bg-purple-700"
+                      data-testid="button-apply-promo"
+                    >
+                      {isValidatingPromo ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        "Apply"
+                      )}
+                    </Button>
+                  )}
+                </div>
+                {promoError && (
+                  <p className="text-red-400 text-sm mt-1">{promoError}</p>
+                )}
+                {promoApplied && (
+                  <p className="text-emerald-400 text-sm mt-1">
+                    Promo code applied! You save {promoDiscount}%
+                  </p>
+                )}
               </div>
 
               <div className="flex gap-2 mb-6">
@@ -196,7 +322,7 @@ export function Payment() {
                 <div className="text-sm text-amber-200">
                   <p className="font-medium mb-1">Important:</p>
                   <ul className="list-disc list-inside text-amber-300/80 space-y-1">
-                    <li>Send exactly 10 USDT</li>
+                    <li>Send exactly <strong>{finalPrice.toFixed(2)} USDT</strong></li>
                     <li>Use only {selectedNetwork.toUpperCase()} network</li>
                     <li>Payment auto-verifies in 1-3 minutes</li>
                   </ul>

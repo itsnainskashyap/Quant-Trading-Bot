@@ -25,7 +25,11 @@ import {
   UserX,
   Mail,
   Calendar,
-  Loader2
+  Loader2,
+  Tag,
+  Plus,
+  Trash2,
+  Percent
 } from "lucide-react";
 import { CryptoLogo } from "@/components/CryptoLogos";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
@@ -43,6 +47,17 @@ interface UserData {
   firstName: string | null;
   lastName: string | null;
   plan: string;
+  createdAt: string | null;
+}
+
+interface PromoCode {
+  id: string;
+  code: string;
+  discountPercent: number;
+  maxUses: number | null;
+  usedCount: number;
+  isActive: boolean;
+  expiresAt: string | null;
   createdAt: string | null;
 }
 
@@ -65,10 +80,20 @@ export default function Admin() {
   const [proPrice, setProPrice] = useState(10);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settings, setSettings] = useState<AdminSettings | null>(null);
+  
+  // Promo code state
+  const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
+  const [isLoadingPromos, setIsLoadingPromos] = useState(false);
+  const [newPromoCode, setNewPromoCode] = useState('');
+  const [newPromoDiscount, setNewPromoDiscount] = useState(10);
+  const [newPromoMaxUses, setNewPromoMaxUses] = useState<string>('');
+  const [isCreatingPromo, setIsCreatingPromo] = useState(false);
+  const [deletingPromoId, setDeletingPromoId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isLoggedIn) {
       fetchSettings();
+      fetchPromoCodes();
     }
   }, [isLoggedIn]);
 
@@ -207,6 +232,93 @@ export default function Admin() {
     setUsers([]);
     setEmail("");
     setPassword("");
+    setPromoCodes([]);
+  };
+
+  // Promo code functions
+  const fetchPromoCodes = async () => {
+    setIsLoadingPromos(true);
+    try {
+      const response = await fetch("/api/admin/promo-codes");
+      if (response.ok) {
+        const data = await response.json();
+        setPromoCodes(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch promo codes:", error);
+    } finally {
+      setIsLoadingPromos(false);
+    }
+  };
+
+  const handleCreatePromoCode = async () => {
+    if (!newPromoCode.trim()) {
+      toast({ title: "Error", description: "Please enter a promo code", variant: "destructive" });
+      return;
+    }
+    
+    setIsCreatingPromo(true);
+    try {
+      const response = await fetch("/api/admin/promo-codes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: newPromoCode.toUpperCase(),
+          discountPercent: newPromoDiscount,
+          maxUses: newPromoMaxUses ? parseInt(newPromoMaxUses) : null,
+        }),
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        toast({ title: "Success", description: `Promo code ${newPromoCode.toUpperCase()} created` });
+        setNewPromoCode('');
+        setNewPromoDiscount(10);
+        setNewPromoMaxUses('');
+        fetchPromoCodes();
+      } else {
+        toast({ title: "Error", description: data.error, variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsCreatingPromo(false);
+    }
+  };
+
+  const handleTogglePromoCode = async (id: string, isActive: boolean) => {
+    try {
+      const response = await fetch(`/api/admin/promo-codes/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !isActive }),
+      });
+      
+      if (response.ok) {
+        toast({ title: isActive ? "Promo code disabled" : "Promo code enabled" });
+        fetchPromoCodes();
+      }
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeletePromoCode = async (id: string) => {
+    setDeletingPromoId(id);
+    try {
+      const response = await fetch(`/api/admin/promo-codes/${id}`, {
+        method: "DELETE",
+      });
+      
+      if (response.ok) {
+        toast({ title: "Promo code deleted" });
+        fetchPromoCodes();
+      }
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setDeletingPromoId(null);
+    }
   };
 
   const filteredUsers = users.filter(user => 
@@ -478,6 +590,135 @@ export default function Admin() {
                     No users found
                   </div>
                 )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Promo Codes Section */}
+        <Card className="bg-[#12121a] border-white/5 mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Tag className="w-5 h-5 text-purple-400" />
+              Promo Codes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* Create new promo code */}
+            <div className="flex flex-wrap gap-3 mb-6 p-4 bg-purple-500/5 rounded-lg border border-purple-500/20">
+              <div className="flex-1 min-w-[150px]">
+                <Label className="text-xs text-gray-400 mb-1 block">Code</Label>
+                <Input
+                  value={newPromoCode}
+                  onChange={(e) => setNewPromoCode(e.target.value.toUpperCase())}
+                  placeholder="PROMO20"
+                  className="bg-[#0a0a0f] border-white/10 font-mono uppercase"
+                  data-testid="input-promo-code"
+                />
+              </div>
+              <div className="w-24">
+                <Label className="text-xs text-gray-400 mb-1 block">Discount %</Label>
+                <Input
+                  type="number"
+                  value={newPromoDiscount}
+                  onChange={(e) => setNewPromoDiscount(Number(e.target.value))}
+                  min={1}
+                  max={100}
+                  className="bg-[#0a0a0f] border-white/10"
+                  data-testid="input-promo-discount"
+                />
+              </div>
+              <div className="w-24">
+                <Label className="text-xs text-gray-400 mb-1 block">Max Uses</Label>
+                <Input
+                  type="number"
+                  value={newPromoMaxUses}
+                  onChange={(e) => setNewPromoMaxUses(e.target.value)}
+                  placeholder="Unlimited"
+                  className="bg-[#0a0a0f] border-white/10"
+                  data-testid="input-promo-max-uses"
+                />
+              </div>
+              <div className="flex items-end">
+                <Button
+                  onClick={handleCreatePromoCode}
+                  disabled={isCreatingPromo || !newPromoCode.trim()}
+                  className="bg-purple-600 hover:bg-purple-700"
+                  data-testid="button-create-promo"
+                >
+                  {isCreatingPromo ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4 mr-1" />
+                      Create
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Promo codes list */}
+            {isLoadingPromos ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
+              </div>
+            ) : promoCodes.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No promo codes created yet
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {promoCodes.map((promo) => (
+                  <div 
+                    key={promo.id} 
+                    className={`flex items-center justify-between p-3 rounded-lg ${promo.isActive ? 'bg-white/[0.02]' : 'bg-red-500/5'}`}
+                    data-testid={`promo-code-${promo.code}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <code className="text-lg font-bold text-purple-400 bg-purple-500/10 px-3 py-1 rounded">
+                        {promo.code}
+                      </code>
+                      <Badge className="bg-emerald-500/20 text-emerald-400">
+                        <Percent className="w-3 h-3 mr-1" />
+                        {promo.discountPercent}% OFF
+                      </Badge>
+                      <span className="text-sm text-gray-500">
+                        {promo.usedCount}{promo.maxUses ? `/${promo.maxUses}` : ''} uses
+                      </span>
+                      {!promo.isActive && (
+                        <Badge variant="outline" className="text-red-400 border-red-500/30">
+                          Disabled
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleTogglePromoCode(promo.id, promo.isActive)}
+                        className={promo.isActive ? "text-amber-400 border-amber-500/30" : "text-emerald-400 border-emerald-500/30"}
+                        data-testid={`button-toggle-promo-${promo.code}`}
+                      >
+                        {promo.isActive ? 'Disable' : 'Enable'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDeletePromoCode(promo.id)}
+                        disabled={deletingPromoId === promo.id}
+                        className="text-red-400 border-red-500/30 hover:bg-red-500/10"
+                        data-testid={`button-delete-promo-${promo.code}`}
+                      >
+                        {deletingPromoId === promo.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3 h-3" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>

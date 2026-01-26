@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { eq, and, lt, count, gte, sql } from "drizzle-orm";
 import { db } from "./db";
-import { predictions, subscriptions, type Prediction, type Subscription } from "@shared/models/trading";
+import { predictions, subscriptions, promoCodes, promoCodeUsage, type Prediction, type Subscription, type PromoCode, type InsertPromoCode } from "@shared/models/trading";
 import { users } from "@shared/models/auth";
 import type { 
   TradingSignal, 
@@ -60,6 +60,15 @@ export interface IStorage {
   verifyPayment(paymentId: string): Promise<void>;
   failPayment(paymentId: string): Promise<void>;
   getUserPayments(userId: string): Promise<any[]>;
+  
+  // Promo codes
+  createPromoCode(code: string, discountPercent: number, maxUses?: number, expiresAt?: Date): Promise<PromoCode>;
+  getAllPromoCodes(): Promise<PromoCode[]>;
+  getPromoCodeByCode(code: string): Promise<PromoCode | null>;
+  validatePromoCode(code: string, userId: string): Promise<{ valid: boolean; discount?: number; message?: string }>;
+  usePromoCode(code: string, userId: string): Promise<boolean>;
+  updatePromoCode(id: string, updates: Partial<InsertPromoCode>): Promise<PromoCode | null>;
+  deletePromoCode(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -939,6 +948,105 @@ export class MemStorage implements IStorage {
     } catch (error) {
       console.error("Error getting user payments:", error);
       return [];
+    }
+  }
+
+  // Promo code methods
+  async createPromoCode(code: string, discountPercent: number, maxUses?: number, expiresAt?: Date): Promise<PromoCode> {
+    const [promo] = await db.insert(promoCodes)
+      .values({
+        code: code.toUpperCase(),
+        discountPercent,
+        maxUses: maxUses || null,
+        expiresAt: expiresAt || null,
+      })
+      .returning();
+    return promo;
+  }
+
+  async getAllPromoCodes(): Promise<PromoCode[]> {
+    return await db.select().from(promoCodes).orderBy(sql`${promoCodes.createdAt} DESC`);
+  }
+
+  async getPromoCodeByCode(code: string): Promise<PromoCode | null> {
+    const [promo] = await db.select()
+      .from(promoCodes)
+      .where(eq(promoCodes.code, code.toUpperCase()))
+      .limit(1);
+    return promo || null;
+  }
+
+  async validatePromoCode(code: string, userId: string): Promise<{ valid: boolean; discount?: number; message?: string }> {
+    const promo = await this.getPromoCodeByCode(code);
+    
+    if (!promo) {
+      return { valid: false, message: "Promo code not found" };
+    }
+    
+    if (!promo.isActive) {
+      return { valid: false, message: "Promo code is no longer active" };
+    }
+    
+    if (promo.expiresAt && new Date(promo.expiresAt) < new Date()) {
+      return { valid: false, message: "Promo code has expired" };
+    }
+    
+    if (promo.maxUses && promo.usedCount >= promo.maxUses) {
+      return { valid: false, message: "Promo code has reached maximum uses" };
+    }
+    
+    // Check if user has already used this promo code
+    const [existingUsage] = await db.select()
+      .from(promoCodeUsage)
+      .where(and(
+        eq(promoCodeUsage.promoCodeId, promo.id),
+        eq(promoCodeUsage.userId, userId)
+      ))
+      .limit(1);
+    
+    if (existingUsage) {
+      return { valid: false, message: "You have already used this promo code" };
+    }
+    
+    return { valid: true, discount: promo.discountPercent };
+  }
+
+  async usePromoCode(code: string, userId: string): Promise<boolean> {
+    const promo = await this.getPromoCodeByCode(code);
+    if (!promo) return false;
+    
+    // Record usage
+    await db.insert(promoCodeUsage).values({
+      promoCodeId: promo.id,
+      userId,
+    });
+    
+    // Increment used count
+    await db.update(promoCodes)
+      .set({ usedCount: promo.usedCount + 1 })
+      .where(eq(promoCodes.id, promo.id));
+    
+    return true;
+  }
+
+  async updatePromoCode(id: string, updates: Partial<InsertPromoCode>): Promise<PromoCode | null> {
+    const [updated] = await db.update(promoCodes)
+      .set(updates)
+      .where(eq(promoCodes.id, id))
+      .returning();
+    return updated || null;
+  }
+
+  async deletePromoCode(id: string): Promise<boolean> {
+    try {
+      // Delete usage records first
+      await db.delete(promoCodeUsage).where(eq(promoCodeUsage.promoCodeId, id));
+      // Delete promo code
+      await db.delete(promoCodes).where(eq(promoCodes.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error deleting promo code:", error);
+      return false;
     }
   }
 }

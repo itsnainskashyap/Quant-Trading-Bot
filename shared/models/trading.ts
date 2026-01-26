@@ -133,3 +133,28 @@ export type AdminSettings = typeof adminSettings.$inferSelect;
 export type InsertAdminSettings = typeof adminSettings.$inferInsert;
 export type PaymentRecord = typeof paymentRecords.$inferSelect;
 export type InsertPaymentRecord = typeof paymentRecords.$inferInsert;
+
+// Promo codes for discounts on Pro subscription
+export const promoCodes = pgTable("promo_codes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code").notNull().unique(),
+  discountPercent: integer("discount_percent").notNull(), // 10 = 10% off
+  maxUses: integer("max_uses"), // null = unlimited
+  usedCount: integer("used_count").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  expiresAt: timestamp("expires_at"), // null = never expires
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Track promo code usage by user
+export const promoCodeUsage = pgTable("promo_code_usage", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  promoCodeId: varchar("promo_code_id").notNull().references(() => promoCodes.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  usedAt: timestamp("used_at").defaultNow(),
+});
+
+export type PromoCode = typeof promoCodes.$inferSelect;
+export type InsertPromoCode = typeof promoCodes.$inferInsert;
+export type PromoCodeUsage = typeof promoCodeUsage.$inferSelect;
+export type InsertPromoCodeUsage = typeof promoCodeUsage.$inferInsert;
