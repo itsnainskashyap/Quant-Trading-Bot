@@ -49,6 +49,7 @@ import { PortfolioDashboard } from "@/components/PortfolioDashboard";
 import { LiveTradeAnalyzer } from "@/components/LiveTradeAnalyzer";
 import { TradeAutomationSettings } from "@/components/TradeAutomationSettings";
 import { TradexBroker } from "@/components/TradexBroker";
+import { AdvancedAnalysis } from "@/components/AdvancedAnalysis";
 import type { TradingPair, ConsensusResult, MarketMetrics } from "@shared/schema";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 
@@ -910,6 +911,8 @@ export default function Dashboard() {
             </Card>
 
             <BacktestStats />
+
+            <AdvancedAnalysis pair={selectedPair} tradeMode={tradeMode} />
 
             <TechnicalIndicators pair={selectedPair} metrics={data?.signal ? {
               pair: selectedPair,

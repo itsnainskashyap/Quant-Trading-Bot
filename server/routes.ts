@@ -7,6 +7,10 @@ import { getMultiAIConsensus, generateConsensusExplanation } from "./consensus";
 import { getEnhancedAIConsensus } from "./enhancedAI";
 import { setupPhoneAuth, getUserById } from "./phoneAuth";
 import { startTradeMonitor } from "./tradeAI";
+import { getAssetProfile, getAssetMemory, getAssetSpecificThresholds, isAssetInCooldown, getCooldownReason, updateAssetMemory } from "./assetIntelligence";
+import { createConditionalSignal, checkTriggerConditions, formatTriggerConditions, cleanExpiredSignals, type ConditionalSignal } from "./conditionalPredictions";
+import { evaluateSignal, getMetaJudgeSummary, type MetaJudgeResult } from "./metaJudge";
+import { checkLossAvoidance, recordTradeOutcome, getLossAvoidanceSummary, getDefensiveRiskMultiplier, type LossAvoidanceState } from "./lossAvoidance";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -236,6 +240,270 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Consensus error:", error);
       res.status(500).json({ error: "Failed to generate consensus" });
+    }
+  });
+
+  // Advanced Accuracy-Focused Analysis (new system)
+  app.post("/api/advanced-analysis", async (req, res) => {
+    try {
+      const { pair, tradeMode = 5 } = req.body as { pair: TradingPair; tradeMode?: number };
+      
+      if (!tradingPairs.includes(pair)) {
+        res.status(400).json({ error: "Invalid trading pair" });
+        return;
+      }
+      
+      console.log(`[AdvancedAnalysis] Running accuracy-focused analysis for ${pair}...`);
+      
+      // Clean up expired signals
+      cleanExpiredSignals();
+      
+      const [prices, metrics] = await Promise.all([
+        storage.getAllPrices(),
+        storage.getMarketMetrics(pair),
+      ]);
+      
+      const priceData = prices.find(p => p.pair === pair);
+      if (!priceData) {
+        res.status(404).json({ error: "Price data not found" });
+        return;
+      }
+      
+      // Step 1: Asset-Specific Intelligence
+      const assetProfile = getAssetProfile(pair);
+      const assetMemory = getAssetMemory(pair);
+      const assetThresholds = getAssetSpecificThresholds(pair, metrics);
+      const cooldownReason = getCooldownReason(pair);
+      
+      // Step 2: Loss Avoidance Check
+      const lossAvoidance = checkLossAvoidance(pair, metrics);
+      
+      // If asset is blocked by loss avoidance, return NO_TRADE immediately
+      if (lossAvoidance.isBlocked) {
+        console.log(`[AdvancedAnalysis] ${pair} BLOCKED: ${lossAvoidance.blockReason}`);
+        
+        res.json({
+          approved: false,
+          signal: {
+            intent: 'NO_TRADE',
+            pair,
+            confidence: 0,
+            isBlocked: true,
+            blockReason: lossAvoidance.blockReason,
+          },
+          triggerConditions: [],
+          expiryMinutes: 0,
+          metaJudge: null,
+          lossAvoidance,
+          assetIntelligence: {
+            profile: assetProfile,
+            memory: {
+              consecutiveLosses: assetMemory.consecutiveLosses,
+              consecutiveWins: assetMemory.consecutiveWins,
+              winRate: assetMemory.winRate,
+              performanceScore: assetMemory.performanceScore,
+              lastSignalTime: assetMemory.lastSignalTime,
+            },
+            thresholds: assetThresholds,
+            cooldownReason,
+          },
+          recommendation: lossAvoidance.blockReason || 'Asset blocked due to risk management rules',
+          summary: getLossAvoidanceSummary(lossAvoidance),
+        });
+        return;
+      }
+      
+      // Step 3: Get Enhanced AI Consensus (5 agents)
+      const enhancedResult = await getEnhancedAIConsensus(pair, metrics, priceData.price, tradeMode);
+      
+      // Step 4: Meta-Judge Evaluation
+      const metaJudgeResult = evaluateSignal({
+        pair,
+        proposedSignal: enhancedResult.finalSignal,
+        confidence: enhancedResult.finalConfidence,
+        agentResults: enhancedResult.agents,
+        metrics,
+        currentPrice: priceData.price,
+      });
+      
+      // Step 5: Create Conditional Signal (trigger-based)
+      let conditionalSignal: ConditionalSignal | null = null;
+      
+      if (metaJudgeResult.approved && metaJudgeResult.finalSignal !== 'NO_TRADE') {
+        // Apply defensive risk multiplier
+        const riskMultiplier = getDefensiveRiskMultiplier(lossAvoidance);
+        const adjustedConfidence = Math.round(metaJudgeResult.adjustedConfidence * riskMultiplier * assetThresholds.confidenceMultiplier);
+        
+        conditionalSignal = createConditionalSignal(
+          pair,
+          metaJudgeResult.finalSignal,
+          priceData.price,
+          metrics,
+          adjustedConfidence,
+          enhancedResult.reasoning,
+          5 // 5 minute expiry for trigger conditions
+        );
+        
+        // Update asset memory with the signal
+        updateAssetMemory(pair, metaJudgeResult.finalSignal, adjustedConfidence);
+      }
+      
+      const approved = metaJudgeResult.approved && !lossAvoidance.isBlocked;
+      const finalIntent = approved ? metaJudgeResult.finalSignal : 'NO_TRADE';
+      
+      console.log(`[AdvancedAnalysis] ${pair}: ${getMetaJudgeSummary(metaJudgeResult)}`);
+      
+      res.json({
+        approved,
+        signal: {
+          intent: finalIntent,
+          pair,
+          confidence: approved ? metaJudgeResult.adjustedConfidence : 0,
+          originalConfidence: enhancedResult.finalConfidence,
+          isBlocked: !approved,
+          blockReason: !approved ? (metaJudgeResult.blockReasons[0]?.description || 'Signal blocked by Meta-Judge') : null,
+          riskGrade: enhancedResult.finalRisk,
+        },
+        triggerConditions: conditionalSignal?.triggerConditions || [],
+        triggerConditionsFormatted: conditionalSignal ? formatTriggerConditions(conditionalSignal.triggerConditions) : 'No trade - no conditions required',
+        expiryMinutes: conditionalSignal?.expiryMinutes || 0,
+        expiryTime: conditionalSignal?.expiryTime || null,
+        metaJudge: {
+          approved: metaJudgeResult.approved,
+          marketStructure: metaJudgeResult.marketStructure,
+          blockReasons: metaJudgeResult.blockReasons,
+          warnings: metaJudgeResult.warnings,
+          recommendation: metaJudgeResult.recommendation,
+        },
+        lossAvoidance: {
+          riskLevel: lossAvoidance.riskLevel,
+          stabilityScore: lossAvoidance.stabilityScore,
+          consecutiveLosses: lossAvoidance.consecutiveLosses,
+          confidenceReduction: lossAvoidance.confidenceReduction,
+          cooldownActive: lossAvoidance.cooldownActive,
+          cooldownRemainingMinutes: lossAvoidance.cooldownRemainingMinutes,
+        },
+        assetIntelligence: {
+          profile: {
+            category: assetProfile.category,
+            volatilityClass: assetProfile.volatilityClass,
+            sessionBias: assetThresholds.sessionBias,
+          },
+          memory: {
+            consecutiveLosses: assetMemory.consecutiveLosses,
+            consecutiveWins: assetMemory.consecutiveWins,
+            winRate: assetMemory.winRate,
+            performanceScore: assetMemory.performanceScore,
+            recentSignalsCount: assetMemory.recentSignals.length,
+          },
+          thresholds: assetThresholds,
+        },
+        agents: enhancedResult.agents.map(a => ({
+          agent: a.agent,
+          signal: a.signal,
+          confidence: a.confidence,
+          weight: a.weight,
+          reasoning: a.reasoning,
+        })),
+        tradeRecommendation: approved ? enhancedResult.tradeRecommendation : null,
+        recommendation: metaJudgeResult.recommendation,
+        summary: `${getMetaJudgeSummary(metaJudgeResult)} | ${getLossAvoidanceSummary(lossAvoidance)}`,
+      });
+    } catch (error) {
+      console.error("Advanced analysis error:", error);
+      res.status(500).json({ error: "Failed to generate advanced analysis" });
+    }
+  });
+
+  // Record trade outcome (for loss avoidance tracking)
+  app.post("/api/record-outcome", async (req, res) => {
+    try {
+      const { pair, outcome } = req.body as { pair: TradingPair; outcome: 'win' | 'loss' | 'expired' };
+      
+      if (!tradingPairs.includes(pair)) {
+        res.status(400).json({ error: "Invalid trading pair" });
+        return;
+      }
+      
+      if (!['win', 'loss', 'expired'].includes(outcome)) {
+        res.status(400).json({ error: "Invalid outcome. Must be 'win', 'loss', or 'expired'" });
+        return;
+      }
+      
+      recordTradeOutcome(pair, outcome);
+      
+      const memory = getAssetMemory(pair);
+      res.json({
+        success: true,
+        pair,
+        outcome,
+        memory: {
+          consecutiveLosses: memory.consecutiveLosses,
+          consecutiveWins: memory.consecutiveWins,
+          winRate: memory.winRate,
+          performanceScore: memory.performanceScore,
+          cooldownUntil: memory.cooldownUntil,
+        }
+      });
+    } catch (error) {
+      console.error("Record outcome error:", error);
+      res.status(500).json({ error: "Failed to record outcome" });
+    }
+  });
+
+  // Get asset intelligence status
+  app.get("/api/asset-intelligence/:pair", async (req, res) => {
+    try {
+      const pair = req.params.pair as TradingPair;
+      
+      if (!tradingPairs.includes(pair)) {
+        res.status(400).json({ error: "Invalid trading pair" });
+        return;
+      }
+      
+      const metrics = await storage.getMarketMetrics(pair);
+      
+      const profile = getAssetProfile(pair);
+      const memory = getAssetMemory(pair);
+      const thresholds = getAssetSpecificThresholds(pair, metrics);
+      const lossAvoidance = checkLossAvoidance(pair, metrics);
+      const cooldownReason = getCooldownReason(pair);
+      
+      res.json({
+        pair,
+        profile: {
+          category: profile.category,
+          volatilityClass: profile.volatilityClass,
+          rsiOversold: profile.rsiOversold,
+          rsiOverbought: profile.rsiOverbought,
+          atrMultiplier: profile.atrMultiplier,
+          volumeThreshold: profile.volumeThreshold,
+          sessionBias: profile.sessionBias,
+        },
+        memory: {
+          consecutiveLosses: memory.consecutiveLosses,
+          consecutiveWins: memory.consecutiveWins,
+          winRate: memory.winRate,
+          performanceScore: memory.performanceScore,
+          avgConfidence: memory.avgConfidence,
+          recentSignalsCount: memory.recentSignals.length,
+          lastSignalTime: memory.lastSignalTime,
+        },
+        thresholds,
+        lossAvoidance: {
+          riskLevel: lossAvoidance.riskLevel,
+          stabilityScore: lossAvoidance.stabilityScore,
+          isBlocked: lossAvoidance.isBlocked,
+          blockReason: lossAvoidance.blockReason,
+          cooldownActive: lossAvoidance.cooldownActive,
+          cooldownRemainingMinutes: lossAvoidance.cooldownRemainingMinutes,
+        },
+        cooldownReason,
+        summary: getLossAvoidanceSummary(lossAvoidance),
+      });
+    } catch (error) {
+      console.error("Asset intelligence error:", error);
+      res.status(500).json({ error: "Failed to get asset intelligence" });
     }
   });
 
