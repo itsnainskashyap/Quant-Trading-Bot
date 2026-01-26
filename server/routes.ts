@@ -298,11 +298,24 @@ export async function registerRoutes(
             blockReason: lossAvoidance.blockReason,
           },
           triggerConditions: [],
+          triggerConditionsFormatted: 'No trade - asset blocked by loss avoidance',
           expiryMinutes: 0,
+          expiryTime: null,
           metaJudge: null,
-          lossAvoidance,
+          lossAvoidance: {
+            riskLevel: lossAvoidance.riskLevel,
+            stabilityScore: lossAvoidance.stabilityScore,
+            consecutiveLosses: lossAvoidance.consecutiveLosses,
+            confidenceReduction: lossAvoidance.confidenceReduction,
+            cooldownActive: lossAvoidance.cooldownActive,
+            cooldownRemainingMinutes: lossAvoidance.cooldownRemainingMinutes,
+          },
           assetIntelligence: {
-            profile: assetProfile,
+            profile: {
+              category: assetProfile.category,
+              volatilityClass: assetProfile.volatilityClass,
+              sessionBias: assetThresholds.sessionBias,
+            },
             memory: {
               consecutiveLosses: assetMemory.consecutiveLosses,
               consecutiveWins: assetMemory.consecutiveWins,
@@ -310,8 +323,9 @@ export async function registerRoutes(
               performanceScore: assetMemory.performanceScore,
             },
             thresholds: assetThresholds,
-            cooldownReason,
           },
+          agents: [],
+          tradeRecommendation: null,
           recommendation: lossAvoidance.blockReason || 'Asset blocked due to risk management rules',
           summary: getLossAvoidanceSummary(lossAvoidance),
         });
@@ -1522,7 +1536,7 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
   
   // Admin credentials (hardcoded for simplicity)
   const ADMIN_EMAIL = "itsnainskashyap@gmail.com";
-  const ADMIN_PASSWORD = "Nains@gmail.com";
+  const ADMIN_PASSWORD = "Nains@1357";
   
   // Track admin sessions
   const adminSessions = new Map<string, { email: string; loggedIn: boolean; expiry: number }>();
