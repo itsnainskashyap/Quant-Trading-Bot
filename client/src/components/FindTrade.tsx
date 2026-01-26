@@ -197,22 +197,22 @@ export function FindTrade({ pair, isPro }: FindTradeProps) {
   const showIdle = !isActive && !showResult && !showTimeout && !showCancelled;
 
   return (
-    <Card className="bg-gradient-to-br from-[#12121a] to-[#1a1a2e] border-amber-500/30 overflow-hidden">
+    <Card className="bg-gradient-to-br from-[#12121a] to-[#1a1a2e] border-amber-500/30 overflow-hidden min-w-0">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <CardTitle className="text-md flex items-center gap-2">
-            <div className="relative">
+          <CardTitle className="text-base flex items-center gap-2 flex-wrap min-w-0">
+            <div className="relative flex-shrink-0">
               <Target className={`w-5 h-5 text-amber-400 ${isActive ? 'animate-pulse' : ''}`} />
               {isActive && (
                 <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full animate-ping" />
               )}
             </div>
-            <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent font-bold">
+            <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent font-bold truncate">
               Find Trade
             </span>
-            <Badge className="bg-amber-500/20 text-amber-400 text-xs">
+            <Badge className="bg-amber-500/20 text-amber-400 text-[10px] flex-shrink-0">
               <ServerCog className="w-3 h-3 mr-1" />
-              Server-Side
+              Server
             </Badge>
           </CardTitle>
           {showIdle && (
@@ -274,15 +274,15 @@ export function FindTrade({ pair, isPro }: FindTradeProps) {
             </div>
 
             <div className="flex items-center gap-3 p-3 bg-amber-500/5 rounded-lg border border-amber-500/20">
-              <div className="relative">
+              <div className="relative flex-shrink-0">
                 <Crosshair className="w-5 h-5 text-amber-400 animate-pulse" />
               </div>
-              <div>
-                <p className="text-amber-200 text-sm font-medium">
+              <div className="min-w-0 flex-1">
+                <p className="text-amber-200 text-sm font-medium truncate">
                   {statusMessages[(scan.attempts || 0) % statusMessages.length]}
                 </p>
-                <p className="text-gray-500 text-xs">
-                  Looking for {scan.pair} with 90%+ confidence (runs even if you close this tab)
+                <p className="text-gray-500 text-xs truncate">
+                  Looking for {scan.pair} 90%+ (persists in background)
                 </p>
               </div>
             </div>
@@ -336,7 +336,7 @@ export function FindTrade({ pair, isPro }: FindTradeProps) {
                 </div>
               </div>
 
-              <p className="text-gray-400 text-sm">{scan.resultReasoning}</p>
+              <p className="text-gray-400 text-sm break-words line-clamp-3">{scan.resultReasoning}</p>
 
               <div className="flex items-center gap-4 mt-3 pt-3 border-t border-white/10 text-xs text-gray-500">
                 <span className="flex items-center gap-1">
@@ -365,11 +365,11 @@ export function FindTrade({ pair, isPro }: FindTradeProps) {
 
         {showIdle && (
           <div className="text-center py-4">
-            <div className="flex items-center justify-center gap-2 text-gray-500 text-sm">
-              <ServerCog className="w-4 h-4 text-amber-400" />
-              <span>Server-side scan persists even if you close the browser</span>
+            <div className="flex items-center justify-center gap-2 text-gray-500 text-sm flex-wrap">
+              <ServerCog className="w-4 h-4 text-amber-400 flex-shrink-0" />
+              <span className="text-xs">Persists even if you close browser</span>
             </div>
-            <p className="text-gray-600 text-xs mt-1">Maximum search time: 30 minutes | 90%+ confidence required</p>
+            <p className="text-gray-600 text-xs mt-1">Max: 30 min | 90%+ confidence</p>
           </div>
         )}
 

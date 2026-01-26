@@ -191,14 +191,14 @@ export function AdvancedAnalysis({ pair, tradeMode = 5, isPro = false }: Advance
   }
 
   return (
-    <div className="space-y-4">
-      <Card className="bg-[#12121a] border-white/10">
+    <div className="space-y-4 min-w-0">
+      <Card className="bg-[#12121a] border-white/10 overflow-hidden">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Cpu className="w-5 h-5 text-purple-400" />
-              Advanced Accuracy Analysis
-              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-black text-[9px]">
+            <CardTitle className="text-base flex items-center gap-2 flex-wrap">
+              <Cpu className="w-5 h-5 text-purple-400 flex-shrink-0" />
+              <span className="truncate">Advanced Analysis</span>
+              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-black text-[9px] flex-shrink-0">
                 <Award className="w-3 h-3 mr-1" />
                 PRO
               </Badge>
@@ -222,8 +222,8 @@ export function AdvancedAnalysis({ pair, tradeMode = 5, isPro = false }: Advance
               )}
             </Button>
           </div>
-          <p className="text-sm text-gray-500">
-            Multi-layer accuracy system: Asset Intelligence + Meta-Judge + Loss Avoidance
+          <p className="text-xs text-gray-500 break-words">
+            Multi-layer accuracy with Meta-Judge verification
           </p>
         </CardHeader>
 
@@ -254,7 +254,7 @@ export function AdvancedAnalysis({ pair, tradeMode = 5, isPro = false }: Advance
               {analysisResult.signal.blockReason && (
                 <div className="flex items-start gap-2 mt-2 p-2 bg-red-500/10 rounded">
                   <AlertTriangle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-red-300">{analysisResult.signal.blockReason}</span>
+                  <span className="text-sm text-red-300 break-words">{analysisResult.signal.blockReason}</span>
                 </div>
               )}
             </div>
@@ -338,9 +338,9 @@ export function AdvancedAnalysis({ pair, tradeMode = 5, isPro = false }: Advance
                     </div>
                   )}
 
-                  <div className="p-3 bg-[#12121a] rounded">
+                  <div className="p-3 bg-[#12121a] rounded overflow-hidden">
                     <div className="text-xs text-gray-500 mb-1">Recommendation:</div>
-                    <div className="text-sm">{analysisResult.metaJudge.recommendation}</div>
+                    <div className="text-sm break-words">{analysisResult.metaJudge.recommendation}</div>
                   </div>
                 </CardContent>
               </Card>
@@ -501,10 +501,10 @@ export function AdvancedAnalysis({ pair, tradeMode = 5, isPro = false }: Advance
 
         {!analysisResult && !analysisMutation.isPending && (
           <CardContent>
-            <div className="text-center py-8 text-gray-500">
-              <Cpu className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>Click "Run Analysis" to get accuracy-focused trading signals</p>
-              <p className="text-sm mt-1">NO TRADE is preferred over false signals</p>
+            <div className="text-center py-6 text-gray-500">
+              <Cpu className="w-10 h-10 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Click "Run Analysis" for accuracy-focused signals</p>
+              <p className="text-xs mt-1">NO TRADE is preferred over false signals</p>
             </div>
           </CardContent>
         )}

@@ -850,13 +850,19 @@ export default function Dashboard() {
                   )}
                   
                   <div className="p-3 max-h-[200px] md:max-h-[300px] overflow-y-auto">
-                    <p className="text-xs text-gray-300 leading-relaxed whitespace-pre-line">
+                    <p className="text-xs text-gray-300 leading-relaxed whitespace-pre-line break-words">
                       {analysis.reasoning}
                     </p>
                   </div>
                 </CardContent>
               </Card>
             )}
+
+            {/* Advanced Analysis and Find Trade - Pro Features */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <AdvancedAnalysis pair={selectedPair} tradeMode={tradeMode} isPro={isPro} />
+              <FindTrade pair={selectedPair} isPro={isPro} />
+            </div>
           </div>
 
           <div className="space-y-4 xl:col-span-1">
@@ -912,11 +918,6 @@ export default function Dashboard() {
             </Card>
 
             <BacktestStats />
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <AdvancedAnalysis pair={selectedPair} tradeMode={tradeMode} isPro={isPro} />
-              <FindTrade pair={selectedPair} isPro={isPro} />
-            </div>
 
             <TechnicalIndicators pair={selectedPair} metrics={data?.signal ? {
               pair: selectedPair,
