@@ -10,7 +10,7 @@ import {
   TrendingUp, 
   TrendingDown,
   RefreshCw, 
-  Zap,
+  Bolt,
   ArrowUpRight,
   ArrowDownRight,
   Clock,
@@ -21,9 +21,9 @@ import {
   Timer,
   BarChart3,
   Activity,
-  Target,
-  Shield,
-  DollarSign,
+  Crosshair,
+  ShieldCheck,
+  Coins,
   AlertTriangle,
   CheckCircle2,
   MessageCircle,
@@ -32,9 +32,9 @@ import {
   Wallet,
   ChevronDown,
   ChevronUp,
-  Crown,
-  Sparkles,
-  Brain,
+  Award,
+  Gem,
+  Cpu,
   Plus
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -397,7 +397,7 @@ export default function Dashboard() {
               </div>
               <div className="w-px h-8 bg-white/10" />
               <div className="flex items-center gap-2">
-                <Brain className="w-4 h-4 text-purple-400" />
+                <Cpu className="w-4 h-4 text-purple-400" />
                 <div className="flex flex-col">
                   <span className="text-[10px] text-gray-500 uppercase">AI Analyses</span>
                   <span className="text-sm font-semibold text-white font-mono">
@@ -409,7 +409,7 @@ export default function Dashboard() {
 
             {isPro ? (
               <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-black font-semibold">
-                <Crown className="w-3 h-3 mr-1" />
+                <Award className="w-3 h-3 mr-1" />
                 PRO
               </Badge>
             ) : (
@@ -438,7 +438,7 @@ export default function Dashboard() {
         <div className="mb-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
           <div className="p-3 rounded-xl bg-gradient-to-br from-[#0d0d14] to-[#12121a] border border-[#1a1a2e]">
             <div className="flex items-center gap-2 mb-1">
-              <Target className="w-3.5 h-3.5 text-cyan-400" />
+              <Crosshair className="w-3.5 h-3.5 text-cyan-400" />
               <span className="text-[10px] text-gray-500 uppercase">Selected Pair</span>
             </div>
             <div className="font-semibold text-white">{selectedPair}</div>
@@ -454,7 +454,7 @@ export default function Dashboard() {
           
           <div className="p-3 rounded-xl bg-gradient-to-br from-[#0d0d14] to-[#12121a] border border-[#1a1a2e]">
             <div className="flex items-center gap-2 mb-1">
-              <Shield className="w-3.5 h-3.5 text-amber-400" />
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
               <span className="text-[10px] text-gray-500 uppercase">Risk Level</span>
             </div>
             <div className={`font-semibold ${
@@ -468,7 +468,7 @@ export default function Dashboard() {
           
           <div className="p-3 rounded-xl bg-gradient-to-br from-[#0d0d14] to-[#12121a] border border-[#1a1a2e]">
             <div className="flex items-center gap-2 mb-1">
-              <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+              <Coins className="w-3.5 h-3.5 text-emerald-400" />
               <span className="text-[10px] text-gray-500 uppercase">Position Size</span>
             </div>
             <div className="font-semibold text-white">{analysis?.positionPercent || '5-15'}%</div>
@@ -476,7 +476,7 @@ export default function Dashboard() {
           
           <div className="hidden lg:block p-3 rounded-xl bg-gradient-to-br from-[#0d0d14] to-[#12121a] border border-[#1a1a2e]">
             <div className="flex items-center gap-2 mb-1">
-              <Zap className="w-3.5 h-3.5 text-yellow-400" />
+              <Bolt className="w-3.5 h-3.5 text-yellow-400" />
               <span className="text-[10px] text-gray-500 uppercase">Market Status</span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -487,7 +487,7 @@ export default function Dashboard() {
           
           <div className="hidden lg:block p-3 rounded-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20">
             <div className="flex items-center gap-2 mb-1">
-              <Brain className="w-3.5 h-3.5 text-cyan-400" />
+              <Cpu className="w-3.5 h-3.5 text-cyan-400" />
               <span className="text-[10px] text-cyan-400 uppercase">AI Ready</span>
             </div>
             <div className="font-semibold text-white">3 Models Active</div>
@@ -886,7 +886,7 @@ export default function Dashboard() {
             <Card className="bg-gradient-to-br from-[#0d0d14] to-[#12121a] border-[#1a1a2e]">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="w-4 h-4 text-cyan-400" />
+                  <Gem className="w-4 h-4 text-cyan-400" />
                   <h3 className="text-sm font-medium text-white">How It Works</h3>
                 </div>
                 <ol className="space-y-2 text-xs text-gray-400">
@@ -936,7 +936,7 @@ export default function Dashboard() {
 
             <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/5 to-cyan-500/5 border border-emerald-500/10">
               <div className="flex items-start gap-2">
-                <Shield className="w-4 h-4 text-emerald-400 mt-0.5" />
+                <ShieldCheck className="w-4 h-4 text-emerald-400 mt-0.5" />
                 <div>
                   <h4 className="text-xs font-medium text-emerald-400 mb-1">Capital Protection</h4>
                   <p className="text-[11px] text-gray-400 leading-relaxed">

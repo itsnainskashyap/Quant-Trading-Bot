@@ -10,34 +10,36 @@ import {
   User, 
   ArrowRight, 
   ArrowLeft,
-  Sparkles,
-  Shield,
-  Target,
-  Flame,
-  Scale,
   ChevronRight,
   Check,
-  Sprout,
-  TrendingUp,
-  Crown
+  GraduationCap,
+  LineChart,
+  Crosshair,
+  Award,
+  ShieldCheck,
+  Gauge,
+  Zap,
+  BarChart3,
+  Settings2,
+  CheckCircle2
 } from "lucide-react";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 
 const experienceIcons: Record<string, React.ComponentType<{className?: string}>> = {
-  Sprout, TrendingUp, Target, Crown
+  GraduationCap, LineChart, Crosshair, Award
 };
 
 const experienceLevels = [
-  { id: "beginner", label: "Beginner", desc: "New to crypto trading", icon: "Sprout" },
-  { id: "intermediate", label: "Intermediate", desc: "Some trading experience", icon: "TrendingUp" },
-  { id: "advanced", label: "Advanced", desc: "Experienced trader", icon: "Target" },
-  { id: "professional", label: "Professional", desc: "Full-time trader", icon: "Crown" },
+  { id: "beginner", label: "Beginner", desc: "New to crypto trading", icon: "GraduationCap" },
+  { id: "intermediate", label: "Intermediate", desc: "Some trading experience", icon: "LineChart" },
+  { id: "advanced", label: "Advanced", desc: "Experienced trader", icon: "Crosshair" },
+  { id: "professional", label: "Professional", desc: "Full-time trader", icon: "Award" },
 ];
 
 const riskLevels = [
-  { id: "low", label: "Conservative", desc: "Prefer stable, lower returns", icon: Shield, color: "text-emerald-400" },
-  { id: "medium", label: "Moderate", desc: "Balanced risk and reward", icon: Scale, color: "text-blue-400" },
-  { id: "high", label: "Aggressive", desc: "Higher risk for higher gains", icon: Flame, color: "text-orange-400" },
+  { id: "low", label: "Conservative", desc: "Prefer stable, lower returns", icon: ShieldCheck, color: "text-emerald-400" },
+  { id: "medium", label: "Moderate", desc: "Balanced risk and reward", icon: Gauge, color: "text-blue-400" },
+  { id: "high", label: "Aggressive", desc: "Higher risk for higher gains", icon: Zap, color: "text-orange-400" },
 ];
 
 const cryptoPairs = [
@@ -141,7 +143,7 @@ export function Personalize() {
           <div className="text-center mb-6">
             <img src={logoImage} alt="TradeX AI" className="h-10 mx-auto mb-4" />
             <div className="flex items-center justify-center gap-2 text-cyan-400 mb-2">
-              <Sparkles className="w-5 h-5" />
+              <Settings2 className="w-5 h-5" />
               <span className="text-sm font-medium">Setting up your experience</span>
             </div>
           </div>
@@ -203,7 +205,7 @@ export function Personalize() {
                 <CardContent className="p-8">
                   <div className="text-center mb-8">
                     <div className="w-20 h-20 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/20">
-                      <Target className="w-10 h-10 text-white" />
+                      <BarChart3 className="w-10 h-10 text-white" />
                     </div>
                     <h2 className="text-2xl font-bold text-white mb-2">Your Trading Experience</h2>
                     <p className="text-gray-400">Help us tailor signals to your level</p>
@@ -267,7 +269,7 @@ export function Personalize() {
                 <CardContent className="p-8">
                   <div className="text-center mb-8">
                     <div className="w-20 h-20 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/20">
-                      <Shield className="w-10 h-10 text-white" />
+                      <Gauge className="w-10 h-10 text-white" />
                     </div>
                     <h2 className="text-2xl font-bold text-white mb-2">Risk Tolerance</h2>
                     <p className="text-gray-400">How much risk are you comfortable with?</p>
@@ -352,7 +354,7 @@ export function Personalize() {
                 <CardContent className="p-8">
                   <div className="text-center mb-8">
                     <div className="w-20 h-20 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/20">
-                      <Sparkles className="w-10 h-10 text-white" />
+                      <CheckCircle2 className="w-10 h-10 text-white" />
                     </div>
                     <h2 className="text-2xl font-bold text-white mb-2">Almost Done!</h2>
                     <p className="text-gray-400">Review your preferences</p>

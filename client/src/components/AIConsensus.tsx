@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, AlertTriangle, Sparkles, Brain, Cpu, Zap, Target, TrendingUp, DollarSign, LineChart, Users } from "lucide-react";
+import { CheckCircle2, XCircle, AlertTriangle, Gem, Cpu, Bolt, Crosshair, TrendingUp, Coins, LineChart, Users } from "lucide-react";
 import type { ConsensusResult, AIProviderAnalysis } from "@shared/schema";
 
 interface EnhancedAgent {
@@ -34,17 +34,17 @@ interface AIConsensusProps {
 }
 
 const providerIcons: Record<string, React.ElementType> = {
-  "OpenAI GPT-4o": Sparkles,
-  "Anthropic Claude": Brain,
-  "Google Gemini": Zap,
+  "OpenAI GPT-4o": Gem,
+  "Anthropic Claude": Cpu,
+  "Google Gemini": Bolt,
 };
 
 const agentIcons: Record<string, React.ElementType> = {
   "Technical Analyst": LineChart,
   "Fundamental Analyst": TrendingUp,
   "Psychology Analyst": Users,
-  "Pattern Recognition": Target,
-  "Smart Money Tracker": DollarSign,
+  "Pattern Recognition": Crosshair,
+  "Smart Money Tracker": Coins,
 };
 
 const agentColors: Record<string, string> = {

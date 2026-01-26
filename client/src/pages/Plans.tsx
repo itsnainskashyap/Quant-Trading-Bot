@@ -8,11 +8,11 @@ import {
   Loader2, 
   Check, 
   X, 
-  Crown, 
-  Zap, 
-  Shield, 
-  Brain, 
-  Sparkles
+  Award, 
+  Rocket, 
+  ShieldCheck, 
+  Cpu, 
+  Gem
 } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
@@ -120,7 +120,7 @@ export function Plans() {
           <div className="text-center mb-10">
             <img src={logoImage} alt="TradeX AI" className="h-12 mx-auto mb-4" />
             <div className="flex items-center justify-center gap-2 text-cyan-400 mb-3">
-              <Sparkles className="w-5 h-5" />
+              <Gem className="w-5 h-5" />
               <span className="text-sm font-medium">Choose Your Trading Power</span>
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">Choose Your Plan</h1>
@@ -143,7 +143,7 @@ export function Plans() {
                 {plan.popular && (
                   <div className="absolute top-0 right-0">
                     <Badge className="rounded-none rounded-bl-lg bg-gradient-to-r from-cyan-500 to-purple-500 text-white px-4 py-1.5">
-                      <Crown className="w-3 h-3 mr-1" />
+                      <Award className="w-3 h-3 mr-1" />
                       Best Value
                     </Badge>
                   </div>
@@ -217,15 +217,15 @@ export function Plans() {
           <div className="text-center">
             <div className="inline-flex items-center gap-6 text-sm text-gray-500">
               <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-emerald-500" />
+                <ShieldCheck className="w-4 h-4 text-emerald-500" />
                 Secure Payment
               </div>
               <div className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-amber-500" />
+                <Rocket className="w-4 h-4 text-amber-500" />
                 Instant Access
               </div>
               <div className="flex items-center gap-2">
-                <Brain className="w-4 h-4 text-purple-500" />
+                <Cpu className="w-4 h-4 text-purple-500" />
                 AI-Powered
               </div>
             </div>

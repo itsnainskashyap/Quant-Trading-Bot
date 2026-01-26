@@ -1,4 +1,4 @@
-import { Shield, Bell, User, Settings, Crown } from "lucide-react";
+import { ShieldCheck, Bell, User, Settings, Award } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -77,7 +77,7 @@ export function Header({ isDataFeedHealthy }: HeaderProps) {
               className={`gap-1 text-xs ${isPro ? 'bg-gradient-to-r from-amber-500 to-yellow-500' : ''}`}
               data-testid="badge-plan"
             >
-              {isPro ? <Crown className="w-3 h-3" /> : <Shield className="w-3 h-3" />}
+              {isPro ? <Award className="w-3 h-3" /> : <ShieldCheck className="w-3 h-3" />}
               {isPro ? 'Pro' : subData?.isEarlyAdopter ? 'Free (Early)' : 'Free'}
             </Badge>
             
