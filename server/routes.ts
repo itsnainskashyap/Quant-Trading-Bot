@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import OpenAI from "openai";
-import { tradingPairs, type TradingPair, type TradingSignal } from "@shared/schema";
+import { tradingPairs, type TradingPair, type TradingSignal, type MarketMetrics } from "@shared/schema";
 import { getMultiAIConsensus, generateConsensusExplanation } from "./consensus";
 import { getEnhancedAIConsensus } from "./enhancedAI";
 import { setupPhoneAuth, getUserById } from "./phoneAuth";
@@ -556,6 +556,113 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Asset intelligence error:", error);
       res.status(500).json({ error: "Failed to get asset intelligence" });
+    }
+  });
+
+  // Find Trade - Continuous scan for high-confidence trades (PRO ONLY)
+  app.post("/api/find-trade", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+      
+      // Check Pro subscription
+      const subscription = await storage.getUserSubscription(userId);
+      const isPro = subscription?.plan === 'pro' && 
+                    subscription?.status === 'active' && 
+                    (!subscription?.endDate || new Date(subscription.endDate) > new Date());
+      
+      if (!isPro) {
+        res.status(403).json({ 
+          error: "Pro subscription required",
+          message: "Find Trade is a Pro-only feature."
+        });
+        return;
+      }
+      
+      const { pair, minConfidence = 90 } = req.body as { pair: TradingPair; minConfidence?: number };
+      
+      if (!tradingPairs.includes(pair)) {
+        res.status(400).json({ error: "Invalid trading pair" });
+        return;
+      }
+      
+      console.log(`[FindTrade] Scanning ${pair} for ${minConfidence}%+ confidence trade...`);
+      
+      const [prices, metrics] = await Promise.all([
+        storage.getAllPrices(),
+        storage.getMarketMetrics(pair),
+      ]);
+      
+      const priceData = prices.find(p => p.pair === pair);
+      if (!priceData) {
+        res.json({ found: false, reason: "No price data" });
+        return;
+      }
+      
+      // Check loss avoidance
+      const lossAvoidance = checkLossAvoidance(pair, metrics);
+      if (lossAvoidance.isBlocked) {
+        res.json({ found: false, reason: lossAvoidance.blockReason });
+        return;
+      }
+      
+      // Use existing metrics or create minimal ones
+      const fullMetrics: MarketMetrics = metrics || {
+        pair,
+        volumeDelta: 0,
+        orderBookImbalance: 0,
+        volatility: 0.02,
+        atr: priceData.price * 0.02,
+        rsi: 50,
+        fundingRate: 0,
+        openInterest: 0,
+      };
+      
+      // Run enhanced AI consensus with strict thresholds
+      // Function signature: (pair, metrics, price, tradeMode)
+      const aiResult = await getEnhancedAIConsensus(pair, fullMetrics, priceData.price, 5);
+      
+      // Only return trade if confidence meets minimum threshold
+      if (aiResult.finalSignal !== 'NO_TRADE' && aiResult.finalConfidence >= minConfidence) {
+        const currentPrice = priceData.price;
+        
+        // Use trade recommendation from AI result
+        const stopLoss = aiResult.tradeRecommendation.stopLoss;
+        const takeProfit = aiResult.tradeRecommendation.takeProfit;
+        
+        // Build reasoning from agent responses
+        const reasoning = aiResult.agents
+          .filter((a: any) => a.signal === aiResult.finalSignal)
+          .map((a: any) => a.reasoning)
+          .slice(0, 2)
+          .join('. ') || aiResult.reasoning;
+        
+        console.log(`[FindTrade] FOUND: ${aiResult.finalSignal} ${pair} at ${aiResult.finalConfidence}% confidence`);
+        
+        res.json({
+          found: true,
+          signal: aiResult.finalSignal,
+          confidence: Math.round(aiResult.finalConfidence),
+          pair,
+          entryPrice: currentPrice,
+          stopLoss: Math.round(stopLoss * 10000) / 10000,
+          takeProfit: Math.round(takeProfit * 10000) / 10000,
+          reasoning: reasoning.substring(0, 200),
+        });
+      } else {
+        res.json({ 
+          found: false, 
+          reason: aiResult.finalConfidence < minConfidence 
+            ? `Confidence ${Math.round(aiResult.finalConfidence)}% below ${minConfidence}% threshold`
+            : 'No clear trade signal'
+        });
+      }
+    } catch (error) {
+      console.error("Find trade error:", error);
+      res.status(500).json({ error: "Failed to scan for trade" });
     }
   });
 

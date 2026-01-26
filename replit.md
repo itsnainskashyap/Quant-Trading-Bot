@@ -30,6 +30,7 @@ The platform features a dark mode theme with a professional trading aesthetic. K
 - **Trade Automation Settings:** Configurable default leverage, auto stop-loss/take-profit, trailing stop, and max daily trades.
 - **Smart Trade Exit Management:** Features an exit timer, auto-close functionality, and AI-driven time extensions based on trade profitability and recoverability.
 - **Multi-AI Trade Automation:** A server-side process with Risk AI (GPT-4o), Exit AI (Claude), and Momentum AI (Gemini) making autonomous, consensus-based trade decisions.
+- **Find Trade (Pro):** Continuous auto-scan feature that runs for up to 30 minutes until a 90%+ confidence BUY or SELL signal is found. Uses all 5 AI agents for maximum accuracy.
 
 ## External Dependencies
 - **AI/LLM Providers:** OpenAI GPT-4o, Anthropic Claude, Google Gemini (all via Replit AI Integrations)
