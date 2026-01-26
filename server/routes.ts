@@ -308,7 +308,6 @@ export async function registerRoutes(
               consecutiveWins: assetMemory.consecutiveWins,
               winRate: assetMemory.winRate,
               performanceScore: assetMemory.performanceScore,
-              lastSignalTime: assetMemory.lastSignalTime,
             },
             thresholds: assetThresholds,
             cooldownReason,
@@ -1523,7 +1522,7 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
   
   // Admin credentials (hardcoded for simplicity)
   const ADMIN_EMAIL = "itsnainskashyap@gmail.com";
-  const ADMIN_PASSWORD = "Nains@1357";
+  const ADMIN_PASSWORD = "Nains@gmail.com";
   
   // Track admin sessions
   const adminSessions = new Map<string, { email: string; loggedIn: boolean; expiry: number }>();

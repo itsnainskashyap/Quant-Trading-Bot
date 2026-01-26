@@ -59,7 +59,7 @@ interface AdvancedAnalysisResult {
       consecutiveWins: number;
       winRate: number;
       performanceScore: number;
-      recentSignalsCount: number;
+      lastSignalTime?: number;
     };
     thresholds: {
       adjustedRsiOversold: number;
