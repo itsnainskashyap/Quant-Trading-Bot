@@ -14,7 +14,7 @@ function hashOTP(code: string): string {
 
 const otpRateLimits = new Map<string, { count: number; resetAt: number }>();
 
-export async function sendOTP(phone: string): Promise<{ success: boolean; message: string }> {
+export async function sendOTP(phone: string): Promise<{ success: boolean; message: string; testOtp?: string }> {
   try {
     const now = Date.now();
     const rateLimit = otpRateLimits.get(phone);
@@ -43,11 +43,14 @@ export async function sendOTP(phone: string): Promise<{ success: boolean; messag
       expiresAt,
     });
 
-    if (process.env.NODE_ENV === "development") {
-      console.log(`[PhoneAuth] Dev mode OTP for ...${phone.slice(-4)}: ${code}`);
-    }
+    // TODO: Replace with real SMS service (Twilio, etc.)
+    // For now, log OTP and return it for testing
+    console.log(`\n========================================`);
+    console.log(`📱 OTP CODE for ${phone}: ${code}`);
+    console.log(`========================================\n`);
 
-    return { success: true, message: "OTP sent successfully" };
+    // Return OTP in response for testing (REMOVE THIS when adding real SMS)
+    return { success: true, message: "OTP sent successfully", testOtp: code };
   } catch (error) {
     console.error("[PhoneAuth] Error sending OTP");
     return { success: false, message: "Failed to send OTP" };

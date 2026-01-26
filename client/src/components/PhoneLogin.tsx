@@ -19,6 +19,7 @@ export function PhoneLogin({ onSuccess }: PhoneLoginProps) {
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [needsProfile, setNeedsProfile] = useState(false);
+  const [testOtp, setTestOtp] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleSendOTP = async () => {
@@ -43,9 +44,13 @@ export function PhoneLogin({ onSuccess }: PhoneLoginProps) {
       const data = await response.json();
       if (data.success) {
         setStep("otp");
+        // Show test OTP for development (no SMS service configured yet)
+        if (data.testOtp) {
+          setTestOtp(data.testOtp);
+        }
         toast({
           title: "OTP Sent",
-          description: "Check your phone for the verification code",
+          description: data.testOtp ? `Test code: ${data.testOtp}` : "Check your phone for the verification code",
         });
       } else {
         toast({
@@ -201,6 +206,12 @@ export function PhoneLogin({ onSuccess }: PhoneLoginProps) {
 
         {step === "otp" && (
           <>
+            {testOtp && (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mb-2" data-testid="test-otp-display">
+                <p className="text-amber-400 text-xs text-center mb-1">Testing Mode (No SMS configured)</p>
+                <p className="text-amber-300 text-2xl font-mono text-center tracking-widest">{testOtp}</p>
+              </div>
+            )}
             <Input
               type="text"
               placeholder="Enter 6-digit code"
