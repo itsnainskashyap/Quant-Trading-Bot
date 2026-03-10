@@ -39,33 +39,47 @@ import sectigoLogo from "@assets/Picsart_26-03-10_23-48-41-180_1773166854206.png
 const INR_TO_USD = 92;
 
 function CryptoIcon({ symbol, className = "w-7 h-7" }: { symbol: string; className?: string }) {
-  const icons: Record<string, { bg: string; text: string; label: string }> = {
-    BTC: { bg: "bg-orange-500", text: "text-white", label: "₿" },
-    ETH: { bg: "bg-blue-500", text: "text-white", label: "Ξ" },
-    USDT: { bg: "bg-emerald-500", text: "text-white", label: "₮" },
-    LTC: { bg: "bg-gray-400", text: "text-white", label: "Ł" },
-    USDC: { bg: "bg-blue-400", text: "text-white", label: "$" },
-  };
-  const config = icons[symbol] || { bg: "bg-gray-500", text: "text-white", label: symbol[0] };
+  if (symbol === "BTC") return (
+    <svg viewBox="0 0 32 32" className={className}><circle cx="16" cy="16" r="16" fill="#F7931A"/><path d="M22.2 13.8c.3-2-1.2-3.1-3.3-3.8l.7-2.7-1.7-.4-.7 2.6c-.4-.1-.9-.2-1.4-.3l.7-2.7-1.7-.4-.7 2.7c-.3-.1-.7-.2-1-.3l-2.3-.6-.4 1.8s1.2.3 1.2.3c.7.2.8.6.8 1l-.8 3.2c0 0 .1 0 .2.1h-.2l-1.1 4.5c-.1.2-.3.5-.8.4 0 0-1.2-.3-1.2-.3l-.8 1.9 2.2.5c.4.1.8.2 1.2.3l-.7 2.8 1.7.4.7-2.7c.5.1.9.2 1.4.3l-.7 2.7 1.7.4.7-2.8c2.9.5 5.1.3 6-2.3.7-2.1 0-3.3-1.5-4.1 1.1-.3 1.9-1 2.1-2.5zm-3.8 5.3c-.5 2.1-4.1 1-5.3.7l.9-3.8c1.2.3 4.9.9 4.4 3.1zm.5-5.4c-.5 1.9-3.5.9-4.4.7l.9-3.4c1 .2 4.1.7 3.5 2.7z" fill="white"/></svg>
+  );
+  if (symbol === "ETH") return (
+    <svg viewBox="0 0 32 32" className={className}><circle cx="16" cy="16" r="16" fill="#627EEA"/><path d="M16.5 4v8.9l7.5 3.3L16.5 4z" fill="white" fillOpacity=".6"/><path d="M16.5 4L9 16.2l7.5-3.3V4z" fill="white"/><path d="M16.5 21.9v6.1l7.5-10.4-7.5 4.3z" fill="white" fillOpacity=".6"/><path d="M16.5 28v-6.1L9 17.6l7.5 10.4z" fill="white"/><path d="M16.5 20.6l7.5-4.4-7.5-3.3v7.7z" fill="white" fillOpacity=".2"/><path d="M9 16.2l7.5 4.4v-7.7L9 16.2z" fill="white" fillOpacity=".6"/></svg>
+  );
+  if (symbol === "USDT") return (
+    <svg viewBox="0 0 32 32" className={className}><circle cx="16" cy="16" r="16" fill="#26A17B"/><path d="M17.9 17.1v0c-.1 0-.7.1-2 .1-1 0-1.7 0-1.9-.1v0c-3.7-.2-6.5-.9-6.5-1.7s2.8-1.6 6.5-1.7v2.7c.3 0 .9.1 2 .1 1.2 0 1.7-.1 1.9-.1v-2.7c3.7.2 6.4.9 6.4 1.7s-2.7 1.6-6.4 1.7zm0-3.7v-2.4h5.5V7.8H8.6V11h5.5v2.4c-4.2.2-7.4 1.1-7.4 2.2s3.2 2 7.4 2.2v7.9h3.8v-7.9c4.2-.2 7.3-1.1 7.3-2.2s-3.1-2-7.3-2.2z" fill="white"/></svg>
+  );
+  if (symbol === "LTC") return (
+    <svg viewBox="0 0 32 32" className={className}><circle cx="16" cy="16" r="16" fill="#BFBBBB"/><path d="M10.7 24l1-3.8-2.3.9.5-2 2.3-.9 2-7.4H10l.6-2.3h4.3l1.5-5.7h2.8l-1.5 5.7h3.5l-.6 2.3h-3.5l-1.6 6 2.3-.9-.5 2-2.3.9-.9 3.2H10.7z" fill="white"/></svg>
+  );
+  if (symbol === "USDC") return (
+    <svg viewBox="0 0 32 32" className={className}><circle cx="16" cy="16" r="16" fill="#2775CA"/><path d="M20.5 18.2c0-2.1-1.3-2.8-3.8-3.1-1.8-.3-2.1-.7-2.1-1.5s.7-1.3 1.9-1.3c1.1 0 1.7.4 2 1.3.1.1.2.2.3.2h1.1c.2 0 .3-.1.3-.3-.3-1.3-1.2-2.3-2.6-2.5V9.5c0-.2-.1-.3-.3-.3h-1c-.2 0-.3.1-.3.3V11c-1.8.2-2.9 1.4-2.9 2.8 0 2 1.2 2.7 3.7 3 1.6.3 2.2.6 2.2 1.6s-.9 1.5-2.1 1.5c-1.6 0-2.2-.7-2.4-1.5-.1-.2-.2-.2-.3-.2h-1.1c-.2 0-.3.1-.3.3.3 1.5 1.2 2.4 3 2.7v1.6c0 .2.1.3.3.3h1c.2 0 .3-.1.3-.3v-1.6c1.8-.3 3-1.4 3-3z" fill="white"/><path d="M13 24.7c-4.8-1.7-7.3-7-5.6-11.8 1-2.7 3-4.7 5.6-5.6.2-.1.3-.2.3-.4v-1c0-.2-.1-.3-.3-.3h-.1c-5.6 1.8-8.7 7.7-6.9 13.3 1.1 3.4 3.6 5.9 6.9 6.9h.1c.2 0 .3-.1.3-.3v-1c0-.1-.1-.3-.3-.4zm6-.4c5.6-1.8 8.7-7.7 6.9-13.3-1.1-3.4-3.6-5.9-6.9-6.9H19c-.2 0-.3.1-.3.3v1c0 .2.1.3.3.4 4.8 1.7 7.3 7 5.6 11.8-1 2.7-3 4.7-5.6 5.6-.2.1-.3.2-.3.4v1c0 .2.1.3.3.3h.1z" fill="white"/></svg>
+  );
   return (
-    <div className={`${className} ${config.bg} rounded-full flex items-center justify-center font-bold ${config.text} text-xs`}>
-      {config.label}
+    <div className={`${className} bg-gray-500 rounded-full flex items-center justify-center font-bold text-white text-xs`}>
+      {symbol[0]}
     </div>
   );
 }
 
 function ChainIcon({ chain, className = "w-5 h-5" }: { chain: string; className?: string }) {
-  const icons: Record<string, { bg: string; label: string }> = {
-    Bitcoin: { bg: "bg-orange-500", label: "₿" },
-    ERC20: { bg: "bg-blue-500", label: "Ξ" },
-    TRC20: { bg: "bg-red-500", label: "T" },
-    BEP20: { bg: "bg-yellow-500", label: "B" },
-    Litecoin: { bg: "bg-gray-400", label: "Ł" },
-  };
-  const config = icons[chain] || { bg: "bg-gray-500", label: chain[0] };
+  if (chain === "Bitcoin") return (
+    <svg viewBox="0 0 32 32" className={className}><circle cx="16" cy="16" r="16" fill="#F7931A"/><path d="M22.2 13.8c.3-2-1.2-3.1-3.3-3.8l.7-2.7-1.7-.4-.7 2.6c-.4-.1-.9-.2-1.4-.3l.7-2.7-1.7-.4-.7 2.7c-.3-.1-.7-.2-1-.3l-2.3-.6-.4 1.8s1.2.3 1.2.3c.7.2.8.6.8 1l-.8 3.2c0 0 .1 0 .2.1h-.2l-1.1 4.5c-.1.2-.3.5-.8.4 0 0-1.2-.3-1.2-.3l-.8 1.9 2.2.5c.4.1.8.2 1.2.3l-.7 2.8 1.7.4.7-2.7c.5.1.9.2 1.4.3l-.7 2.7 1.7.4.7-2.8c2.9.5 5.1.3 6-2.3.7-2.1 0-3.3-1.5-4.1 1.1-.3 1.9-1 2.1-2.5zm-3.8 5.3c-.5 2.1-4.1 1-5.3.7l.9-3.8c1.2.3 4.9.9 4.4 3.1zm.5-5.4c-.5 1.9-3.5.9-4.4.7l.9-3.4c1 .2 4.1.7 3.5 2.7z" fill="white"/></svg>
+  );
+  if (chain === "ERC20") return (
+    <svg viewBox="0 0 32 32" className={className}><circle cx="16" cy="16" r="16" fill="#627EEA"/><path d="M16.5 4v8.9l7.5 3.3L16.5 4z" fill="white" fillOpacity=".6"/><path d="M16.5 4L9 16.2l7.5-3.3V4z" fill="white"/><path d="M16.5 20.6l7.5-4.4-7.5-3.3v7.7z" fill="white" fillOpacity=".2"/><path d="M9 16.2l7.5 4.4v-7.7L9 16.2z" fill="white" fillOpacity=".6"/></svg>
+  );
+  if (chain === "TRC20") return (
+    <svg viewBox="0 0 32 32" className={className}><circle cx="16" cy="16" r="16" fill="#EF0027"/><path d="M21.9 10.3L8.3 7l-.3.5 5.4 14.8.3.3 8.9-11.6-.7-.7zm-8.2 2.7l-2.5-1.5 6.7-1.5-4.2 3zm.9.6l5.3-3.8-6.5 8.4 1.2-4.6zm-1.7-.1l-1.3 5-2.5-6.8 3.8 1.8z" fill="white"/></svg>
+  );
+  if (chain === "BEP20") return (
+    <svg viewBox="0 0 32 32" className={className}><circle cx="16" cy="16" r="16" fill="#F3BA2F"/><path d="M12.1 14.1L16 10.2l3.9 3.9 2.3-2.3L16 5.6l-6.2 6.2 2.3 2.3zm-6.5 1.9l2.3-2.3 2.3 2.3-2.3 2.3-2.3-2.3zm6.5 1.9L16 21.8l3.9-3.9 2.3 2.3L16 26.4l-6.2-6.2 2.3-2.3zm10.3-1.9l2.3-2.3 2.3 2.3-2.3 2.3-2.3-2.3zM18.6 16L16 13.4 14 15.4l-.2.2-.4.4L16 18.6l2.6-2.6z" fill="white"/></svg>
+  );
+  if (chain === "Litecoin") return (
+    <svg viewBox="0 0 32 32" className={className}><circle cx="16" cy="16" r="16" fill="#BFBBBB"/><path d="M10.7 24l1-3.8-2.3.9.5-2 2.3-.9 2-7.4H10l.6-2.3h4.3l1.5-5.7h2.8l-1.5 5.7h3.5l-.6 2.3h-3.5l-1.6 6 2.3-.9-.5 2-2.3.9-.9 3.2H10.7z" fill="white"/></svg>
+  );
   return (
-    <div className={`${className} ${config.bg} rounded-full flex items-center justify-center font-bold text-white text-[9px]`}>
-      {config.label}
+    <div className={`${className} bg-gray-500 rounded-full flex items-center justify-center font-bold text-white text-[9px]`}>
+      {chain[0]}
     </div>
   );
 }
@@ -218,83 +232,6 @@ function WireTransferLogo({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
-function UpiPaymentPage({
-  upiMethod, allUpiMethods, upiIndex, onNextUpi,
-  amountInr, amountUsd, utr, setUtr, copied, copyText,
-  isSubmitting, onSubmit, onBack,
-}: {
-  upiMethod: any; allUpiMethods: any[]; upiIndex: number; onNextUpi: () => void;
-  amountInr: string; amountUsd: string; utr: string; setUtr: (v: string) => void;
-  copied: boolean; copyText: (t: string) => void;
-  isSubmitting: boolean; onSubmit: () => void; onBack: () => void;
-}) {
-  return (
-    <div className="space-y-4">
-      <button onClick={onBack} className="flex items-center gap-2 text-gray-400 hover:text-white text-sm" data-testid="button-upi-back">
-        <ArrowLeft className="w-4 h-4" /> Back
-      </button>
-
-      <div className="text-center space-y-1">
-        <img src={upiLogo} alt="UPI" className="h-6 mx-auto" />
-        <p className="text-white text-lg font-bold">₹{parseFloat(amountInr).toLocaleString("en-IN")}</p>
-        <p className="text-gray-500 text-xs">≈ {amountUsd} USD</p>
-      </div>
-
-      <div className="bg-white rounded-lg p-4 flex justify-center">
-        <QRCode
-          value={`upi://pay?pa=${upiMethod.upiId}&pn=TradeX&am=${amountInr}&cu=INR&tn=TradeX+Deposit`}
-          size={180}
-        />
-      </div>
-
-      <div className="bg-black border border-white/[0.06] rounded-lg p-3">
-        <p className="text-gray-500 text-xs mb-1">UPI ID</p>
-        <div className="flex items-center justify-between">
-          <span className="text-white text-sm font-mono">{upiMethod.upiId}</span>
-          <button onClick={() => copyText(upiMethod.upiId)} className="text-gray-400 hover:text-white" data-testid="button-copy-upi">
-            {copied ? <CheckCircle className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-          </button>
-        </div>
-      </div>
-
-      {allUpiMethods.length > 1 && (
-        <button
-          onClick={onNextUpi}
-          className="w-full text-center text-xs text-amber-400 hover:underline py-1"
-          data-testid="button-try-another-upi"
-        >
-          <RefreshCw className="w-3 h-3 inline mr-1" />
-          Payment Failed? Try Another UPI ({(upiIndex % allUpiMethods.length) + 1}/{allUpiMethods.length})
-        </button>
-      )}
-
-      <div className="border-t border-white/[0.06] pt-4 space-y-3">
-        <p className="text-gray-400 text-xs text-center">After payment, enter UTR number below</p>
-        <div>
-          <Label className="text-gray-300">UTR Number</Label>
-          <Input
-            placeholder="Enter UTR from your UPI app"
-            value={utr}
-            onChange={e => setUtr(e.target.value)}
-            className="bg-black border-white/[0.06] text-white font-mono text-sm"
-            data-testid="input-utr"
-          />
-          <p className="text-xs text-gray-500 mt-1">Find this in your UPI app's transaction details</p>
-        </div>
-        <Button
-          onClick={onSubmit}
-          disabled={isSubmitting || !utr.trim()}
-          className="w-full bg-gradient-to-r from-green-500 to-emerald-600"
-          data-testid="button-submit-upi-deposit"
-        >
-          {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ArrowDownToLine className="w-4 h-4 mr-2" />}
-          Submit Deposit
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 function DepositTab() {
   const { toast } = useToast();
   const [depositType, setDepositType] = useState<"crypto" | "upi" | "imps" | "skrill" | "volet">("crypto");
@@ -313,7 +250,7 @@ function DepositTab() {
   const [upiIndex, setUpiIndex] = useState(0);
   const [impsIndex, setImpsIndex] = useState(0);
   const [depositOrderId, setDepositOrderId] = useState<string | null>(null);
-  const [showUpiPaymentPage, setShowUpiPaymentPage] = useState(false);
+
 
   useEffect(() => {
     fetch("/api/payment-methods", { credentials: "include" })
@@ -472,8 +409,7 @@ function DepositTab() {
         <DepositStatusOverlay orderId={depositOrderId} onClose={() => setDepositOrderId(null)} />
       )}
 
-      {!showUpiPaymentPage && (
-        <div className="grid grid-cols-5 gap-2">
+      <div className="grid grid-cols-5 gap-2">
           <Button
             variant={depositType === "crypto" ? "default" : "outline"}
             onClick={() => setDepositType("crypto")}
@@ -484,7 +420,7 @@ function DepositTab() {
           </Button>
           <Button
             variant={depositType === "upi" ? "default" : "outline"}
-            onClick={() => { setDepositType("upi"); setShowUpiPaymentPage(false); }}
+            onClick={() => setDepositType("upi")}
             className="flex flex-col items-center gap-1 h-auto py-2 text-xs"
             data-testid="button-deposit-upi"
           >
@@ -515,7 +451,6 @@ function DepositTab() {
             <VoletLogo className="w-4 h-4" /> Volet
           </Button>
         </div>
-      )}
 
       {depositType === "crypto" && (
         <div className="space-y-4">
@@ -611,64 +546,22 @@ function DepositTab() {
         </div>
       )}
 
-      {depositType === "upi" && !showUpiPaymentPage && (
+      {depositType === "upi" && (
         <div className="space-y-4">
-          <div>
-            <Label className="text-gray-300">Amount (INR)</Label>
-            <Input
-              type="number"
-              placeholder="Min ₹2,000"
-              value={amountInr}
-              onChange={e => handleInrChange(e.target.value)}
-              className="bg-black border-white/[0.06] text-white"
-              data-testid="input-inr-amount"
-            />
-            <p className="text-[11px] text-amber-400/70 mt-1">Minimum deposit: ₹2,000 INR</p>
-          </div>
-          {amount && parseFloat(amount) > 0 && (
-            <div className="bg-black border border-white/[0.06] rounded-lg p-3 flex items-center justify-between">
-              <span className="text-gray-400 text-sm">You will receive</span>
-              <span className="text-white font-bold">{amount} USD</span>
+          <div className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/[0.06]">
+            <img src={upiLogo} alt="UPI" className="h-6" />
+            <div>
+              <p className="text-white text-sm font-medium">UPI Deposit</p>
+              <p className="text-gray-500 text-xs">Pay via GPay, PhonePe, Paytm or any UPI app</p>
             </div>
-          )}
-          <p className="text-xs text-gray-500">Conversion Rate: ₹{INR_TO_USD} = 1 USD</p>
-          <Button
-            onClick={() => {
-              if (!amountInr || parseFloat(amountInr) < 2000) {
-                toast({ title: "Invalid Amount", description: "Minimum deposit is ₹2,000 INR", variant: "destructive" });
-                return;
-              }
-              if (!upiMethod) {
-                toast({ title: "Error", description: "UPI payment method not available", variant: "destructive" });
-                return;
-              }
-              setShowUpiPaymentPage(true);
-            }}
-            className="w-full bg-white text-black hover:bg-gray-200 font-semibold"
-            data-testid="button-open-upi-payment"
-          >
-            <img src={upiLogo} alt="UPI" className="h-4 mr-2" />
-            Pay with UPI
-          </Button>
+          </div>
+          <Link href="/upi-payment">
+            <Button className="w-full bg-white text-black hover:bg-gray-200 font-semibold h-11" data-testid="button-open-upi-payment">
+              <img src={upiLogo} alt="UPI" className="h-4 mr-2" />
+              Pay with UPI
+            </Button>
+          </Link>
         </div>
-      )}
-
-      {depositType === "upi" && showUpiPaymentPage && upiMethod && (
-        <UpiPaymentPage
-          upiMethod={upiMethod}
-          allUpiMethods={allUpiMethods}
-          upiIndex={upiIndex}
-          onNextUpi={handleNewUpi}
-          amountInr={amountInr}
-          amountUsd={amount}
-          utr={utr}
-          setUtr={setUtr}
-          copied={copied}
-          copyText={copyText}
-          isSubmitting={isSubmitting}
-          onSubmit={handleSubmit}
-          onBack={() => setShowUpiPaymentPage(false)}
-        />
       )}
 
       {depositType === "imps" && (
@@ -868,7 +761,7 @@ function DepositTab() {
         </div>
       )}
 
-      {!(depositType === "upi" && showUpiPaymentPage) && (
+      {depositType !== "upi" && (
         <Button
           onClick={handleSubmit}
           disabled={isSubmitting}

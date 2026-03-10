@@ -16,6 +16,7 @@ import Personalize from "@/pages/Personalize";
 import Plans from "@/pages/Plans";
 import Payment from "@/pages/Payment";
 import Wallet from "@/pages/Wallet";
+import UpiPayment from "@/pages/UpiPayment";
 import KYC from "@/pages/KYC";
 import Support from "@/pages/Support";
 import NotFound from "@/pages/not-found";
@@ -78,6 +79,11 @@ function AuthenticatedRoutes() {
       <Route path="/wallet">
         <OnboardingGuard>
           <Wallet />
+        </OnboardingGuard>
+      </Route>
+      <Route path="/upi-payment">
+        <OnboardingGuard>
+          <UpiPayment />
         </OnboardingGuard>
       </Route>
       <Route path="/kyc">
