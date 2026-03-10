@@ -32,7 +32,8 @@ import {
 import QRCode from "react-qr-code";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 import upiLogo from "@assets/image_1773144638368.png";
-import impsLogo from "@assets/Picsart_26-03-10_19-32-00-972_1773151372884.png";
+import impsLogo from "@assets/Picsart_26-03-10_19-32-00-972_1773166568501.png";
+import binanceLogo from "@assets/binance_logo.png";
 
 const INR_TO_USDT = 92;
 
@@ -112,15 +113,7 @@ function VoletLogo({ className = "w-5 h-5" }: { className?: string }) {
 }
 
 function BinanceLogo({ className = "w-5 h-5" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="none">
-      <rect width="24" height="24" rx="6" fill="#F0B90B" />
-      <path d="M12 5L14.5 7.5L10.5 11.5L8 9L12 5Z" fill="#1E2329" />
-      <path d="M16 9L18.5 11.5L14.5 15.5L12 13L16 9Z" fill="#1E2329" />
-      <path d="M8 9L10.5 11.5L6.5 15.5L4 13L8 9Z" fill="#1E2329" />
-      <path d="M12 13L14.5 15.5L10.5 19.5L8 17L12 13Z" fill="#1E2329" />
-    </svg>
-  );
+  return <img src={binanceLogo} alt="Binance" className={className} />;
 }
 
 function WireTransferLogo({ className = "w-5 h-5" }: { className?: string }) {
