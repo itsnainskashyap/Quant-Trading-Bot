@@ -64,9 +64,7 @@ function AuthenticatedRoutes() {
         </OnboardingGuard>
       </Route>
       <Route path="/admin">
-        <OnboardingGuard>
-          <Admin />
-        </OnboardingGuard>
+        <Admin />
       </Route>
       <Route path="/personalize">
         <Personalize />
@@ -101,6 +99,9 @@ function UnauthenticatedRoutes() {
       <Route path="/login" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/support" component={Support} />
+      <Route path="/admin">
+        <Admin />
+      </Route>
       <Route path="/personalize">
         <Redirect to="/login" />
       </Route>
