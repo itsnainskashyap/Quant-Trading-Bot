@@ -34,3 +34,8 @@ externalPort = 80
 deploymentTarget = "autoscale"
 run = ["node", "dist/index.cjs"]
 build = ["npm", "run", "build"]
+
+[userenv]
+
+[userenv.shared]
+RESEND_FROM_EMAIL = "TradeX AI <noreply@tradexai.in>"
