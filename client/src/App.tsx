@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/use-auth";
+import Home from "@/pages/Home";
 import Dashboard from "@/pages/Dashboard";
 import { Landing } from "@/pages/Landing";
 import Profile from "@/pages/Profile";
@@ -42,10 +43,15 @@ function AuthenticatedRoutes() {
     <Switch>
       <Route path="/">
         <OnboardingGuard>
-          <Dashboard />
+          <Home />
         </OnboardingGuard>
       </Route>
       <Route path="/dashboard">
+        <OnboardingGuard>
+          <Home />
+        </OnboardingGuard>
+      </Route>
+      <Route path="/trade">
         <OnboardingGuard>
           <Dashboard />
         </OnboardingGuard>
@@ -99,6 +105,9 @@ function UnauthenticatedRoutes() {
       <Route path="/dashboard">
         <Redirect to="/login" />
       </Route>
+      <Route path="/trade">
+        <Redirect to="/login" />
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
@@ -109,10 +118,9 @@ function Router() {
   
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-black">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Loading...</p>
+          <Loader2 className="w-8 h-8 animate-spin text-white" />
         </div>
       </div>
     );

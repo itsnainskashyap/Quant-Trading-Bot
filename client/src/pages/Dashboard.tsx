@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -541,73 +542,76 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-black text-white font-sans" data-testid="dashboard">
-      <header className="border-b border-white/5 bg-black/90 backdrop-blur-xl sticky top-0 z-50">
-        <div className="w-full px-4 lg:px-8 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <img src={logoImage} alt="TradeX AI" className="h-10 w-auto" />
-            <div className="hidden lg:flex items-center gap-1 text-xs text-gray-500">
-              <Activity className="w-3 h-3 text-emerald-400" />
-              <span>Multi-AI Consensus Trading</span>
-            </div>
+      <header className="border-b border-white/[0.06] bg-black sticky top-0 z-50">
+        <div className="max-w-[1600px] mx-auto px-4 lg:px-8 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <Link href="/dashboard">
+              <img src={logoImage} alt="TradeX AI" className="h-8 w-auto cursor-pointer" />
+            </Link>
+            <nav className="hidden md:flex items-center gap-1">
+              <Link href="/dashboard" className="px-3 py-1.5 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-white/[0.04] transition-colors" data-testid="nav-dashboard">
+                Dashboard
+              </Link>
+              <Link href="/trade" className="px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-white/[0.06]" data-testid="nav-trade">
+                Trade
+              </Link>
+              <Link href="/wallet" className="px-3 py-1.5 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-white/[0.04] transition-colors" data-testid="nav-wallet">
+                Wallet
+              </Link>
+            </nav>
           </div>
           
           <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-4 px-4 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-              <div className="flex items-center gap-2">
-                <Wallet className="w-4 h-4 text-neutral-400" />
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-neutral-500 uppercase">TradeX Balance</span>
-                  <span className="text-sm font-semibold text-white font-mono">${capital.toLocaleString()}</span>
-                </div>
+            <div className="hidden lg:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs">
+              <div className="flex items-center gap-1.5">
+                <Wallet className="w-3.5 h-3.5 text-neutral-500" />
+                <span className="font-mono text-white">${capital.toLocaleString()}</span>
               </div>
-              <div className="w-px h-8 bg-white/10" />
-              <a href="/wallet" className="flex items-center gap-2 hover:opacity-80 transition-opacity" data-testid="link-wallet-balance">
-                <Coins className="w-4 h-4 text-emerald-400" />
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-gray-500 uppercase">USDT Wallet</span>
-                  <span className="text-sm font-semibold text-emerald-400 font-mono">{usdtBalance.toFixed(2)} USDT</span>
-                </div>
-              </a>
-              <div className="w-px h-8 bg-white/10" />
-              <div className="flex items-center gap-2">
-                <Cpu className="w-4 h-4 text-purple-400" />
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-gray-500 uppercase">AI Analyses</span>
-                  <span className="text-sm font-semibold text-white font-mono">
-                    {isPro ? '∞' : `${dailyAnalysesRemaining}/${dailyLimit}`}
-                  </span>
-                </div>
+              <div className="w-px h-4 bg-white/10" />
+              <div className="flex items-center gap-1.5">
+                <Coins className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="font-mono text-emerald-400">{usdtBalance.toFixed(2)}</span>
               </div>
             </div>
 
-            {isPro ? (
-              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-black font-semibold">
+            {isPro && (
+              <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px]">
                 <Award className="w-3 h-3 mr-1" />
                 PRO
               </Badge>
-            ) : (
-              <Badge variant="outline" className="text-gray-400 border-gray-700">
-                FREE
-              </Badge>
             )}
-            
-            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-emerald-400" asChild>
-              <a href="/wallet" data-testid="link-wallet">
-                <Wallet className="w-4 h-4" />
-              </a>
-            </Button>
 
-            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white" asChild>
-              <a href="/profile" data-testid="link-profile">
+            <Link href="/wallet" data-testid="link-wallet">
+              <Button size="sm" className="bg-white text-black hover:bg-neutral-200 text-xs h-8 font-medium">
+                Deposit
+              </Button>
+            </Link>
+
+            <Link href="/profile" data-testid="link-profile">
+              <Button variant="ghost" size="icon" className="text-neutral-400 hover:text-white">
                 <User className="w-4 h-4" />
-              </a>
-            </Button>
+              </Button>
+            </Link>
             
-            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white" asChild>
+            <Button variant="ghost" size="icon" className="text-neutral-400 hover:text-white" asChild>
               <a href="/api/logout" data-testid="button-logout">
                 <LogOut className="w-4 h-4" />
               </a>
             </Button>
+          </div>
+        </div>
+
+        <div className="md:hidden border-t border-white/[0.06]">
+          <div className="flex">
+            <Link href="/dashboard" className="flex-1 py-2.5 text-center text-xs text-neutral-500 hover:text-white transition-colors">
+              Dashboard
+            </Link>
+            <Link href="/trade" className="flex-1 py-2.5 text-center text-xs font-medium text-white bg-white/[0.04]">
+              Trade
+            </Link>
+            <Link href="/wallet" className="flex-1 py-2.5 text-center text-xs text-neutral-500 hover:text-white transition-colors">
+              Wallet
+            </Link>
           </div>
         </div>
       </header>
