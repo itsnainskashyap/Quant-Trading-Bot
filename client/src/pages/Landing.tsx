@@ -7,9 +7,10 @@ import { ExchangeLogo } from "@/components/ExchangeLogos";
 function InteractiveCube() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mouseRef = useRef({ x: 0, y: 0 });
   const animRef = useRef<number>(0);
   const visibleRef = useRef(true);
+  const rotRef = useRef({ rx: -0.55, ry: 0.65 });
+  const dragRef = useRef({ active: false, lastX: 0, lastY: 0 });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -19,7 +20,7 @@ function InteractiveCube() {
     if (!ctx) return;
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const size = Math.min(500, container.clientWidth);
+    const size = Math.min(480, container.clientWidth);
     canvas.width = size * dpr;
     canvas.height = size * dpr;
     canvas.style.width = size + "px";
@@ -34,19 +35,148 @@ function InteractiveCube() {
 
     const cx = size / 2;
     const cy = size / 2;
-    const cubeSize = 58;
-    const gap = 5;
+    const cell = 52;
+    const gap = 4;
+    const step = cell + gap;
+    const stickerInset = 4;
+
+    type V3 = { x: number; y: number; z: number };
+
+    const faceColors: [number, number, number][] = [
+      [20, 20, 25],
+      [20, 20, 25],
+      [20, 20, 25],
+      [20, 20, 25],
+      [20, 20, 25],
+      [20, 20, 25],
+    ];
+
+    const stickerColors: [number, number, number][] = [
+      [220, 40, 40],
+      [255, 100, 20],
+      [240, 240, 240],
+      [250, 210, 20],
+      [30, 140, 50],
+      [30, 80, 200],
+    ];
+
+    interface Cubie {
+      pos: [number, number, number];
+      stickers: { faceDir: number; color: [number, number, number] }[];
+    }
+
+    const cubies: Cubie[] = [];
+    for (let xi = 0; xi < 3; xi++) {
+      for (let yi = 0; yi < 3; yi++) {
+        for (let zi = 0; zi < 3; zi++) {
+          const stickers: Cubie["stickers"] = [];
+          if (zi === 0) stickers.push({ faceDir: 0, color: [...stickerColors[0]] });
+          if (zi === 2) stickers.push({ faceDir: 1, color: [...stickerColors[1]] });
+          if (xi === 0) stickers.push({ faceDir: 2, color: [...stickerColors[2]] });
+          if (xi === 2) stickers.push({ faceDir: 3, color: [...stickerColors[3]] });
+          if (yi === 0) stickers.push({ faceDir: 4, color: [...stickerColors[4]] });
+          if (yi === 2) stickers.push({ faceDir: 5, color: [...stickerColors[5]] });
+          cubies.push({ pos: [xi - 1, yi - 1, zi - 1], stickers });
+        }
+      }
+    }
+
+    type MoveAxis = "x" | "y" | "z";
+    interface ActiveMove {
+      axis: MoveAxis;
+      layer: number;
+      angle: number;
+      target: number;
+      speed: number;
+    }
+
+    let currentMove: ActiveMove | null = null;
+    let moveQueue: ActiveMove[] = [];
+    let moveTimer = 0;
+    const MOVE_INTERVAL = 1800;
+
+    function queueRandomMove() {
+      const axes: MoveAxis[] = ["x", "y", "z"];
+      const axis = axes[Math.floor(Math.random() * 3)];
+      const layer = Math.floor(Math.random() * 3) - 1;
+      const dir = Math.random() < 0.5 ? 1 : -1;
+      moveQueue.push({ axis, layer, angle: 0, target: dir * Math.PI / 2, speed: 0.045 });
+    }
+
+    function rotatePoint(p: [number, number, number], axis: MoveAxis, angle: number): [number, number, number] {
+      const c = Math.cos(angle), s = Math.sin(angle);
+      const [x, y, z] = p;
+      if (axis === "x") return [x, y * c - z * s, y * s + z * c];
+      if (axis === "y") return [x * c + z * s, y, -x * s + z * c];
+      return [x * c - y * s, x * s + y * c, z];
+    }
+
+    function rotateFaceDir(fd: number, axis: MoveAxis, dir: number): number {
+      const maps: Record<MoveAxis, number[][]> = {
+        x: [[0, 0], [1, 1], [2, 4], [3, 5], [4, 3], [5, 2]],
+        y: [[0, 2], [1, 3], [2, 1], [3, 0], [4, 4], [5, 5]],
+        z: [[0, 0], [1, 1], [2, 5], [3, 4], [4, 2], [5, 3]],
+      };
+      const rMaps: Record<MoveAxis, number[][]> = {
+        x: [[0, 0], [1, 1], [2, 5], [3, 4], [4, 2], [5, 3]],
+        y: [[0, 3], [1, 2], [2, 0], [3, 1], [4, 4], [5, 5]],
+        z: [[0, 0], [1, 1], [2, 4], [3, 5], [4, 3], [5, 2]],
+      };
+      const m = dir > 0 ? maps[axis] : rMaps[axis];
+      const entry = m.find(e => e[0] === fd);
+      return entry ? entry[1] : fd;
+    }
+
+    function snapCubiePos(p: [number, number, number]): [number, number, number] {
+      return [Math.round(p[0]), Math.round(p[1]), Math.round(p[2])];
+    }
+
+    function applyMove(m: ActiveMove) {
+      const dir = m.target > 0 ? 1 : -1;
+      for (const cubie of cubies) {
+        const axIdx = m.axis === "x" ? 0 : m.axis === "y" ? 1 : 2;
+        if (Math.round(cubie.pos[axIdx]) === m.layer) {
+          cubie.pos = snapCubiePos(rotatePoint(cubie.pos, m.axis, m.target));
+          for (const s of cubie.stickers) {
+            s.faceDir = rotateFaceDir(s.faceDir, m.axis, dir);
+          }
+        }
+      }
+    }
 
     function project(x: number, y: number, z: number, rx: number, ry: number) {
       let y1 = y * Math.cos(rx) - z * Math.sin(rx);
       let z1 = y * Math.sin(rx) + z * Math.cos(rx);
       let x1 = x * Math.cos(ry) + z1 * Math.sin(ry);
       let z2 = -x * Math.sin(ry) + z1 * Math.cos(ry);
-      const scale = 650 / (650 + z2);
+      const scale = 700 / (700 + z2);
       return { x: x1 * scale + cx, y: y1 * scale + cy, z: z2, scale };
     }
 
-    function getNormal(corners: { x: number; y: number; z: number }[]) {
+    function drawRoundedQuad(
+      c: CanvasRenderingContext2D,
+      p: { x: number; y: number }[],
+      radius: number
+    ) {
+      c.beginPath();
+      for (let i = 0; i < 4; i++) {
+        const curr = p[i];
+        const next = p[(i + 1) % 4];
+        const prev = p[(i + 3) % 4];
+        const dx1 = curr.x - prev.x, dy1 = curr.y - prev.y;
+        const dx2 = next.x - curr.x, dy2 = next.y - curr.y;
+        const l1 = Math.sqrt(dx1 * dx1 + dy1 * dy1) || 1;
+        const l2 = Math.sqrt(dx2 * dx2 + dy2 * dy2) || 1;
+        const r = Math.min(radius, l1 * 0.3, l2 * 0.3);
+        const fx = curr.x - (dx1 / l1) * r, fy = curr.y - (dy1 / l1) * r;
+        const tx = curr.x + (dx2 / l2) * r, ty = curr.y + (dy2 / l2) * r;
+        if (i === 0) c.moveTo(fx, fy); else c.lineTo(fx, fy);
+        c.quadraticCurveTo(curr.x, curr.y, tx, ty);
+      }
+      c.closePath();
+    }
+
+    function getNormal(corners: V3[]) {
       const ax = corners[1].x - corners[0].x, ay = corners[1].y - corners[0].y, az = corners[1].z - corners[0].z;
       const bx = corners[2].x - corners[0].x, by = corners[2].y - corners[0].y, bz = corners[2].z - corners[0].z;
       const nx = ay * bz - az * by, ny = az * bx - ax * bz, nz = ax * by - ay * bx;
@@ -54,208 +184,235 @@ function InteractiveCube() {
       return { x: nx / len, y: ny / len, z: nz / len };
     }
 
-    function drawRoundedQuad(
-      ctx: CanvasRenderingContext2D,
-      p: { x: number; y: number }[],
-      radius: number
-    ) {
-      ctx.beginPath();
-      for (let i = 0; i < 4; i++) {
-        const curr = p[i];
-        const next = p[(i + 1) % 4];
-        const prev = p[(i + 3) % 4];
-
-        const dx1 = curr.x - prev.x, dy1 = curr.y - prev.y;
-        const dx2 = next.x - curr.x, dy2 = next.y - curr.y;
-        const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1) || 1;
-        const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2) || 1;
-
-        const r = Math.min(radius, len1 * 0.35, len2 * 0.35);
-
-        const fromX = curr.x - (dx1 / len1) * r;
-        const fromY = curr.y - (dy1 / len1) * r;
-        const toX = curr.x + (dx2 / len2) * r;
-        const toY = curr.y + (dy2 / len2) * r;
-
-        if (i === 0) ctx.moveTo(fromX, fromY);
-        else ctx.lineTo(fromX, fromY);
-        ctx.quadraticCurveTo(curr.x, curr.y, toX, toY);
-      }
-      ctx.closePath();
-    }
-
-    function drawGlossyFace(
-      ctx: CanvasRenderingContext2D,
-      corners: { x: number; y: number; z: number }[],
-      rx: number,
-      ry: number,
-    ) {
-      const projected = corners.map((c) => project(c.x, c.y, c.z, rx, ry));
-      const avgZ = projected.reduce((s, p) => s + p.z, 0) / projected.length;
-      const avgScale = projected.reduce((s, p) => s + p.scale, 0) / projected.length;
-
+    function computeLighting(corners: V3[], rx: number, ry: number) {
       const n = getNormal(corners);
       const cosRx = Math.cos(rx), sinRx = Math.sin(rx);
       const cosRy = Math.cos(ry), sinRy = Math.sin(ry);
       const rny = n.y * cosRx - n.z * sinRx;
       const rnz = n.y * sinRx + n.z * cosRx;
       const rnx = n.x * cosRy + rnz * sinRy;
-      const rnzFinal = -n.x * sinRy + rnz * cosRy;
-
-      const lightDir = { x: 0.35, y: -0.65, z: 0.65 };
-      const lLen = Math.sqrt(lightDir.x ** 2 + lightDir.y ** 2 + lightDir.z ** 2);
-      lightDir.x /= lLen; lightDir.y /= lLen; lightDir.z /= lLen;
-
-      const dot = rnx * lightDir.x + rny * lightDir.y + rnzFinal * lightDir.z;
+      const rnzF = -n.x * sinRy + rnz * cosRy;
+      const lx = 0.4, ly = -0.6, lz = 0.7;
+      const ll = Math.sqrt(lx * lx + ly * ly + lz * lz);
+      const dot = (rnx * lx + rny * ly + rnzF * lz) / ll;
       const diffuse = Math.max(0, dot);
-
-      const reflX = 2 * dot * rnx - lightDir.x;
-      const reflY = 2 * dot * rny - lightDir.y;
-      const reflZ = 2 * dot * rnzFinal - lightDir.z;
-      const specDot = Math.max(0, reflZ);
-      const specular = Math.pow(specDot, 80);
-      const specular2 = Math.pow(specDot, 24);
-
-      const ambient = 0.04;
-      const baseVal = 12;
-      const lit = baseVal + baseVal * diffuse * 1.8;
-      const r = Math.min(255, Math.round(lit + 255 * specular * 0.45 + 40 * specular2 * 0.3));
-      const g = Math.min(255, Math.round(lit + 255 * specular * 0.45 + 40 * specular2 * 0.3));
-      const b = Math.min(255, Math.round(lit + 2 + 255 * specular * 0.5 + 50 * specular2 * 0.3));
-
-      const cornerRadius = 6 * avgScale;
-      drawRoundedQuad(ctx, projected, cornerRadius);
-
-      const minX = Math.min(...projected.map(p => p.x));
-      const maxX = Math.max(...projected.map(p => p.x));
-      const minY = Math.min(...projected.map(p => p.y));
-      const maxY = Math.max(...projected.map(p => p.y));
-      const grad = ctx.createLinearGradient(minX, minY, maxX, maxY);
-      const r2 = Math.min(255, r + 8), g2 = Math.min(255, g + 8), b2 = Math.min(255, b + 10);
-      grad.addColorStop(0, `rgb(${r2}, ${g2}, ${b2})`);
-      grad.addColorStop(0.5, `rgb(${r}, ${g}, ${b})`);
-      grad.addColorStop(1, `rgb(${Math.max(0, r - 4)}, ${Math.max(0, g - 4)}, ${Math.max(0, b - 3)})`);
-
-      ctx.fillStyle = grad;
-      ctx.fill();
-
-      const edgeBright = 0.03 + diffuse * 0.06 + specular * 0.25;
-      ctx.strokeStyle = `rgba(200, 210, 230, ${Math.min(0.35, edgeBright)})`;
-      ctx.lineWidth = 0.8;
-      ctx.stroke();
-
-      if (specular2 > 0.05) {
-        const shCx = (projected[0].x + projected[2].x) / 2;
-        const shCy = (projected[0].y + projected[2].y) / 2;
-        const shR = Math.max(maxX - minX, maxY - minY) * 0.4;
-        const shGrad = ctx.createRadialGradient(
-          shCx - shR * 0.3, shCy - shR * 0.3, 0,
-          shCx, shCy, shR
-        );
-        shGrad.addColorStop(0, `rgba(180, 190, 210, ${specular2 * 0.12})`);
-        shGrad.addColorStop(1, `rgba(0, 0, 0, 0)`);
-        drawRoundedQuad(ctx, projected, cornerRadius);
-        ctx.fillStyle = shGrad;
-        ctx.fill();
-      }
-
-      return avgZ;
+      const specDot = Math.max(0, rnzF);
+      const specular = Math.pow(specDot, 40);
+      return { diffuse, specular };
     }
+
+    interface FaceEntry { z: number; draw: () => void }
+
+    function buildCubieCorners(bx: number, by: number, bz: number, half: number) {
+      return [
+        { x: bx - half, y: by - half, z: bz - half },
+        { x: bx + half, y: by - half, z: bz - half },
+        { x: bx + half, y: by + half, z: bz - half },
+        { x: bx - half, y: by + half, z: bz - half },
+        { x: bx - half, y: by - half, z: bz + half },
+        { x: bx + half, y: by - half, z: bz + half },
+        { x: bx + half, y: by + half, z: bz + half },
+        { x: bx - half, y: by + half, z: bz + half },
+      ];
+    }
+
+    const faceVerts = [
+      [0, 1, 2, 3],
+      [5, 4, 7, 6],
+      [4, 0, 3, 7],
+      [1, 5, 6, 2],
+      [4, 5, 1, 0],
+      [3, 2, 6, 7],
+    ];
 
     function render() {
       if (!visibleRef.current) {
         animRef.current = requestAnimationFrame(render);
         return;
       }
-      const t = Date.now() * 0.0003;
-      const mx = mouseRef.current.x;
-      const my = mouseRef.current.y;
 
-      const rx = -0.6 + my * 0.002 + Math.sin(t * 0.7) * 0.04;
-      const ry = 0.7 + mx * 0.002 + Math.cos(t * 0.5) * 0.04;
+      const now = Date.now();
+      const t = now * 0.00025;
 
-      ctx!.clearRect(0, 0, size, size);
-
-      const faces: { z: number; draw: () => void }[] = [];
-
-      for (let xi = 0; xi < 3; xi++) {
-        for (let yi = 0; yi < 3; yi++) {
-          for (let zi = 0; zi < 3; zi++) {
-            const bx = (xi - 1) * (cubeSize + gap);
-            const by = (yi - 1) * (cubeSize + gap);
-            const bz = (zi - 1) * (cubeSize + gap);
-            const half = cubeSize / 2;
-
-            const cubeCorners = [
-              { x: bx - half, y: by - half, z: bz - half },
-              { x: bx + half, y: by - half, z: bz - half },
-              { x: bx + half, y: by + half, z: bz - half },
-              { x: bx - half, y: by + half, z: bz - half },
-              { x: bx - half, y: by - half, z: bz + half },
-              { x: bx + half, y: by - half, z: bz + half },
-              { x: bx + half, y: by + half, z: bz + half },
-              { x: bx - half, y: by + half, z: bz + half },
-            ];
-
-            const faceIndices = [
-              [0, 1, 2, 3],
-              [5, 4, 7, 6],
-              [4, 0, 3, 7],
-              [1, 5, 6, 2],
-              [4, 5, 1, 0],
-              [3, 2, 6, 7],
-            ];
-
-            for (let fi = 0; fi < 6; fi++) {
-              const fCorners = faceIndices[fi].map((i) => cubeCorners[i]);
-              const projected = fCorners.map((c) => project(c.x, c.y, c.z, rx, ry));
-              const avgZ = projected.reduce((s, p) => s + p.z, 0) / 4;
-
-              const e1x = projected[1].x - projected[0].x;
-              const e1y = projected[1].y - projected[0].y;
-              const e2x = projected[2].x - projected[0].x;
-              const e2y = projected[2].y - projected[0].y;
-              const cross = e1x * e2y - e1y * e2x;
-              if (cross <= 0) continue;
-
-              faces.push({
-                z: avgZ,
-                draw: () => {
-                  drawGlossyFace(ctx!, fCorners, rx, ry);
-                },
-              });
-            }
-          }
+      if (!currentMove && moveQueue.length === 0) {
+        moveTimer += 16;
+        if (moveTimer >= MOVE_INTERVAL) {
+          moveTimer = 0;
+          queueRandomMove();
         }
       }
 
-      faces.sort((a, b) => a.z - b.z);
-      faces.forEach((f) => f.draw());
+      if (!currentMove && moveQueue.length > 0) {
+        currentMove = moveQueue.shift()!;
+      }
+
+      if (currentMove) {
+        const dir = Math.sign(currentMove.target);
+        currentMove.angle += dir * currentMove.speed;
+        if (Math.abs(currentMove.angle) >= Math.abs(currentMove.target)) {
+          applyMove(currentMove);
+          currentMove = null;
+        }
+      }
+
+      if (!dragRef.current.active) {
+        rotRef.current.rx += Math.sin(t * 0.8) * 0.0008;
+        rotRef.current.ry += 0.002;
+      }
+
+      const rx = rotRef.current.rx;
+      const ry = rotRef.current.ry;
+
+      ctx!.clearRect(0, 0, size, size);
+
+      const allFaces: FaceEntry[] = [];
+      const half = cell / 2;
+
+      for (const cubie of cubies) {
+        let [px, py, pz] = cubie.pos;
+        let bx = px * step, by = py * step, bz = pz * step;
+
+        let moveAngle = 0;
+        let moveAxis: MoveAxis | null = null;
+        if (currentMove) {
+          const axIdx = currentMove.axis === "x" ? 0 : currentMove.axis === "y" ? 1 : 2;
+          if (Math.round(cubie.pos[axIdx]) === currentMove.layer) {
+            moveAngle = currentMove.angle;
+            moveAxis = currentMove.axis;
+          }
+        }
+
+        let corners: V3[];
+        if (moveAxis && moveAngle !== 0) {
+          const rp = rotatePoint([bx, by, bz], moveAxis, moveAngle);
+          const tempCorners = buildCubieCorners(0, 0, 0, half);
+          corners = tempCorners.map(c => {
+            const rr = rotatePoint([c.x, c.y, c.z], moveAxis!, moveAngle);
+            return { x: rr[0] + rp[0], y: rr[1] + rp[1], z: rr[2] + rp[2] };
+          });
+        } else {
+          corners = buildCubieCorners(bx, by, bz, half);
+        }
+
+        for (let fi = 0; fi < 6; fi++) {
+          const fCorners = faceVerts[fi].map(i => corners[i]);
+          const proj = fCorners.map(c => project(c.x, c.y, c.z, rx, ry));
+          const avgZ = proj.reduce((s, p) => s + p.z, 0) / 4;
+          const e1x = proj[1].x - proj[0].x, e1y = proj[1].y - proj[0].y;
+          const e2x = proj[2].x - proj[0].x, e2y = proj[2].y - proj[0].y;
+          if (e1x * e2y - e1y * e2x <= 0) continue;
+
+          const sticker = cubie.stickers.find(s => s.faceDir === fi);
+
+          allFaces.push({
+            z: avgZ,
+            draw: () => {
+              const avgScale = proj.reduce((s, p) => s + p.scale, 0) / 4;
+              const { diffuse, specular } = computeLighting(fCorners, rx, ry);
+
+              const baseCol = faceColors[fi];
+              const amb = 0.15;
+              const br = Math.min(255, Math.round(baseCol[0] * (amb + diffuse * 0.6) + 180 * specular * 0.3));
+              const bg = Math.min(255, Math.round(baseCol[1] * (amb + diffuse * 0.6) + 180 * specular * 0.3));
+              const bb = Math.min(255, Math.round(baseCol[2] * (amb + diffuse * 0.6) + 190 * specular * 0.35));
+              drawRoundedQuad(ctx!, proj, 5 * avgScale);
+              ctx!.fillStyle = `rgb(${br},${bg},${bb})`;
+              ctx!.fill();
+              ctx!.strokeStyle = `rgba(60,65,80,${0.3 + specular * 0.3})`;
+              ctx!.lineWidth = 0.6;
+              ctx!.stroke();
+
+              if (sticker) {
+                const inF = stickerInset / (cell);
+                const sProj = [];
+                for (let si = 0; si < 4; si++) {
+                  const cX = proj[si].x, cY = proj[si].y;
+                  const centX = (proj[0].x + proj[1].x + proj[2].x + proj[3].x) / 4;
+                  const centY = (proj[0].y + proj[1].y + proj[2].y + proj[3].y) / 4;
+                  sProj.push({ x: cX + (centX - cX) * inF, y: cY + (centY - cY) * inF });
+                }
+                const sc = sticker.color;
+                const sr = Math.min(255, Math.round(sc[0] * (0.25 + diffuse * 0.65) + 200 * specular * 0.4));
+                const sg = Math.min(255, Math.round(sc[1] * (0.25 + diffuse * 0.65) + 200 * specular * 0.4));
+                const sb = Math.min(255, Math.round(sc[2] * (0.25 + diffuse * 0.65) + 200 * specular * 0.4));
+                drawRoundedQuad(ctx!, sProj, 4 * avgScale);
+                const sMinX = Math.min(...sProj.map(p => p.x));
+                const sMaxX = Math.max(...sProj.map(p => p.x));
+                const sMinY = Math.min(...sProj.map(p => p.y));
+                const sMaxY = Math.max(...sProj.map(p => p.y));
+                const sg2 = ctx!.createLinearGradient(sMinX, sMinY, sMaxX, sMaxY);
+                const sr2 = Math.min(255, sr + 15), sg3 = Math.min(255, sg + 15), sb2 = Math.min(255, sb + 15);
+                sg2.addColorStop(0, `rgb(${sr2},${sg3},${sb2})`);
+                sg2.addColorStop(0.6, `rgb(${sr},${sg},${sb})`);
+                sg2.addColorStop(1, `rgb(${Math.max(0, sr - 20)},${Math.max(0, sg - 20)},${Math.max(0, sb - 20)})`);
+                ctx!.fillStyle = sg2;
+                ctx!.fill();
+
+                if (specular > 0.05) {
+                  const shCx = (sProj[0].x + sProj[2].x) / 2;
+                  const shCy = (sProj[0].y + sProj[2].y) / 2;
+                  const shR = Math.max(sMaxX - sMinX, sMaxY - sMinY) * 0.5;
+                  const shG = ctx!.createRadialGradient(shCx - shR * 0.3, shCy - shR * 0.4, 0, shCx, shCy, shR);
+                  shG.addColorStop(0, `rgba(255,255,255,${specular * 0.25})`);
+                  shG.addColorStop(1, `rgba(255,255,255,0)`);
+                  drawRoundedQuad(ctx!, sProj, 4 * avgScale);
+                  ctx!.fillStyle = shG;
+                  ctx!.fill();
+                }
+              }
+            },
+          });
+        }
+      }
+
+      allFaces.sort((a, b) => a.z - b.z);
+      allFaces.forEach(f => f.draw());
 
       animRef.current = requestAnimationFrame(render);
     }
 
-    const handleMouseMove = (e: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      mouseRef.current = {
-        x: e.clientX - rect.left - rect.width / 2,
-        y: e.clientY - rect.top - rect.height / 2,
-      };
+    const onPointerDown = (e: PointerEvent) => {
+      dragRef.current = { active: true, lastX: e.clientX, lastY: e.clientY };
+      canvas.setPointerCapture(e.pointerId);
+    };
+    const onPointerMove = (e: PointerEvent) => {
+      if (!dragRef.current.active) return;
+      const dx = e.clientX - dragRef.current.lastX;
+      const dy = e.clientY - dragRef.current.lastY;
+      rotRef.current.ry += dx * 0.008;
+      rotRef.current.rx += dy * 0.008;
+      rotRef.current.rx = Math.max(-1.2, Math.min(1.2, rotRef.current.rx));
+      dragRef.current.lastX = e.clientX;
+      dragRef.current.lastY = e.clientY;
+    };
+    const onPointerUp = () => {
+      dragRef.current.active = false;
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
+    canvas.addEventListener("pointerdown", onPointerDown);
+    canvas.addEventListener("pointermove", onPointerMove);
+    canvas.addEventListener("pointerup", onPointerUp);
+    canvas.addEventListener("pointerleave", onPointerUp);
+
     render();
 
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
+      canvas.removeEventListener("pointerdown", onPointerDown);
+      canvas.removeEventListener("pointermove", onPointerMove);
+      canvas.removeEventListener("pointerup", onPointerUp);
+      canvas.removeEventListener("pointerleave", onPointerUp);
       cancelAnimationFrame(animRef.current);
       observer.disconnect();
     };
   }, []);
 
   return (
-    <div ref={containerRef} className="w-full max-w-[500px] p-6">
-      <canvas ref={canvasRef} className="pointer-events-auto" data-testid="canvas-3d-cube" />
+    <div ref={containerRef} className="w-full max-w-[480px] p-4">
+      <canvas
+        ref={canvasRef}
+        className="pointer-events-auto cursor-grab active:cursor-grabbing touch-none"
+        data-testid="canvas-3d-cube"
+      />
     </div>
   );
 }
