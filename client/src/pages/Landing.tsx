@@ -43,12 +43,12 @@ function InteractiveCube() {
     type V3 = { x: number; y: number; z: number };
 
     const faceColors: [number, number, number][] = [
-      [20, 20, 25],
-      [20, 20, 25],
-      [20, 20, 25],
-      [20, 20, 25],
-      [20, 20, 25],
-      [20, 20, 25],
+      [52, 52, 60],
+      [52, 52, 60],
+      [52, 52, 60],
+      [52, 52, 60],
+      [52, 52, 60],
+      [52, 52, 60],
     ];
 
     const stickerColors: [number, number, number][] = [
@@ -311,15 +311,23 @@ function InteractiveCube() {
               const { diffuse, specular } = computeLighting(fCorners, rx, ry);
 
               const baseCol = faceColors[fi];
-              const amb = 0.15;
-              const br = Math.min(255, Math.round(baseCol[0] * (amb + diffuse * 0.6) + 180 * specular * 0.3));
-              const bg = Math.min(255, Math.round(baseCol[1] * (amb + diffuse * 0.6) + 180 * specular * 0.3));
-              const bb = Math.min(255, Math.round(baseCol[2] * (amb + diffuse * 0.6) + 190 * specular * 0.35));
+              const amb = 0.45;
+              const br = Math.min(255, Math.round(baseCol[0] * (amb + diffuse * 0.75) + 220 * specular * 0.5));
+              const bg = Math.min(255, Math.round(baseCol[1] * (amb + diffuse * 0.75) + 220 * specular * 0.5));
+              const bb = Math.min(255, Math.round(baseCol[2] * (amb + diffuse * 0.75) + 230 * specular * 0.55));
               drawRoundedQuad(ctx!, proj, 5 * avgScale);
-              ctx!.fillStyle = `rgb(${br},${bg},${bb})`;
+              const minBX = Math.min(...proj.map(p => p.x));
+              const maxBX = Math.max(...proj.map(p => p.x));
+              const minBY = Math.min(...proj.map(p => p.y));
+              const maxBY = Math.max(...proj.map(p => p.y));
+              const bodyGrad = ctx!.createLinearGradient(minBX, minBY, maxBX, maxBY);
+              bodyGrad.addColorStop(0, `rgb(${Math.min(255, br + 6)},${Math.min(255, bg + 6)},${Math.min(255, bb + 8)})`);
+              bodyGrad.addColorStop(0.5, `rgb(${br},${bg},${bb})`);
+              bodyGrad.addColorStop(1, `rgb(${Math.max(0, br - 5)},${Math.max(0, bg - 5)},${Math.max(0, bb - 4)})`);
+              ctx!.fillStyle = bodyGrad;
               ctx!.fill();
-              ctx!.strokeStyle = `rgba(60,65,80,${0.3 + specular * 0.3})`;
-              ctx!.lineWidth = 0.6;
+              ctx!.strokeStyle = `rgba(90,95,115,${0.4 + specular * 0.4})`;
+              ctx!.lineWidth = 0.8;
               ctx!.stroke();
 
               if (sticker) {
