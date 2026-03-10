@@ -274,6 +274,13 @@ export default function Admin() {
       fetchAdminDeposits();
       fetchAdminWithdrawals();
       fetchKycSubmissions();
+
+      const interval = setInterval(() => {
+        fetchAdminDeposits();
+        fetchAdminWithdrawals();
+        fetchKycSubmissions();
+      }, 10000);
+      return () => clearInterval(interval);
     }
   }, [isLoggedIn]);
 
@@ -1239,6 +1246,7 @@ export default function Admin() {
               <CardTitle className="text-lg flex items-center gap-2">
                 <ArrowDownToLine className="w-5 h-5 text-green-400" />
                 Deposit Requests
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" title="Auto-refreshing every 10s" />
                 {adminDeposits.filter(d => d.status === "pending").length > 0 && (
                   <Badge className="bg-amber-500/20 text-amber-400 ml-2">{adminDeposits.filter(d => d.status === "pending").length} pending</Badge>
                 )}
@@ -1300,6 +1308,7 @@ export default function Admin() {
               <CardTitle className="text-lg flex items-center gap-2">
                 <ArrowUpFromLine className="w-5 h-5 text-red-400" />
                 Withdrawal Requests
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" title="Auto-refreshing every 10s" />
                 {adminWithdrawals.filter(w => w.status === "pending").length > 0 && (
                   <Badge className="bg-amber-500/20 text-amber-400 ml-2">{adminWithdrawals.filter(w => w.status === "pending").length} pending</Badge>
                 )}
