@@ -10,7 +10,7 @@ I prefer iterative development with clear explanations for any significant archi
 TradeX AI is built with a React + TypeScript + Vite frontend, an Express.js + TypeScript backend, and a PostgreSQL database utilizing Drizzle ORM. Authentication is handled via Replit Auth (OpenID Connect). Styling uses Tailwind CSS with a custom dark trading theme. TanStack Query manages state.
 
 **UI/UX Decisions:**
-The platform features a dark mode theme with a professional trading aesthetic. Key colors are green for BUY, red for SELL, amber for NO_TRADE, and blue as a primary color. Typography uses the Inter font family, with JetBrains Mono for numerical data. The interface includes TradingView Advanced Charts for live data visualization.
+The platform features a Resend.com-inspired pure black aesthetic with clean typography (light weight headings, italic accents, neutral color palette). Landing page has an interactive 3D reflective cube (canvas, mouse-responsive, IntersectionObserver for performance), live price ticker, and grid-based section layouts with 1px gap borders. Login/Register pages use pure black bg with white buttons, subtle `white/[0.04]` input backgrounds. Dashboard and internal pages use dark trading theme with green for BUY, red for SELL, amber for NO_TRADE. Typography uses Inter font family with JetBrains Mono for numerical data. TradingView Advanced Charts for live data visualization.
 
 **Technical Implementations & Feature Specifications:**
 - **Multi-AI Consensus System:** Queries OpenAI GPT-4o, Anthropic Claude, and Google Gemini in parallel, requiring 67%+ agreement and 70%+ average confidence for actionable signals, with automatic NO_TRADE on conflicts.

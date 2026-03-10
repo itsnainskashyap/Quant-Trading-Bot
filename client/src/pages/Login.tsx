@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
-import { Loader2, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Loader2, ArrowRight } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 
@@ -61,84 +59,74 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <img src={logoImage} alt="TradeX AI" className="h-12 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-white mb-2">Welcome Back</h1>
-          <p className="text-gray-400">Sign in to your TradeX AI account</p>
+    <div className="min-h-screen bg-black flex items-center justify-center p-4">
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-10">
+          <img src={logoImage} alt="TradeX AI" className="h-9 mx-auto mb-8" />
+          <h1 className="text-2xl font-light text-white tracking-tight mb-2">Welcome back</h1>
+          <p className="text-neutral-500 text-sm">Sign in to your account</p>
         </div>
 
-        <Card className="bg-[#12121a] border-[#1a1a2e]">
-          <CardContent className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-300">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 bg-[#0a0a0f] border-[#1a1a2e] text-white"
-                    data-testid="input-email"
-                  />
-                </div>
-              </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs text-neutral-400 font-medium">Email</label>
+            <Input
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="bg-white/[0.04] border-white/[0.08] text-white h-10 rounded-lg placeholder:text-neutral-600 focus:border-white/20 focus:ring-0"
+              data-testid="input-email"
+            />
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-gray-300">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 bg-[#0a0a0f] border-[#1a1a2e] text-white"
-                    data-testid="input-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
-                    data-testid="button-toggle-password"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white"
-                data-testid="button-login"
+          <div className="space-y-1.5">
+            <label className="text-xs text-neutral-400 font-medium">Password</label>
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="bg-white/[0.04] border-white/[0.08] text-white h-10 rounded-lg pr-10 placeholder:text-neutral-600 focus:border-white/20 focus:ring-0"
+                data-testid="input-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-neutral-400 text-xs"
+                data-testid="button-toggle-password"
               >
-                {isLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <>
-                    Sign In
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </>
-                )}
-              </Button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <p className="text-gray-400 text-sm">
-                Don't have an account?{" "}
-                <Link href="/register" className="text-cyan-400 hover:underline" data-testid="link-register">
-                  Create one
-                </Link>
-              </p>
+                {showPassword ? "Hide" : "Show"}
+              </button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-white text-black hover:bg-neutral-200 h-10 rounded-lg font-medium text-sm mt-2"
+            data-testid="button-login"
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                Sign In
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </>
+            )}
+          </Button>
+        </form>
+
+        <div className="mt-8 text-center">
+          <p className="text-neutral-500 text-sm">
+            Don't have an account?{" "}
+            <Link href="/register" className="text-white hover:underline" data-testid="link-register">
+              Create one
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -1,14 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
-import { Loader2, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Loader2, ArrowRight } from "lucide-react";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 import { TermsContent } from "@/components/TermsAndConditions";
 
@@ -71,149 +69,137 @@ export function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <img src={logoImage} alt="TradeX AI" className="h-12 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-white mb-2">Create Account</h1>
-          <p className="text-gray-400">Join TradeX AI and start trading smarter</p>
+    <div className="min-h-screen bg-black flex items-center justify-center p-4">
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-10">
+          <img src={logoImage} alt="TradeX AI" className="h-9 mx-auto mb-8" />
+          <h1 className="text-2xl font-light text-white tracking-tight mb-2">Create account</h1>
+          <p className="text-neutral-500 text-sm">Start trading with AI signals</p>
         </div>
 
-        <Card className="bg-[#12121a] border-[#1a1a2e]">
-          <CardContent className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-300">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 bg-[#0a0a0f] border-[#1a1a2e] text-white"
-                    data-testid="input-email"
-                  />
-                </div>
-              </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs text-neutral-400 font-medium">Email</label>
+            <Input
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="bg-white/[0.04] border-white/[0.08] text-white h-10 rounded-lg placeholder:text-neutral-600 focus:border-white/20 focus:ring-0"
+              data-testid="input-email"
+            />
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-gray-300">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Min 6 characters"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 bg-[#0a0a0f] border-[#1a1a2e] text-white"
-                    data-testid="input-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
-                    data-testid="button-toggle-password"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-gray-300">Confirm Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Re-enter password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-10 pr-10 bg-[#0a0a0f] border-[#1a1a2e] text-white"
-                    data-testid="input-confirm-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
-                    data-testid="button-toggle-confirm-password"
-                  >
-                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2 pt-1">
-                <Checkbox
-                  id="terms"
-                  checked={agreedToTerms}
-                  onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
-                  className="mt-0.5 border-gray-600 data-[state=checked]:bg-cyan-500 data-[state=checked]:border-cyan-500"
-                  data-testid="checkbox-terms"
-                />
-                <label htmlFor="terms" className="text-xs text-gray-400 leading-relaxed cursor-pointer">
-                  I agree to the{" "}
-                  <button
-                    type="button"
-                    onClick={() => setShowTermsModal(true)}
-                    className="text-cyan-400 hover:underline font-medium"
-                    data-testid="button-view-terms"
-                  >
-                    Terms & Conditions
-                  </button>
-                </label>
-              </div>
-
-              <Button
-                type="submit"
-                disabled={isLoading || !agreedToTerms}
-                className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white disabled:opacity-50"
-                data-testid="button-register"
+          <div className="space-y-1.5">
+            <label className="text-xs text-neutral-400 font-medium">Password</label>
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="Min 6 characters"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="bg-white/[0.04] border-white/[0.08] text-white h-10 rounded-lg pr-10 placeholder:text-neutral-600 focus:border-white/20 focus:ring-0"
+                data-testid="input-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-neutral-400 text-xs"
+                data-testid="button-toggle-password"
               >
-                {isLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <>
-                    Create Account
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </>
-                )}
-              </Button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <p className="text-gray-400 text-sm">
-                Already have an account?{" "}
-                <Link href="/login" className="text-cyan-400 hover:underline" data-testid="link-login">
-                  Sign in
-                </Link>
-              </p>
+                {showPassword ? "Hide" : "Show"}
+              </button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs text-neutral-400 font-medium">Confirm Password</label>
+            <div className="relative">
+              <Input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Re-enter password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="bg-white/[0.04] border-white/[0.08] text-white h-10 rounded-lg pr-10 placeholder:text-neutral-600 focus:border-white/20 focus:ring-0"
+                data-testid="input-confirm-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-neutral-400 text-xs"
+                data-testid="button-toggle-confirm-password"
+              >
+                {showConfirmPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2.5 pt-1">
+            <Checkbox
+              id="terms"
+              checked={agreedToTerms}
+              onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+              className="mt-0.5 border-neutral-700 data-[state=checked]:bg-white data-[state=checked]:border-white data-[state=checked]:text-black"
+              data-testid="checkbox-terms"
+            />
+            <label htmlFor="terms" className="text-xs text-neutral-500 leading-relaxed cursor-pointer">
+              I agree to the{" "}
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(true)}
+                className="text-white hover:underline"
+                data-testid="button-view-terms"
+              >
+                Terms & Conditions
+              </button>
+            </label>
+          </div>
+
+          <Button
+            type="submit"
+            disabled={isLoading || !agreedToTerms}
+            className="w-full bg-white text-black hover:bg-neutral-200 h-10 rounded-lg font-medium text-sm mt-2 disabled:opacity-40"
+            data-testid="button-register"
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                Create Account
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </>
+            )}
+          </Button>
+        </form>
+
+        <div className="mt-8 text-center">
+          <p className="text-neutral-500 text-sm">
+            Already have an account?{" "}
+            <Link href="/login" className="text-white hover:underline" data-testid="link-login">
+              Sign in
+            </Link>
+          </p>
+        </div>
       </div>
 
       <Dialog open={showTermsModal} onOpenChange={setShowTermsModal}>
-        <DialogContent className="bg-[#12121a] border-[#1a1a2e] text-white max-w-lg max-h-[80vh]">
+        <DialogContent className="bg-neutral-950 border-white/[0.08] text-white max-w-lg max-h-[80vh]">
           <DialogHeader>
-            <DialogTitle className="text-white">Terms & Conditions</DialogTitle>
+            <DialogTitle className="text-white font-light text-lg">Terms & Conditions</DialogTitle>
           </DialogHeader>
           <ScrollArea className="max-h-[60vh] pr-4">
             <TermsContent />
           </ScrollArea>
-          <div className="pt-3 border-t border-white/5">
+          <div className="pt-3 border-t border-white/[0.06]">
             <Button
               onClick={() => {
                 setAgreedToTerms(true);
                 setShowTermsModal(false);
               }}
-              className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white"
+              className="w-full bg-white text-black hover:bg-neutral-200 h-10 rounded-lg font-medium text-sm"
               data-testid="button-accept-terms"
             >
-              I Accept the Terms & Conditions
+              I Accept
             </Button>
           </div>
         </DialogContent>
