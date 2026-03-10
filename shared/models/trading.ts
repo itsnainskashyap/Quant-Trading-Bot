@@ -203,15 +203,18 @@ export const adminPaymentMethods = pgTable("admin_payment_methods", {
 export const deposits = pgTable("deposits", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
-  type: varchar("type").notNull(), // crypto, upi, or imps
-  crypto: varchar("crypto"), // BTC, ETH, USDT, LTC, USDC
-  chain: varchar("chain"), // ERC20, TRC20, BEP20, Bitcoin, Litecoin
-  amountInr: real("amount_inr"), // INR amount for UPI/IMPS
-  amountUsdt: real("amount_usdt").notNull(), // USDT equivalent
-  txHash: varchar("tx_hash"), // crypto tx hash
-  utr: varchar("utr"), // UPI/IMPS transaction reference
-  toAddress: varchar("to_address"), // deposit address used
-  status: varchar("status").notNull().default("pending"), // pending, processing, approved, rejected
+  type: varchar("type").notNull(), // crypto, upi, imps, skrill, volet
+  crypto: varchar("crypto"),
+  chain: varchar("chain"),
+  amountInr: real("amount_inr"),
+  amountUsdt: real("amount_usdt").notNull(),
+  txHash: varchar("tx_hash"),
+  utr: varchar("utr"),
+  toAddress: varchar("to_address"),
+  skrillEmail: varchar("skrill_email"),
+  voletEmail: varchar("volet_email"),
+  transactionId: varchar("transaction_id"),
+  status: varchar("status").notNull().default("pending"),
   adminNotes: text("admin_notes"),
   createdAt: timestamp("created_at").defaultNow(),
   processedAt: timestamp("processed_at"),
@@ -220,19 +223,25 @@ export const deposits = pgTable("deposits", {
 export const withdrawals = pgTable("withdrawals", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
-  type: varchar("type").notNull(), // crypto, upi, or imps
-  crypto: varchar("crypto"), // BTC, ETH, USDT, LTC, USDC
-  chain: varchar("chain"), // ERC20, TRC20, BEP20, Bitcoin, Litecoin
-  toAddress: varchar("to_address"), // crypto address or UPI ID
+  type: varchar("type").notNull(), // crypto, upi, imps, binance_pay, wire_transfer
+  crypto: varchar("crypto"),
+  chain: varchar("chain"),
+  toAddress: varchar("to_address"),
   amountUsdt: real("amount_usdt").notNull(),
-  amountInr: real("amount_inr"), // INR equivalent for UPI/IMPS
-  bankName: varchar("bank_name"), // IMPS bank name
-  accountNumber: varchar("account_number"), // IMPS account number
-  ifscCode: varchar("ifsc_code"), // IMPS IFSC code
-  accountHolderName: varchar("account_holder_name"), // IMPS account holder
-  status: varchar("status").notNull().default("pending"), // pending, processing, approved, rejected
+  amountInr: real("amount_inr"),
+  bankName: varchar("bank_name"),
+  accountNumber: varchar("account_number"),
+  ifscCode: varchar("ifsc_code"),
+  accountHolderName: varchar("account_holder_name"),
+  binancePayId: varchar("binance_pay_id"),
+  wireSwiftCode: varchar("wire_swift_code"),
+  wireIban: varchar("wire_iban"),
+  wireBankName: varchar("wire_bank_name"),
+  wireAccountNumber: varchar("wire_account_number"),
+  wireAccountHolderName: varchar("wire_account_holder_name"),
+  status: varchar("status").notNull().default("pending"),
   adminNotes: text("admin_notes"),
-  txHash: varchar("tx_hash"), // admin fills after sending
+  txHash: varchar("tx_hash"),
   createdAt: timestamp("created_at").defaultNow(),
   processedAt: timestamp("processed_at"),
 });

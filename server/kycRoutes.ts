@@ -203,6 +203,9 @@ export function setupKycRoutes(app: Express, verifyAdminSession?: (sessionId: st
         }
       }
 
+      const autoVerify = extracted.isValid === true && extracted.confidence >= 85 && extracted.docNumber && extracted.name;
+      const docStatus = autoVerify ? "verified" : "pending";
+
       const [doc] = await db
         .insert(kycDocuments)
         .values({
@@ -216,18 +219,37 @@ export function setupKycRoutes(app: Express, verifyAdminSession?: (sessionId: st
           extractedFatherName: extracted.fatherName || null,
           extractedAddress: extracted.address || null,
           extractedGender: extracted.gender || null,
-          status: "pending",
+          status: docStatus,
+          verifiedAt: autoVerify ? new Date() : null,
+          adminNotes: autoVerify ? "Auto-verified by AI (confidence: " + extracted.confidence + "%)" : null,
         })
         .returning();
 
+      if (autoVerify && extracted.name) {
+        const nameParts = extracted.name.trim().split(/\s+/);
+        const firstName = nameParts[0];
+        const lastName = nameParts.slice(1).join(" ") || null;
+        const [existingUser] = await db.select().from(users).where(eq(users.id, userId));
+        if (existingUser && !existingUser.firstName) {
+          await db.update(users).set({ firstName, lastName, updatedAt: new Date() }).where(eq(users.id, userId));
+        }
+        if (existingUser?.email) {
+          sendKycStatusEmail(existingUser.email, "verified");
+        }
+      }
+
       res.json({
         id: doc.id,
-        status: "pending",
+        status: docStatus,
+        autoVerified: autoVerify,
+        confidence: extracted.confidence || 0,
         extractedName: doc.extractedName,
         extractedDob: doc.extractedDob,
         extractedDocNumber: doc.extractedDocNumber,
         extractedGender: doc.extractedGender,
-        message: "Document submitted successfully. Our team will review and verify it shortly.",
+        message: autoVerify
+          ? "Document verified successfully! Your KYC is now approved."
+          : "Document submitted successfully. Our team will review and verify it shortly.",
       });
     } catch (e: any) {
       console.error("KYC submit error:", e.message);

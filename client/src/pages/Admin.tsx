@@ -1250,7 +1250,7 @@ export default function Admin() {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold text-white">{d.amountUsdt?.toFixed(2)} USDT</span>
-                          <Badge variant="outline" className="text-xs">{d.type === "upi" ? "UPI" : `${d.crypto} (${d.chain})`}</Badge>
+                          <Badge variant="outline" className="text-xs">{d.type === "upi" ? "UPI" : d.type === "imps" ? "IMPS" : d.type === "skrill" ? "Skrill" : d.type === "volet" ? "Volet" : `${d.crypto} (${d.chain})`}</Badge>
                         </div>
                         <Badge className={
                           d.status === "approved" ? "bg-green-500/20 text-green-400" :
@@ -1261,9 +1261,12 @@ export default function Admin() {
                       </div>
                       <div className="text-xs text-gray-500 space-y-1">
                         <p>User: {d.userEmail || d.userName || d.userId?.slice(0, 8)}</p>
-                        {d.type === "upi" && d.amountInr && <p>INR: ₹{d.amountInr.toFixed(2)}</p>}
+                        {(d.type === "upi" || d.type === "imps") && d.amountInr && <p>INR: ₹{d.amountInr.toFixed(2)}</p>}
                         {d.txHash && <p className="font-mono">TX: {d.txHash.slice(0, 20)}...</p>}
                         {d.utr && <p className="font-mono">UTR: {d.utr}</p>}
+                        {d.type === "skrill" && d.skrillEmail && <p>Skrill Email: {d.skrillEmail}</p>}
+                        {d.type === "volet" && d.voletEmail && <p>Volet Email: {d.voletEmail}</p>}
+                        {(d.type === "skrill" || d.type === "volet") && d.transactionId && <p className="font-mono">Txn ID: {d.transactionId}</p>}
                         <p>{new Date(d.createdAt).toLocaleString()}</p>
                       </div>
                       {d.status === "pending" || d.status === "processing" ? (
@@ -1307,7 +1310,7 @@ export default function Admin() {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold text-white">{w.amountUsdt?.toFixed(2)} USDT</span>
-                          <Badge variant="outline" className="text-xs">{w.type === "imps" ? "IMPS" : w.type === "upi" ? "UPI" : `${w.crypto} (${w.chain})`}</Badge>
+                          <Badge variant="outline" className="text-xs">{w.type === "imps" ? "IMPS" : w.type === "upi" ? "UPI" : w.type === "binance_pay" ? "Binance Pay" : w.type === "wire_transfer" ? "Wire Transfer" : `${w.crypto} (${w.chain})`}</Badge>
                         </div>
                         <Badge className={
                           w.status === "approved" ? "bg-green-500/20 text-green-400" :
@@ -1318,13 +1321,26 @@ export default function Admin() {
                       </div>
                       <div className="text-xs text-gray-500 space-y-1">
                         <p>User: {w.userEmail || w.userName || w.userId?.slice(0, 8)}</p>
-                        {w.type === "imps" ? (
+                        {w.type === "imps" && (
                           <>
                             <p>Name: {w.accountHolderName}</p>
                             <p className="font-mono">A/C: {w.accountNumber} | IFSC: {w.ifscCode}</p>
                             {w.bankName && <p>Bank: {w.bankName}</p>}
                           </>
-                        ) : (
+                        )}
+                        {w.type === "binance_pay" && w.binancePayId && (
+                          <p className="font-mono">Binance Pay ID: {w.binancePayId}</p>
+                        )}
+                        {w.type === "wire_transfer" && (
+                          <>
+                            {w.wireBankName && <p>Bank: {w.wireBankName}</p>}
+                            {w.wireAccountHolderName && <p>Name: {w.wireAccountHolderName}</p>}
+                            {w.wireAccountNumber && <p className="font-mono">A/C: {w.wireAccountNumber}</p>}
+                            {w.wireSwiftCode && <p className="font-mono">SWIFT: {w.wireSwiftCode}</p>}
+                            {w.wireIban && <p className="font-mono">IBAN: {w.wireIban}</p>}
+                          </>
+                        )}
+                        {(w.type === "crypto" || w.type === "upi") && w.toAddress && (
                           <p className="font-mono">To: {w.toAddress}</p>
                         )}
                         {(w.type === "upi" || w.type === "imps") && w.amountInr && <p>INR: ₹{w.amountInr.toFixed(2)}</p>}

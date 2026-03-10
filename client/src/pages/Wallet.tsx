@@ -93,15 +93,57 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+function SkrillLogo({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none">
+      <rect width="24" height="24" rx="6" fill="#862165" />
+      <text x="12" y="16" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="sans-serif">S</text>
+    </svg>
+  );
+}
+
+function VoletLogo({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none">
+      <rect width="24" height="24" rx="6" fill="#00B4D8" />
+      <text x="12" y="16" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="sans-serif">V</text>
+    </svg>
+  );
+}
+
+function BinanceLogo({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none">
+      <rect width="24" height="24" rx="6" fill="#F0B90B" />
+      <path d="M12 5L14.5 7.5L10.5 11.5L8 9L12 5Z" fill="#1E2329" />
+      <path d="M16 9L18.5 11.5L14.5 15.5L12 13L16 9Z" fill="#1E2329" />
+      <path d="M8 9L10.5 11.5L6.5 15.5L4 13L8 9Z" fill="#1E2329" />
+      <path d="M12 13L14.5 15.5L10.5 19.5L8 17L12 13Z" fill="#1E2329" />
+    </svg>
+  );
+}
+
+function WireTransferLogo({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none">
+      <rect width="24" height="24" rx="6" fill="#1A56DB" />
+      <path d="M4 8h16M4 8l8-3 8 3M6 8v8M10 8v8M14 8v8M18 8v8M4 16h16M5 18h14" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function DepositTab() {
   const { toast } = useToast();
-  const [depositType, setDepositType] = useState<"crypto" | "upi" | "imps">("crypto");
+  const [depositType, setDepositType] = useState<"crypto" | "upi" | "imps" | "skrill" | "volet">("crypto");
   const [selectedCrypto, setSelectedCrypto] = useState("USDT");
   const [selectedChain, setSelectedChain] = useState("TRC20");
   const [amount, setAmount] = useState("");
   const [amountInr, setAmountInr] = useState("");
   const [txHash, setTxHash] = useState("");
   const [utr, setUtr] = useState("");
+  const [skrillEmail, setSkrillEmail] = useState("");
+  const [voletEmail, setVoletEmail] = useState("");
+  const [transactionId, setTransactionId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
   const [copied, setCopied] = useState(false);
@@ -171,6 +213,18 @@ function DepositTab() {
       toast({ title: "Error", description: "Enter UTR/Reference number", variant: "destructive" });
       return;
     }
+    if (depositType === "skrill" && !skrillEmail.trim()) {
+      toast({ title: "Error", description: "Enter your Skrill email", variant: "destructive" });
+      return;
+    }
+    if (depositType === "volet" && !voletEmail.trim()) {
+      toast({ title: "Error", description: "Enter your Volet email", variant: "destructive" });
+      return;
+    }
+    if ((depositType === "skrill" || depositType === "volet") && !transactionId.trim()) {
+      toast({ title: "Error", description: "Enter the transaction ID", variant: "destructive" });
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -186,7 +240,10 @@ function DepositTab() {
           amountUsdt,
           txHash: depositType === "crypto" ? txHash : null,
           utr: (depositType === "upi" || depositType === "imps") ? utr : null,
-          toAddress: depositType === "crypto" ? depositAddress : depositType === "upi" ? upiMethod?.upiId : impsMethod?.accountNumber,
+          toAddress: depositType === "crypto" ? depositAddress : depositType === "upi" ? upiMethod?.upiId : depositType === "imps" ? impsMethod?.accountNumber : null,
+          skrillEmail: depositType === "skrill" ? skrillEmail : null,
+          voletEmail: depositType === "volet" ? voletEmail : null,
+          transactionId: (depositType === "skrill" || depositType === "volet") ? transactionId : null,
         }),
       });
       if (!res.ok) {
@@ -198,6 +255,9 @@ function DepositTab() {
       setAmountInr("");
       setTxHash("");
       setUtr("");
+      setSkrillEmail("");
+      setVoletEmail("");
+      setTransactionId("");
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -207,34 +267,50 @@ function DepositTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
+      <div className="grid grid-cols-5 gap-2">
         <Button
           variant={depositType === "crypto" ? "default" : "outline"}
           onClick={() => setDepositType("crypto")}
-          className="flex-1"
+          className="flex flex-col items-center gap-1 h-auto py-2 text-xs"
           data-testid="button-deposit-crypto"
         >
-          <Bitcoin className="w-4 h-4 mr-2" /> Crypto
+          <Bitcoin className="w-4 h-4" /> Crypto
         </Button>
         <Button
           variant={depositType === "upi" ? "default" : "outline"}
           onClick={() => setDepositType("upi")}
-          className="flex-1"
+          className="flex flex-col items-center gap-1 h-auto py-2 text-xs"
           data-testid="button-deposit-upi"
         >
-          <img src={upiLogo} alt="UPI" className="h-4 mr-2" /> UPI
+          <img src={upiLogo} alt="UPI" className="h-4" /> UPI
         </Button>
         <Button
           variant={depositType === "imps" ? "default" : "outline"}
           onClick={() => setDepositType("imps")}
-          className="flex-1"
+          className="flex flex-col items-center gap-1 h-auto py-2 text-xs"
           data-testid="button-deposit-imps"
         >
-          <Landmark className="w-4 h-4 mr-2" /> IMPS
+          <Landmark className="w-4 h-4" /> IMPS
+        </Button>
+        <Button
+          variant={depositType === "skrill" ? "default" : "outline"}
+          onClick={() => setDepositType("skrill")}
+          className="flex flex-col items-center gap-1 h-auto py-2 text-xs"
+          data-testid="button-deposit-skrill"
+        >
+          <SkrillLogo className="w-4 h-4" /> Skrill
+        </Button>
+        <Button
+          variant={depositType === "volet" ? "default" : "outline"}
+          onClick={() => setDepositType("volet")}
+          className="flex flex-col items-center gap-1 h-auto py-2 text-xs"
+          data-testid="button-deposit-volet"
+        >
+          <VoletLogo className="w-4 h-4" /> Volet
         </Button>
       </div>
 
-      {depositType === "crypto" ? (
+      {depositType === "crypto" && (
         <div className="space-y-4">
           <div>
             <Label className="text-gray-300">Select Cryptocurrency</Label>
@@ -325,7 +401,9 @@ function DepositTab() {
             />
           </div>
         </div>
-      ) : depositType === "upi" ? (
+      )}
+
+      {depositType === "upi" && (
         <div className="space-y-4">
           <div>
             <Label className="text-gray-300">Amount (INR)</Label>
@@ -389,7 +467,9 @@ function DepositTab() {
             <p className="text-xs text-gray-500 mt-1">Enter the UTR/Reference number from your UPI app</p>
           </div>
         </div>
-      ) : (
+      )}
+
+      {depositType === "imps" && (
         <div className="space-y-4">
           <div className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/[0.06]">
             <img src={impsLogo} alt="IMPS" className="h-6" />
@@ -480,6 +560,94 @@ function DepositTab() {
         </div>
       )}
 
+      {depositType === "skrill" && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/[0.06]">
+            <SkrillLogo className="w-7 h-7" />
+            <div>
+              <p className="text-white text-sm font-medium">Skrill</p>
+              <p className="text-gray-500 text-xs">Deposit via Skrill e-wallet</p>
+            </div>
+          </div>
+          <div>
+            <Label className="text-gray-300">Amount (USDT)</Label>
+            <Input
+              type="number"
+              placeholder="Enter USDT amount"
+              value={amount}
+              onChange={e => setAmount(e.target.value)}
+              className="bg-black border-white/[0.06] text-white"
+              data-testid="input-skrill-amount"
+            />
+          </div>
+          <div>
+            <Label className="text-gray-300">Your Skrill Email</Label>
+            <Input
+              type="email"
+              placeholder="your@skrill-email.com"
+              value={skrillEmail}
+              onChange={e => setSkrillEmail(e.target.value)}
+              className="bg-black border-white/[0.06] text-white"
+              data-testid="input-skrill-email"
+            />
+          </div>
+          <div>
+            <Label className="text-gray-300">Transaction ID</Label>
+            <Input
+              placeholder="Enter Skrill transaction ID"
+              value={transactionId}
+              onChange={e => setTransactionId(e.target.value)}
+              className="bg-black border-white/[0.06] text-white font-mono text-sm"
+              data-testid="input-skrill-txid"
+            />
+          </div>
+        </div>
+      )}
+
+      {depositType === "volet" && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/[0.06]">
+            <VoletLogo className="w-7 h-7" />
+            <div>
+              <p className="text-white text-sm font-medium">Volet</p>
+              <p className="text-gray-500 text-xs">Deposit via Volet e-wallet</p>
+            </div>
+          </div>
+          <div>
+            <Label className="text-gray-300">Amount (USDT)</Label>
+            <Input
+              type="number"
+              placeholder="Enter USDT amount"
+              value={amount}
+              onChange={e => setAmount(e.target.value)}
+              className="bg-black border-white/[0.06] text-white"
+              data-testid="input-volet-amount"
+            />
+          </div>
+          <div>
+            <Label className="text-gray-300">Your Volet Email</Label>
+            <Input
+              type="email"
+              placeholder="your@volet-email.com"
+              value={voletEmail}
+              onChange={e => setVoletEmail(e.target.value)}
+              className="bg-black border-white/[0.06] text-white"
+              data-testid="input-volet-email"
+            />
+          </div>
+          <div>
+            <Label className="text-gray-300">Transaction ID</Label>
+            <Input
+              placeholder="Enter Volet transaction ID"
+              value={transactionId}
+              onChange={e => setTransactionId(e.target.value)}
+              className="bg-black border-white/[0.06] text-white font-mono text-sm"
+              data-testid="input-volet-txid"
+            />
+          </div>
+        </div>
+      )}
+
       <Button
         onClick={handleSubmit}
         disabled={isSubmitting}
@@ -495,7 +663,7 @@ function DepositTab() {
 
 function WithdrawTab() {
   const { toast } = useToast();
-  const [withdrawType, setWithdrawType] = useState<"crypto" | "upi" | "imps">("crypto");
+  const [withdrawType, setWithdrawType] = useState<"crypto" | "upi" | "imps" | "binance_pay" | "wire_transfer">("crypto");
   const [selectedCrypto, setSelectedCrypto] = useState("USDT");
   const [selectedChain, setSelectedChain] = useState("TRC20");
   const [amount, setAmount] = useState("");
@@ -511,11 +679,27 @@ function WithdrawTab() {
   const [withdrawOtp, setWithdrawOtp] = useState("");
   const [withdrawalToken, setWithdrawalToken] = useState("");
   const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [binancePayId, setBinancePayId] = useState("");
+  const [binancePayIdLocked, setBinancePayIdLocked] = useState(false);
+  const [wireSwiftCode, setWireSwiftCode] = useState("");
+  const [wireIban, setWireIban] = useState("");
+  const [wireBankNameVal, setWireBankNameVal] = useState("");
+  const [wireAccountNumberVal, setWireAccountNumberVal] = useState("");
+  const [wireAccountHolderNameVal, setWireAccountHolderNameVal] = useState("");
 
   useEffect(() => {
     fetch("/api/user/balance", { credentials: "include" })
       .then(r => r.json())
       .then(d => setBalance(d.balance || 0))
+      .catch(() => {});
+    fetch("/api/user/binance-pay-id", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => {
+        if (d.binancePayId) {
+          setBinancePayId(d.binancePayId);
+          setBinancePayIdLocked(true);
+        }
+      })
       .catch(() => {});
   }, []);
 
@@ -555,6 +739,16 @@ function WithdrawTab() {
       }
       if (accountNumber !== confirmAccountNumber) {
         toast({ title: "Error", description: "Account numbers do not match", variant: "destructive" });
+        return false;
+      }
+    }
+    if (withdrawType === "binance_pay" && !binancePayId.trim()) {
+      toast({ title: "Error", description: "Enter Binance Pay ID", variant: "destructive" });
+      return false;
+    }
+    if (withdrawType === "wire_transfer") {
+      if (!wireBankNameVal.trim() || !wireAccountNumberVal.trim() || !wireAccountHolderNameVal.trim() || !wireSwiftCode.trim()) {
+        toast({ title: "Error", description: "Fill all wire transfer details", variant: "destructive" });
         return false;
       }
     }
@@ -607,12 +801,18 @@ function WithdrawTab() {
           type: withdrawType,
           crypto: withdrawType === "crypto" ? selectedCrypto : null,
           chain: withdrawType === "crypto" ? selectedChain : null,
-          toAddress: withdrawType !== "imps" ? address : null,
+          toAddress: (withdrawType === "crypto" || withdrawType === "upi") ? address : null,
           amountUsdt,
           bankName: withdrawType === "imps" ? bankName : null,
           accountNumber: withdrawType === "imps" ? accountNumber : null,
           ifscCode: withdrawType === "imps" ? ifscCode : null,
           accountHolderName: withdrawType === "imps" ? accountHolderName : null,
+          binancePayId: withdrawType === "binance_pay" ? binancePayId : null,
+          wireSwiftCode: withdrawType === "wire_transfer" ? wireSwiftCode : null,
+          wireIban: withdrawType === "wire_transfer" ? wireIban : null,
+          wireBankName: withdrawType === "wire_transfer" ? wireBankNameVal : null,
+          wireAccountNumber: withdrawType === "wire_transfer" ? wireAccountNumberVal : null,
+          wireAccountHolderName: withdrawType === "wire_transfer" ? wireAccountHolderNameVal : null,
           withdrawalToken: verifyData.withdrawalToken,
         }),
       });
@@ -646,34 +846,50 @@ function WithdrawTab() {
         <span className="text-white font-bold text-lg">{balance.toFixed(2)} USDT</span>
       </div>
 
-      <div className="flex gap-2">
+      <div className="grid grid-cols-5 gap-2">
         <Button
           variant={withdrawType === "crypto" ? "default" : "outline"}
           onClick={() => setWithdrawType("crypto")}
-          className="flex-1"
+          className="flex flex-col items-center gap-1 h-auto py-2 text-xs"
           data-testid="button-withdraw-crypto"
         >
-          <Bitcoin className="w-4 h-4 mr-2" /> Crypto
+          <Bitcoin className="w-4 h-4" /> Crypto
         </Button>
         <Button
           variant={withdrawType === "upi" ? "default" : "outline"}
           onClick={() => setWithdrawType("upi")}
-          className="flex-1"
+          className="flex flex-col items-center gap-1 h-auto py-2 text-xs"
           data-testid="button-withdraw-upi"
         >
-          <img src={upiLogo} alt="UPI" className="h-4 mr-2" /> UPI
+          <img src={upiLogo} alt="UPI" className="h-4" /> UPI
         </Button>
         <Button
           variant={withdrawType === "imps" ? "default" : "outline"}
           onClick={() => setWithdrawType("imps")}
-          className="flex-1"
+          className="flex flex-col items-center gap-1 h-auto py-2 text-xs"
           data-testid="button-withdraw-imps"
         >
-          <Landmark className="w-4 h-4 mr-2" /> IMPS
+          <Landmark className="w-4 h-4" /> IMPS
+        </Button>
+        <Button
+          variant={withdrawType === "binance_pay" ? "default" : "outline"}
+          onClick={() => setWithdrawType("binance_pay")}
+          className="flex flex-col items-center gap-1 h-auto py-2 text-xs"
+          data-testid="button-withdraw-binance"
+        >
+          <BinanceLogo className="w-4 h-4" /> Binance
+        </Button>
+        <Button
+          variant={withdrawType === "wire_transfer" ? "default" : "outline"}
+          onClick={() => setWithdrawType("wire_transfer")}
+          className="flex flex-col items-center gap-1 h-auto py-2 text-xs"
+          data-testid="button-withdraw-wire"
+        >
+          <WireTransferLogo className="w-4 h-4" /> Wire
         </Button>
       </div>
 
-      {withdrawType === "crypto" ? (
+      {withdrawType === "crypto" && (
         <div className="space-y-4">
           <div>
             <Label className="text-gray-300">Cryptocurrency</Label>
@@ -730,7 +946,9 @@ function WithdrawTab() {
             />
           </div>
         </div>
-      ) : withdrawType === "upi" ? (
+      )}
+
+      {withdrawType === "upi" && (
         <div>
           <Label className="text-gray-300">UPI ID</Label>
           <Input
@@ -741,7 +959,9 @@ function WithdrawTab() {
             data-testid="input-withdraw-upi"
           />
         </div>
-      ) : (
+      )}
+
+      {withdrawType === "imps" && (
         <div className="space-y-3">
           <div className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/[0.06]">
             <img src={impsLogo} alt="IMPS" className="h-6" />
@@ -806,6 +1026,96 @@ function WithdrawTab() {
               onChange={e => setBankName(e.target.value)}
               className="bg-black border-white/[0.06] text-white"
               data-testid="input-imps-bank"
+            />
+          </div>
+        </div>
+      )}
+
+      {withdrawType === "binance_pay" && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/[0.06]">
+            <BinanceLogo className="w-7 h-7" />
+            <div>
+              <p className="text-white text-sm font-medium">Binance Pay</p>
+              <p className="text-gray-500 text-xs">Withdraw via Binance Pay ID</p>
+            </div>
+          </div>
+          <div>
+            <Label className="text-gray-300">Binance Pay ID</Label>
+            <Input
+              placeholder="Enter your Binance Pay ID"
+              value={binancePayId}
+              onChange={e => !binancePayIdLocked && setBinancePayId(e.target.value)}
+              readOnly={binancePayIdLocked}
+              className={`bg-black border-white/[0.06] text-white font-mono ${binancePayIdLocked ? "opacity-60 cursor-not-allowed" : ""}`}
+              data-testid="input-binance-pay-id"
+            />
+            {binancePayIdLocked && (
+              <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
+                <Shield className="w-3 h-3" /> Binance Pay ID is locked and cannot be changed
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {withdrawType === "wire_transfer" && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/[0.06]">
+            <WireTransferLogo className="w-7 h-7" />
+            <div>
+              <p className="text-white text-sm font-medium">Wire Transfer</p>
+              <p className="text-gray-500 text-xs">International bank wire (SWIFT)</p>
+            </div>
+          </div>
+          <div>
+            <Label className="text-gray-300">Account Holder Name</Label>
+            <Input
+              placeholder="Full name on bank account"
+              value={wireAccountHolderNameVal}
+              onChange={e => setWireAccountHolderNameVal(e.target.value)}
+              className="bg-black border-white/[0.06] text-white"
+              data-testid="input-wire-holder"
+            />
+          </div>
+          <div>
+            <Label className="text-gray-300">Bank Name</Label>
+            <Input
+              placeholder="Your bank name"
+              value={wireBankNameVal}
+              onChange={e => setWireBankNameVal(e.target.value)}
+              className="bg-black border-white/[0.06] text-white"
+              data-testid="input-wire-bank"
+            />
+          </div>
+          <div>
+            <Label className="text-gray-300">Account Number</Label>
+            <Input
+              placeholder="Bank account number"
+              value={wireAccountNumberVal}
+              onChange={e => setWireAccountNumberVal(e.target.value)}
+              className="bg-black border-white/[0.06] text-white font-mono"
+              data-testid="input-wire-account"
+            />
+          </div>
+          <div>
+            <Label className="text-gray-300">SWIFT/BIC Code</Label>
+            <Input
+              placeholder="e.g. ABCDINBB"
+              value={wireSwiftCode}
+              onChange={e => setWireSwiftCode(e.target.value.toUpperCase())}
+              className="bg-black border-white/[0.06] text-white font-mono"
+              data-testid="input-wire-swift"
+            />
+          </div>
+          <div>
+            <Label className="text-gray-300">IBAN (Optional)</Label>
+            <Input
+              placeholder="International Bank Account Number"
+              value={wireIban}
+              onChange={e => setWireIban(e.target.value.toUpperCase())}
+              className="bg-black border-white/[0.06] text-white font-mono"
+              data-testid="input-wire-iban"
             />
           </div>
         </div>
@@ -931,7 +1241,7 @@ function HistoryTab() {
                 {tx.txType === "deposit" ? "Deposit" : "Withdrawal"}
               </span>
               <Badge variant="outline" className="text-xs">
-                {tx.type === "imps" ? "IMPS" : tx.type === "upi" ? "UPI" : `${tx.crypto} (${tx.chain})`}
+                {tx.type === "imps" ? "IMPS" : tx.type === "upi" ? "UPI" : tx.type === "skrill" ? "Skrill" : tx.type === "volet" ? "Volet" : tx.type === "binance_pay" ? "Binance Pay" : tx.type === "wire_transfer" ? "Wire Transfer" : `${tx.crypto} (${tx.chain})`}
               </Badge>
             </div>
             <StatusBadge status={tx.status} />
@@ -951,6 +1261,21 @@ function HistoryTab() {
             <p className="text-xs text-gray-500 mt-1">
               A/C: ****{tx.accountNumber.slice(-4)} | IFSC: {tx.ifscCode}
             </p>
+          )}
+          {tx.type === "skrill" && tx.skrillEmail && (
+            <p className="text-xs text-gray-500 mt-1">Skrill: {tx.skrillEmail}</p>
+          )}
+          {tx.type === "volet" && tx.voletEmail && (
+            <p className="text-xs text-gray-500 mt-1">Volet: {tx.voletEmail}</p>
+          )}
+          {tx.type === "binance_pay" && tx.binancePayId && (
+            <p className="text-xs text-gray-500 mt-1 font-mono">Binance Pay ID: {tx.binancePayId}</p>
+          )}
+          {tx.type === "wire_transfer" && tx.wireBankName && (
+            <p className="text-xs text-gray-500 mt-1">Bank: {tx.wireBankName} | SWIFT: {tx.wireSwiftCode}</p>
+          )}
+          {(tx.type === "skrill" || tx.type === "volet") && tx.transactionId && (
+            <p className="text-xs text-gray-500 mt-1 font-mono">Txn: {tx.transactionId}</p>
           )}
           <p className="text-xs text-gray-600 mt-1">
             {new Date(tx.createdAt).toLocaleString()}

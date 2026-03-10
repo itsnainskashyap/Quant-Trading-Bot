@@ -64,13 +64,13 @@ export function setupWalletRoutes(app: Express, verifyAdminSession?: (sessionId:
         return res.status(403).json({ message: "KYC verification required before making deposits. Please verify your identity first.", kycRequired: true });
       }
 
-      const { type, crypto, chain, amountInr, amountUsdt, txHash, utr, toAddress } = req.body;
+      const { type, crypto, chain, amountInr, amountUsdt, txHash, utr, toAddress, skrillEmail, voletEmail, transactionId } = req.body;
 
       if (!type || !amountUsdt || typeof amountUsdt !== "number" || amountUsdt <= 0 || !isFinite(amountUsdt)) {
         return res.status(400).json({ message: "Valid positive amount is required" });
       }
 
-      if (!["crypto", "upi", "imps"].includes(type)) {
+      if (!["crypto", "upi", "imps", "skrill", "volet"].includes(type)) {
         return res.status(400).json({ message: "Invalid deposit type" });
       }
 
@@ -80,6 +80,22 @@ export function setupWalletRoutes(app: Express, verifyAdminSession?: (sessionId:
 
       if (type === "crypto" && !txHash) {
         return res.status(400).json({ message: "Transaction hash is required for crypto deposits" });
+      }
+
+      if (type === "skrill" && !skrillEmail) {
+        return res.status(400).json({ message: "Skrill email is required" });
+      }
+
+      if (type === "skrill" && !transactionId) {
+        return res.status(400).json({ message: "Transaction ID is required for Skrill deposits" });
+      }
+
+      if (type === "volet" && !voletEmail) {
+        return res.status(400).json({ message: "Volet email is required" });
+      }
+
+      if (type === "volet" && !transactionId) {
+        return res.status(400).json({ message: "Transaction ID is required for Volet deposits" });
       }
 
       const [deposit] = await db.insert(deposits).values({
@@ -92,6 +108,9 @@ export function setupWalletRoutes(app: Express, verifyAdminSession?: (sessionId:
         txHash: txHash || null,
         utr: utr || null,
         toAddress: toAddress || null,
+        skrillEmail: type === "skrill" ? skrillEmail : null,
+        voletEmail: type === "volet" ? voletEmail : null,
+        transactionId: transactionId || null,
         status: "pending",
       }).returning();
 
@@ -183,7 +202,7 @@ export function setupWalletRoutes(app: Express, verifyAdminSession?: (sessionId:
       const userId = getUserIdFromRequest(req);
       if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-      const { type, crypto, chain, toAddress, amountUsdt, bankName, accountNumber, ifscCode, accountHolderName, withdrawalToken } = req.body;
+      const { type, crypto, chain, toAddress, amountUsdt, bankName, accountNumber, ifscCode, accountHolderName, withdrawalToken, binancePayId, wireSwiftCode, wireIban, wireBankName, wireAccountNumber, wireAccountHolderName } = req.body;
 
       if (!withdrawalToken) {
         return res.status(400).json({ message: "Withdrawal OTP verification required" });
@@ -209,7 +228,7 @@ export function setupWalletRoutes(app: Express, verifyAdminSession?: (sessionId:
         return res.status(400).json({ message: "Valid positive amount is required" });
       }
 
-      if (!["crypto", "upi", "imps"].includes(type)) {
+      if (!["crypto", "upi", "imps", "binance_pay", "wire_transfer"].includes(type)) {
         return res.status(400).json({ message: "Invalid withdrawal type" });
       }
 
@@ -222,6 +241,12 @@ export function setupWalletRoutes(app: Express, verifyAdminSession?: (sessionId:
       if (type === "imps" && (!accountNumber || !ifscCode || !accountHolderName)) {
         return res.status(400).json({ message: "Bank details (account number, IFSC, account holder name) are required" });
       }
+      if (type === "binance_pay" && !binancePayId) {
+        return res.status(400).json({ message: "Binance Pay ID is required" });
+      }
+      if (type === "wire_transfer" && (!wireBankName || !wireAccountNumber || !wireAccountHolderName || !wireSwiftCode)) {
+        return res.status(400).json({ message: "Wire transfer details (bank name, account number, SWIFT code, account holder) are required" });
+      }
 
       const balance = await getOrCreateBalance(userId);
       if (balance < amountUsdt) {
@@ -229,6 +254,15 @@ export function setupWalletRoutes(app: Express, verifyAdminSession?: (sessionId:
       }
 
       const amountInr = (type === "upi" || type === "imps") ? amountUsdt * INR_TO_USDT : null;
+
+      if (type === "binance_pay") {
+        const existingWithdrawals = await db.select().from(withdrawals)
+          .where(and(eq(withdrawals.userId, userId), eq(withdrawals.type, "binance_pay")));
+        const existingBinanceId = existingWithdrawals.find(w => w.binancePayId)?.binancePayId;
+        if (existingBinanceId && existingBinanceId !== binancePayId) {
+          return res.status(400).json({ message: "Binance Pay ID cannot be changed once set. Your registered ID: " + existingBinanceId });
+        }
+      }
 
       const result = await db.transaction(async (tx) => {
         const [updated] = await tx.update(userBalances).set({
@@ -255,6 +289,12 @@ export function setupWalletRoutes(app: Express, verifyAdminSession?: (sessionId:
           accountNumber: accountNumber || null,
           ifscCode: ifscCode || null,
           accountHolderName: accountHolderName || null,
+          binancePayId: type === "binance_pay" ? binancePayId : null,
+          wireSwiftCode: type === "wire_transfer" ? wireSwiftCode : null,
+          wireIban: type === "wire_transfer" ? (wireIban || null) : null,
+          wireBankName: type === "wire_transfer" ? wireBankName : null,
+          wireAccountNumber: type === "wire_transfer" ? wireAccountNumber : null,
+          wireAccountHolderName: type === "wire_transfer" ? wireAccountHolderName : null,
           status: "pending",
         }).returning();
 
@@ -266,6 +306,19 @@ export function setupWalletRoutes(app: Express, verifyAdminSession?: (sessionId:
       if (e.message === "Insufficient balance") {
         return res.status(400).json({ message: e.message });
       }
+      res.status(500).json({ message: e.message });
+    }
+  }) as RequestHandler);
+
+  app.get("/api/user/binance-pay-id", (async (req: Request, res: Response) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+      const userWithdrawals = await db.select().from(withdrawals)
+        .where(and(eq(withdrawals.userId, userId), eq(withdrawals.type, "binance_pay")));
+      const binancePayId = userWithdrawals.find(w => w.binancePayId)?.binancePayId || null;
+      res.json({ binancePayId });
+    } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
   }) as RequestHandler);

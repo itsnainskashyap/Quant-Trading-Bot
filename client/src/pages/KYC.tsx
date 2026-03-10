@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,9 @@ import {
   Calendar,
   Hash,
   CreditCard,
+  ScanLine,
+  Fingerprint,
+  BadgeCheck,
 } from "lucide-react";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 
@@ -86,6 +89,9 @@ export default function KYC() {
   const [imageBase64, setImageBase64] = useState<string>("");
   const [backImagePreview, setBackImagePreview] = useState<string>("");
   const [backImageBase64, setBackImageBase64] = useState<string>("");
+  const [showVerifyPopup, setShowVerifyPopup] = useState(false);
+  const [verifyStep, setVerifyStep] = useState<"uploading" | "analyzing" | "verifying" | "done" | "error">("uploading");
+  const [verifyResult, setVerifyResult] = useState<any>(null);
 
   const { data: kycStatus, isLoading } = useQuery<KycStatus>({
     queryKey: ["/api/kyc/status"],
@@ -93,27 +99,35 @@ export default function KYC() {
 
   const submitMutation = useMutation({
     mutationFn: async (data: { documentType: string; documentImage: string; documentImageBack?: string }) => {
+      setShowVerifyPopup(true);
+      setVerifyStep("uploading");
+      setVerifyResult(null);
+
+      await new Promise(r => setTimeout(r, 1200));
+      setVerifyStep("analyzing");
+
       const res = await apiRequest("POST", "/api/kyc/submit", data);
-      return res.json();
+      const result = await res.json();
+
+      await new Promise(r => setTimeout(r, 800));
+      setVerifyStep("verifying");
+      await new Promise(r => setTimeout(r, 1000));
+
+      return result;
     },
     onSuccess: (data) => {
+      setVerifyResult(data);
+      setVerifyStep("done");
       queryClient.invalidateQueries({ queryKey: ["/api/kyc/status"] });
       setSelectedDocType("");
       setImagePreview("");
       setImageBase64("");
       setBackImagePreview("");
       setBackImageBase64("");
-      toast({
-        title: "Document Submitted",
-        description: data.message,
-      });
     },
     onError: (error: any) => {
-      toast({
-        title: "Submission Failed",
-        description: error.message || "Failed to submit document",
-        variant: "destructive",
-      });
+      setVerifyStep("error");
+      setVerifyResult({ message: error.message || "Failed to submit document" });
     },
   });
 
@@ -554,6 +568,151 @@ export default function KYC() {
           </div>
         )}
       </div>
+
+      {showVerifyPopup && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" data-testid="modal-kyc-verify">
+          <div className="bg-neutral-950 border border-white/[0.08] rounded-2xl w-full max-w-sm p-8">
+            <div className="text-center space-y-6">
+              {verifyStep === "uploading" && (
+                <>
+                  <div className="w-16 h-16 mx-auto rounded-full bg-blue-500/10 flex items-center justify-center">
+                    <Upload className="w-8 h-8 text-blue-400 animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium text-white mb-1">Uploading Document</h3>
+                    <p className="text-sm text-neutral-500">Securely uploading your document...</p>
+                  </div>
+                  <div className="w-full bg-white/[0.06] rounded-full h-1.5 overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full animate-pulse" style={{ width: "40%" }} />
+                  </div>
+                </>
+              )}
+
+              {verifyStep === "analyzing" && (
+                <>
+                  <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/10 flex items-center justify-center">
+                    <ScanLine className="w-8 h-8 text-amber-400 animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium text-white mb-1">AI Analysis in Progress</h3>
+                    <p className="text-sm text-neutral-500">Extracting data and verifying document authenticity...</p>
+                  </div>
+                  <div className="space-y-2 text-left">
+                    <div className="flex items-center gap-2 text-xs text-emerald-400">
+                      <CheckCircle2 className="w-3 h-3" /> Document uploaded
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-amber-400">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Scanning document details...
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-neutral-600">
+                      <Fingerprint className="w-3 h-3" /> Identity verification pending
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {verifyStep === "verifying" && (
+                <>
+                  <div className="w-16 h-16 mx-auto rounded-full bg-purple-500/10 flex items-center justify-center">
+                    <Fingerprint className="w-8 h-8 text-purple-400 animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium text-white mb-1">Verifying Identity</h3>
+                    <p className="text-sm text-neutral-500">Running final verification checks...</p>
+                  </div>
+                  <div className="space-y-2 text-left">
+                    <div className="flex items-center gap-2 text-xs text-emerald-400">
+                      <CheckCircle2 className="w-3 h-3" /> Document uploaded
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-emerald-400">
+                      <CheckCircle2 className="w-3 h-3" /> Data extracted successfully
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-purple-400">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Verifying identity...
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {verifyStep === "done" && verifyResult && (
+                <>
+                  <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center ${verifyResult.autoVerified ? "bg-emerald-500/10" : "bg-amber-500/10"}`}>
+                    {verifyResult.autoVerified ? (
+                      <BadgeCheck className="w-8 h-8 text-emerald-400" />
+                    ) : (
+                      <Clock className="w-8 h-8 text-amber-400" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium text-white mb-1">
+                      {verifyResult.autoVerified ? "KYC Verified!" : "Submitted for Review"}
+                    </h3>
+                    <p className="text-sm text-neutral-500">{verifyResult.message}</p>
+                  </div>
+                  {verifyResult.autoVerified && verifyResult.confidence && (
+                    <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-lg p-3 space-y-1.5">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-neutral-500">AI Confidence</span>
+                        <span className="text-emerald-400 font-mono">{verifyResult.confidence}%</span>
+                      </div>
+                      {verifyResult.extractedName && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-neutral-500">Name</span>
+                          <span className="text-white">{verifyResult.extractedName}</span>
+                        </div>
+                      )}
+                      {verifyResult.extractedDocNumber && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-neutral-500">Doc Number</span>
+                          <span className="text-white font-mono">{verifyResult.extractedDocNumber}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div className="space-y-2 text-left">
+                    <div className="flex items-center gap-2 text-xs text-emerald-400">
+                      <CheckCircle2 className="w-3 h-3" /> Document uploaded
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-emerald-400">
+                      <CheckCircle2 className="w-3 h-3" /> Data extracted
+                    </div>
+                    <div className={`flex items-center gap-2 text-xs ${verifyResult.autoVerified ? "text-emerald-400" : "text-amber-400"}`}>
+                      {verifyResult.autoVerified ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                      {verifyResult.autoVerified ? "Identity verified" : "Pending admin review"}
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => setShowVerifyPopup(false)}
+                    className="w-full bg-white text-black hover:bg-neutral-200"
+                    data-testid="button-close-verify-popup"
+                  >
+                    {verifyResult.autoVerified ? "Continue" : "Close"}
+                  </Button>
+                </>
+              )}
+
+              {verifyStep === "error" && (
+                <>
+                  <div className="w-16 h-16 mx-auto rounded-full bg-red-500/10 flex items-center justify-center">
+                    <XCircle className="w-8 h-8 text-red-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium text-white mb-1">Verification Failed</h3>
+                    <p className="text-sm text-red-400">{verifyResult?.message || "Something went wrong"}</p>
+                  </div>
+                  <Button
+                    onClick={() => setShowVerifyPopup(false)}
+                    className="w-full bg-white text-black hover:bg-neutral-200"
+                    data-testid="button-close-error-popup"
+                  >
+                    Try Again
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
