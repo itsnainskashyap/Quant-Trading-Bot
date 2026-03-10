@@ -40,7 +40,7 @@ import {
   Landmark,
 } from "lucide-react";
 import { CryptoLogo } from "@/components/CryptoLogos";
-import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
+import logoImage from "@assets/Picsart_26-03-10_23-57-49-090_1773167302165.png";
 import upiLogo from "@assets/image_1773144638368.png";
 import { useToast } from "@/hooks/use-toast";
 

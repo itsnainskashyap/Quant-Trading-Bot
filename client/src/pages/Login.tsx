@@ -6,7 +6,7 @@ import { Link, useLocation } from "wouter";
 import { Loader2, ArrowRight, ShieldCheck, Mail } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { queryClient } from "@/lib/queryClient";
-import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
+import logoImage from "@assets/Picsart_26-03-10_23-57-49-090_1773167302165.png";
 
 export function Login() {
   const [, setLocation] = useLocation();
