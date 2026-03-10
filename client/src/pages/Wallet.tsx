@@ -34,6 +34,7 @@ import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100
 import upiLogo from "@assets/image_1773144638368.png";
 import impsLogo from "@assets/Picsart_26-03-10_19-32-00-972_1773166568501.png";
 import binanceLogo from "@assets/binance_logo.png";
+import skrillLogo from "@assets/Picsart_26-03-10_23-54-36-981_1773167153469.png";
 import pciDssLogo from "@assets/pcidss_(1)_1773166833303.png";
 import sectigoLogo from "@assets/Picsart_26-03-10_23-48-41-180_1773166854206.png";
 
@@ -97,12 +98,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function SkrillLogo({ className = "w-5 h-5" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 256 256" className={className}>
-      <rect width="256" height="256" rx="40" fill="#862165" />
-      <path d="M178.5 80.5c-5.3-5.3-11.9-9.4-19.5-12.1-7.6-2.7-16-4-24.9-4H89v28h45.1c5.5 0 10.3.8 14.1 2.5 3.8 1.7 5.8 4.5 5.8 8.3 0 3.5-1.9 6.1-5.6 7.9-3.7 1.8-8.5 2.7-14.3 2.7h-15.4L89 143.6V172h37.3l30.7-30.2c3.3.4 6.4 1.2 9.3 2.4 5.5 2.3 8.2 5.8 8.2 10.6 0 4.4-2.4 7.8-7.2 10.2-4.8 2.4-11 3.6-18.5 3.6H89v28h59.8c9.5 0 18.2-1.5 25.9-4.4 7.8-2.9 13.9-7.3 18.4-13.1 4.5-5.8 6.8-12.8 6.8-21 0-7.5-2-13.8-5.9-19-3.9-5.2-9.3-9.3-16.1-12.3 5.4-3.3 9.6-7.4 12.5-12.4 2.9-5 4.4-10.7 4.4-17 0-7.8-2.1-14.3-6.3-19.5-.6-.7-1.3-1.4-2-2.1l-8 7.2z" fill="white" />
-    </svg>
-  );
+  return <img src={skrillLogo} alt="Skrill" className={`${className} rounded`} />;
 }
 
 function VoletLogo({ className = "w-5 h-5" }: { className?: string }) {
