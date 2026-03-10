@@ -19,7 +19,7 @@ function InteractiveCube() {
     if (!ctx) return;
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const size = Math.min(420, container.clientWidth);
+    const size = Math.min(500, container.clientWidth);
     canvas.width = size * dpr;
     canvas.height = size * dpr;
     canvas.style.width = size + "px";
@@ -34,16 +34,15 @@ function InteractiveCube() {
 
     const cx = size / 2;
     const cy = size / 2;
-    const cubeSize = 75;
-    const gap = 3;
-    const totalSize = cubeSize * 3 + gap * 2;
+    const cubeSize = 58;
+    const gap = 5;
 
     function project(x: number, y: number, z: number, rx: number, ry: number) {
       let y1 = y * Math.cos(rx) - z * Math.sin(rx);
       let z1 = y * Math.sin(rx) + z * Math.cos(rx);
       let x1 = x * Math.cos(ry) + z1 * Math.sin(ry);
       let z2 = -x * Math.sin(ry) + z1 * Math.cos(ry);
-      const scale = 600 / (600 + z2);
+      const scale = 650 / (650 + z2);
       return { x: x1 * scale + cx, y: y1 * scale + cy, z: z2, scale };
     }
 
@@ -55,22 +54,45 @@ function InteractiveCube() {
       return { x: nx / len, y: ny / len, z: nz / len };
     }
 
-    function drawMetallicFace(
+    function drawRoundedQuad(
+      ctx: CanvasRenderingContext2D,
+      p: { x: number; y: number }[],
+      radius: number
+    ) {
+      ctx.beginPath();
+      for (let i = 0; i < 4; i++) {
+        const curr = p[i];
+        const next = p[(i + 1) % 4];
+        const prev = p[(i + 3) % 4];
+
+        const dx1 = curr.x - prev.x, dy1 = curr.y - prev.y;
+        const dx2 = next.x - curr.x, dy2 = next.y - curr.y;
+        const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1) || 1;
+        const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2) || 1;
+
+        const r = Math.min(radius, len1 * 0.35, len2 * 0.35);
+
+        const fromX = curr.x - (dx1 / len1) * r;
+        const fromY = curr.y - (dy1 / len1) * r;
+        const toX = curr.x + (dx2 / len2) * r;
+        const toY = curr.y + (dy2 / len2) * r;
+
+        if (i === 0) ctx.moveTo(fromX, fromY);
+        else ctx.lineTo(fromX, fromY);
+        ctx.quadraticCurveTo(curr.x, curr.y, toX, toY);
+      }
+      ctx.closePath();
+    }
+
+    function drawGlossyFace(
       ctx: CanvasRenderingContext2D,
       corners: { x: number; y: number; z: number }[],
       rx: number,
       ry: number,
-      faceIdx: number,
     ) {
       const projected = corners.map((c) => project(c.x, c.y, c.z, rx, ry));
       const avgZ = projected.reduce((s, p) => s + p.z, 0) / projected.length;
-
-      ctx.beginPath();
-      ctx.moveTo(projected[0].x, projected[0].y);
-      for (let i = 1; i < projected.length; i++) {
-        ctx.lineTo(projected[i].x, projected[i].y);
-      }
-      ctx.closePath();
+      const avgScale = projected.reduce((s, p) => s + p.scale, 0) / projected.length;
 
       const n = getNormal(corners);
       const cosRx = Math.cos(rx), sinRx = Math.sin(rx);
@@ -80,38 +102,62 @@ function InteractiveCube() {
       const rnx = n.x * cosRy + rnz * sinRy;
       const rnzFinal = -n.x * sinRy + rnz * cosRy;
 
-      const lightDir = { x: 0.3, y: -0.6, z: 0.7 };
+      const lightDir = { x: 0.35, y: -0.65, z: 0.65 };
+      const lLen = Math.sqrt(lightDir.x ** 2 + lightDir.y ** 2 + lightDir.z ** 2);
+      lightDir.x /= lLen; lightDir.y /= lLen; lightDir.z /= lLen;
+
       const dot = rnx * lightDir.x + rny * lightDir.y + rnzFinal * lightDir.z;
       const diffuse = Math.max(0, dot);
-      const specPow = 32;
-      const viewDir = { x: 0, y: 0, z: 1 };
+
       const reflX = 2 * dot * rnx - lightDir.x;
       const reflY = 2 * dot * rny - lightDir.y;
       const reflZ = 2 * dot * rnzFinal - lightDir.z;
-      const specDot = Math.max(0, reflX * viewDir.x + reflY * viewDir.y + reflZ * viewDir.z);
-      const specular = Math.pow(specDot, specPow);
+      const specDot = Math.max(0, reflZ);
+      const specular = Math.pow(specDot, 80);
+      const specular2 = Math.pow(specDot, 24);
 
-      const ambient = 0.12;
-      const baseR = 180, baseG = 185, baseB = 195;
-      const r = Math.min(255, Math.round(baseR * (ambient + diffuse * 0.65) + 255 * specular * 0.7));
-      const g = Math.min(255, Math.round(baseG * (ambient + diffuse * 0.65) + 255 * specular * 0.7));
-      const b = Math.min(255, Math.round(baseB * (ambient + diffuse * 0.65) + 255 * specular * 0.7));
+      const ambient = 0.04;
+      const baseVal = 12;
+      const lit = baseVal + baseVal * diffuse * 1.8;
+      const r = Math.min(255, Math.round(lit + 255 * specular * 0.45 + 40 * specular2 * 0.3));
+      const g = Math.min(255, Math.round(lit + 255 * specular * 0.45 + 40 * specular2 * 0.3));
+      const b = Math.min(255, Math.round(lit + 2 + 255 * specular * 0.5 + 50 * specular2 * 0.3));
+
+      const cornerRadius = 6 * avgScale;
+      drawRoundedQuad(ctx, projected, cornerRadius);
 
       const minX = Math.min(...projected.map(p => p.x));
       const maxX = Math.max(...projected.map(p => p.x));
       const minY = Math.min(...projected.map(p => p.y));
       const maxY = Math.max(...projected.map(p => p.y));
       const grad = ctx.createLinearGradient(minX, minY, maxX, maxY);
-      const r2 = Math.min(255, r + 20), g2 = Math.min(255, g + 20), b2 = Math.min(255, b + 20);
-      grad.addColorStop(0, `rgb(${r}, ${g}, ${b})`);
-      grad.addColorStop(0.5, `rgb(${r2}, ${g2}, ${b2})`);
-      grad.addColorStop(1, `rgb(${Math.max(0, r - 15)}, ${Math.max(0, g - 15)}, ${Math.max(0, b - 15)})`);
+      const r2 = Math.min(255, r + 8), g2 = Math.min(255, g + 8), b2 = Math.min(255, b + 10);
+      grad.addColorStop(0, `rgb(${r2}, ${g2}, ${b2})`);
+      grad.addColorStop(0.5, `rgb(${r}, ${g}, ${b})`);
+      grad.addColorStop(1, `rgb(${Math.max(0, r - 4)}, ${Math.max(0, g - 4)}, ${Math.max(0, b - 3)})`);
 
       ctx.fillStyle = grad;
       ctx.fill();
-      ctx.strokeStyle = `rgba(255,255,255,${0.06 + specular * 0.15})`;
-      ctx.lineWidth = 0.5;
+
+      const edgeBright = 0.03 + diffuse * 0.06 + specular * 0.25;
+      ctx.strokeStyle = `rgba(200, 210, 230, ${Math.min(0.35, edgeBright)})`;
+      ctx.lineWidth = 0.8;
       ctx.stroke();
+
+      if (specular2 > 0.05) {
+        const shCx = (projected[0].x + projected[2].x) / 2;
+        const shCy = (projected[0].y + projected[2].y) / 2;
+        const shR = Math.max(maxX - minX, maxY - minY) * 0.4;
+        const shGrad = ctx.createRadialGradient(
+          shCx - shR * 0.3, shCy - shR * 0.3, 0,
+          shCx, shCy, shR
+        );
+        shGrad.addColorStop(0, `rgba(180, 190, 210, ${specular2 * 0.12})`);
+        shGrad.addColorStop(1, `rgba(0, 0, 0, 0)`);
+        drawRoundedQuad(ctx, projected, cornerRadius);
+        ctx.fillStyle = shGrad;
+        ctx.fill();
+      }
 
       return avgZ;
     }
@@ -121,12 +167,12 @@ function InteractiveCube() {
         animRef.current = requestAnimationFrame(render);
         return;
       }
-      const t = Date.now() * 0.0004;
+      const t = Date.now() * 0.0003;
       const mx = mouseRef.current.x;
       const my = mouseRef.current.y;
 
-      const rx = -0.55 + my * 0.003 + Math.sin(t * 0.7) * 0.06;
-      const ry = 0.65 + mx * 0.003 + Math.cos(t * 0.5) * 0.06;
+      const rx = -0.6 + my * 0.002 + Math.sin(t * 0.7) * 0.04;
+      const ry = 0.7 + mx * 0.002 + Math.cos(t * 0.5) * 0.04;
 
       ctx!.clearRect(0, 0, size, size);
 
@@ -175,7 +221,7 @@ function InteractiveCube() {
               faces.push({
                 z: avgZ,
                 draw: () => {
-                  drawMetallicFace(ctx!, fCorners, rx, ry, fi);
+                  drawGlossyFace(ctx!, fCorners, rx, ry);
                 },
               });
             }
@@ -185,13 +231,6 @@ function InteractiveCube() {
 
       faces.sort((a, b) => a.z - b.z);
       faces.forEach((f) => f.draw());
-
-      const grd = ctx!.createRadialGradient(cx, cy + 100, 0, cx, cy + 100, totalSize * 1.5);
-      grd.addColorStop(0, "rgba(200, 210, 230, 0.04)");
-      grd.addColorStop(0.5, "rgba(150, 160, 180, 0.02)");
-      grd.addColorStop(1, "rgba(0, 0, 0, 0)");
-      ctx!.fillStyle = grd;
-      ctx!.fillRect(0, 0, size, size);
 
       animRef.current = requestAnimationFrame(render);
     }
@@ -215,7 +254,7 @@ function InteractiveCube() {
   }, []);
 
   return (
-    <div ref={containerRef} className="w-full max-w-[420px]">
+    <div ref={containerRef} className="w-full max-w-[500px] p-6">
       <canvas ref={canvasRef} className="pointer-events-auto" data-testid="canvas-3d-cube" />
     </div>
   );
@@ -347,9 +386,9 @@ export function Landing() {
               </div>
             </div>
 
-            <div className="flex justify-center md:justify-end">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent rounded-full blur-[60px] scale-125" />
+            <div className="flex justify-center md:justify-end overflow-visible">
+              <div className="relative overflow-visible">
+                <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent rounded-full blur-[80px] scale-150" />
                 <InteractiveCube />
               </div>
             </div>
