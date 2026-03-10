@@ -36,7 +36,7 @@ import skrillLogo from "@assets/Picsart_26-03-10_23-54-36-981_1773167153469.png"
 import pciDssLogo from "@assets/pcidss_(1)_1773166833303.png";
 import sectigoLogo from "@assets/Picsart_26-03-10_23-48-41-180_1773166854206.png";
 
-const INR_TO_USD = 92;
+const INR_TO_USD = 93.5;
 
 function CryptoIcon({ symbol, className = "w-7 h-7" }: { symbol: string; className?: string }) {
   if (symbol === "BTC") return (

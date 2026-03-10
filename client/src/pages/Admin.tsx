@@ -1341,8 +1341,11 @@ export default function Admin() {
                               </td>
                               <td className="py-3 px-4">
                                 <div className="text-sm font-semibold text-white">${w.amountUsdt?.toFixed(2)}</div>
+                                {w.feeUsdt && (
+                                  <div className="text-[10px] text-amber-400">Fee: ${w.feeUsdt?.toFixed(2)} | Net: ${w.netAmountUsdt?.toFixed(2)}</div>
+                                )}
                                 {(w.type === "upi" || w.type === "imps") && w.amountInr && (
-                                  <div className="text-[10px] text-gray-500">INR ₹{w.amountInr.toFixed(2)}</div>
+                                  <div className="text-[10px] text-gray-500">Payout: ₹{w.amountInr.toFixed(2)}</div>
                                 )}
                               </td>
                               <td className="py-3 px-4">

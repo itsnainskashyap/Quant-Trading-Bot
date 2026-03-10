@@ -20,6 +20,7 @@ import UpiPayment from "@/pages/UpiPayment";
 import KYC from "@/pages/KYC";
 import Support from "@/pages/Support";
 import NotFound from "@/pages/not-found";
+import { LiveChatWidget, LiveChatBubble } from "@/components/LiveChat";
 import { Loader2 } from "lucide-react";
 
 function OnboardingGuard({ children }: { children: React.ReactNode }) {
@@ -151,6 +152,8 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Router />
+        <LiveChatWidget />
+        <LiveChatBubble />
       </TooltipProvider>
     </QueryClientProvider>
   );

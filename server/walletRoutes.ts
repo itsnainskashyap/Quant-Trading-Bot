@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { sendWithdrawalOTP, sendDepositStatusEmail, sendWithdrawalStatusEmail } from "./emailService";
 
-const INR_TO_USDT = 92;
+const INR_TO_USDT = 93.5;
 
 function getUserIdFromRequest(req: any): string | null {
   if (req.session?.userId) return req.session.userId;
@@ -253,7 +253,10 @@ export function setupWalletRoutes(app: Express, verifyAdminSession?: (sessionId:
         return res.status(400).json({ message: "Insufficient balance" });
       }
 
-      const amountInr = (type === "upi" || type === "imps") ? amountUsdt * INR_TO_USDT : null;
+      const feePercent = (type === "imps" || type === "upi") ? 4 : (type === "binance_pay" || type === "crypto") ? 1 : 2;
+      const feeUsdt = parseFloat((amountUsdt * (feePercent / 100)).toFixed(4));
+      const netAmountUsdt = parseFloat((amountUsdt - feeUsdt).toFixed(4));
+      const amountInr = (type === "upi" || type === "imps") ? parseFloat((netAmountUsdt * INR_TO_USDT).toFixed(2)) : null;
 
       if (type === "binance_pay") {
         const existingWithdrawals = await db.select().from(withdrawals)
@@ -284,6 +287,8 @@ export function setupWalletRoutes(app: Express, verifyAdminSession?: (sessionId:
           chain: chain || null,
           toAddress: toAddress || null,
           amountUsdt,
+          feeUsdt,
+          netAmountUsdt,
           amountInr,
           bankName: bankName || null,
           accountNumber: accountNumber || null,

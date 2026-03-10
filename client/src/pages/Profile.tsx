@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { LiveChatProfileCard } from "@/components/LiveChat";
 import { 
   ArrowLeft, 
   TrendingUp,
@@ -496,6 +497,12 @@ export default function Profile() {
                 <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gray-400 transition-colors" />
               </button>
             </Link>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white/[0.03] border-white/5">
+          <CardContent className="p-4">
+            <LiveChatProfileCard />
           </CardContent>
         </Card>
 

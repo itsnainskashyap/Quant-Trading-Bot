@@ -47,7 +47,7 @@
 
   --font-sans: 'Inter', 'Geist', sans-serif;
   --font-serif: Georgia, serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-mono: 'Space Grotesk', 'IBM Plex Mono', 'Roboto Mono', monospace;
   --radius: .5rem;
   --shadow-2xs: 0px 1px 2px 0px rgba(0,0,0,0.03);
   --shadow-xs: 0px 1px 3px 0px rgba(0,0,0,0.05);

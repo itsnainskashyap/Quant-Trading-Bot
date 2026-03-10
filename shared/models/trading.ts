@@ -230,6 +230,8 @@ export const withdrawals = pgTable("withdrawals", {
   chain: varchar("chain"),
   toAddress: varchar("to_address"),
   amountUsdt: real("amount_usdt").notNull(),
+  feeUsdt: real("fee_usdt"),
+  netAmountUsdt: real("net_amount_usdt"),
   amountInr: real("amount_inr"),
   bankName: varchar("bank_name"),
   accountNumber: varchar("account_number"),

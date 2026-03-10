@@ -1,6 +1,6 @@
 import { Shield, Clock, AlertTriangle, Ban, DollarSign, UserX, Scale, FileText } from "lucide-react";
 
-export function TermsContent() {
+export function TermsContent({ showThirdParty = true }: { showThirdParty?: boolean }) {
   return (
     <div className="space-y-4 text-sm text-gray-300">
       <div className="flex items-center gap-2 pb-2 border-b border-white/10">
@@ -33,25 +33,29 @@ export function TermsContent() {
           </p>
         </div>
 
-        <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/10">
-          <div className="flex items-center gap-2 mb-1.5">
-            <Ban className="w-4 h-4 text-red-400 flex-shrink-0" />
-            <span className="font-medium text-red-300 text-xs">Third-Party UPI Payments Strictly Prohibited</span>
-          </div>
-          <p className="text-xs text-gray-400 leading-relaxed pl-6">
-            UPI payments must be made only from the account holder's own UPI ID. Third-party UPI payments (payments from someone else's account) are strictly not allowed. Using another person's UPI account to make deposits is a violation of our terms.
-          </p>
-        </div>
+        {showThirdParty && (
+          <>
+            <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/10">
+              <div className="flex items-center gap-2 mb-1.5">
+                <Ban className="w-4 h-4 text-red-400 flex-shrink-0" />
+                <span className="font-medium text-red-300 text-xs">Third-Party UPI Payments Strictly Prohibited</span>
+              </div>
+              <p className="text-xs text-gray-400 leading-relaxed pl-6">
+                UPI payments must be made only from the account holder's own UPI ID. Third-party UPI payments (payments from someone else's account) are strictly not allowed. Using another person's UPI account to make deposits is a violation of our terms.
+              </p>
+            </div>
 
-        <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/10">
-          <div className="flex items-center gap-2 mb-1.5">
-            <DollarSign className="w-4 h-4 text-red-400 flex-shrink-0" />
-            <span className="font-medium text-red-300 text-xs">Third-Party Payment Penalty</span>
-          </div>
-          <p className="text-xs text-gray-400 leading-relaxed pl-6">
-            If any third-party payment is detected, the entire deposited amount will be deducted from your account without refund. TradeX AI actively monitors all transactions and reserves the right to take immediate action including account suspension.
-          </p>
-        </div>
+            <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/10">
+              <div className="flex items-center gap-2 mb-1.5">
+                <DollarSign className="w-4 h-4 text-red-400 flex-shrink-0" />
+                <span className="font-medium text-red-300 text-xs">Third-Party Payment Penalty</span>
+              </div>
+              <p className="text-xs text-gray-400 leading-relaxed pl-6">
+                If any third-party payment is detected, the entire deposited amount will be deducted from your account without refund. TradeX AI actively monitors all transactions and reserves the right to take immediate action including account suspension.
+              </p>
+            </div>
+          </>
+        )}
 
         <div className="p-3 rounded-lg bg-white/[0.03] border border-white/5">
           <div className="flex items-center gap-2 mb-1.5">
@@ -89,7 +93,7 @@ export function TermsContent() {
             <span className="font-medium text-white text-xs">UPI Conversion Rate</span>
           </div>
           <p className="text-xs text-gray-400 leading-relaxed pl-6">
-            UPI deposits are converted at the rate of 92 INR = 1 USDT. This rate is fixed and set by the platform. The platform reserves the right to update this conversion rate at any time.
+            UPI deposits are converted at the rate of 93.5 INR = 1 USDT. This rate is fixed and set by the platform. The platform reserves the right to update this conversion rate at any time.
           </p>
         </div>
 

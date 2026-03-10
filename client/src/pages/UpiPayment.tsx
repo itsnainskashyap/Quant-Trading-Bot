@@ -21,7 +21,7 @@ import upiLogo from "@assets/image_1773144638368.png";
 import pciDssLogo from "@assets/pcidss_(1)_1773166833303.png";
 import sectigoLogo from "@assets/Picsart_26-03-10_23-48-41-180_1773166854206.png";
 
-const INR_TO_USD = 92;
+const INR_TO_USD = 93.5;
 
 export default function UpiPaymentPage() {
   const { toast } = useToast();

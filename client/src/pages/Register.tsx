@@ -457,7 +457,7 @@ export function Register() {
             <DialogTitle className="text-white font-light text-lg">Terms & Conditions</DialogTitle>
           </DialogHeader>
           <ScrollArea className="max-h-[60vh] pr-4">
-            <TermsContent />
+            <TermsContent showThirdParty={false} />
           </ScrollArea>
           <div className="pt-3 border-t border-white/[0.06]">
             <Button
