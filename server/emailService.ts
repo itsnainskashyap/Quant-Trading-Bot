@@ -2,7 +2,7 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM_EMAIL = "TradeX AI <onboarding@resend.dev>";
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "TradeX AI <onboarding@resend.dev>";
 
 function baseTemplate(title: string, content: string): string {
   return `<!DOCTYPE html>
@@ -217,9 +217,9 @@ ${isVerified ? `<p style="color:#22c55e;font-size:14px;margin:0;font-weight:500;
   }
 }
 
-export async function sendRegistrationOTP(email: string, otp: string): Promise<void> {
+export async function sendRegistrationOTP(email: string, otp: string): Promise<boolean> {
   try {
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: "TradeX AI — Verify Your Email",
@@ -232,15 +232,21 @@ ${otpBlock(otp)}
 If you did not create an account, please ignore this email.
 </p>`),
     });
-    console.log("[Email] Registration OTP sent to", email);
+    console.log("[Email] Registration OTP sent to", email, "result:", JSON.stringify(result));
+    if ((result as any).error) {
+      console.error("[Email] Resend API error:", JSON.stringify((result as any).error));
+      return false;
+    }
+    return true;
   } catch (e: any) {
-    console.error("[Email] Failed to send registration OTP:", e.message);
+    console.error("[Email] Failed to send registration OTP:", e.message, e.statusCode, JSON.stringify(e));
+    return false;
   }
 }
 
-export async function sendLoginOTP(email: string, otp: string): Promise<void> {
+export async function sendLoginOTP(email: string, otp: string): Promise<boolean> {
   try {
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: "TradeX AI — Login Verification Code",
@@ -253,9 +259,15 @@ ${otpBlock(otp)}
 If this wasn't you, please change your password immediately.
 </p>`),
     });
-    console.log("[Email] Login OTP sent to", email);
+    console.log("[Email] Login OTP sent to", email, "result:", JSON.stringify(result));
+    if ((result as any).error) {
+      console.error("[Email] Resend API error:", JSON.stringify((result as any).error));
+      return false;
+    }
+    return true;
   } catch (e: any) {
-    console.error("[Email] Failed to send login OTP:", e.message);
+    console.error("[Email] Failed to send login OTP:", e.message, JSON.stringify(e));
+    return false;
   }
 }
 

@@ -132,7 +132,11 @@ export function setupEmailAuth(app: Express): void {
       expiresAt: new Date(Date.now() + 10 * 60 * 1000),
     });
 
-    await sendRegistrationOTP(email, otp);
+    const emailSent = await sendRegistrationOTP(email, otp);
+    if (!emailSent) {
+      console.error("[EmailAuth] Failed to send OTP email to", email);
+      return res.status(502).json({ success: false, message: "Failed to send verification email. Please try again or contact support." });
+    }
     return res.json({ success: true, message: "Registration successful. Please verify your email.", requiresVerification: true, email });
   }) as RequestHandler);
 
@@ -158,7 +162,11 @@ export function setupEmailAuth(app: Express): void {
     });
 
     const challengeToken = createLoginChallenge(email);
-    await sendLoginOTP(email, otp);
+    const emailSent = await sendLoginOTP(email, otp);
+    if (!emailSent) {
+      console.error("[EmailAuth] Failed to send login OTP to", email);
+      return res.status(502).json({ success: false, message: "Failed to send verification email. Please try again or contact support." });
+    }
     return res.json({ success: true, message: "Verification code sent to your email.", requiresOTP: true, email, challengeToken });
   }) as RequestHandler);
 
@@ -278,12 +286,17 @@ export function setupEmailAuth(app: Express): void {
         expiresAt: new Date(Date.now() + 10 * 60 * 1000),
       });
 
+      let emailSent: boolean;
       if (purpose === "registration") {
-        await sendRegistrationOTP(email, otp);
+        emailSent = await sendRegistrationOTP(email, otp);
       } else {
-        await sendLoginOTP(email, otp);
+        emailSent = await sendLoginOTP(email, otp);
       }
 
+      if (!emailSent) {
+        console.error("[EmailAuth] Failed to resend OTP to", email);
+        return res.status(502).json({ success: false, message: "Failed to send verification email. Please try again or contact support." });
+      }
       return res.json({ success: true, message: "New verification code sent." });
     } catch (e: any) {
       console.error("[EmailAuth] Resend OTP error:", e.message);

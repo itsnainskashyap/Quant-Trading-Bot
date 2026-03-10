@@ -30,9 +30,9 @@ function LiveTicker() {
   }, []);
 
   return (
-    <div className="flex items-center gap-6 overflow-hidden" data-testid="live-ticker">
+    <div className="flex items-center gap-4 sm:gap-6 overflow-hidden" data-testid="live-ticker">
       {prices.map((p) => (
-        <div key={p.pair} className="flex items-center gap-2 text-xs shrink-0">
+        <div key={p.pair} className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs shrink-0">
           <span className="text-neutral-500 font-medium">{p.pair}</span>
           <span className="font-mono text-neutral-300">
             ${p.price.toLocaleString("en-US", { minimumFractionDigits: p.price < 10 ? 4 : 2, maximumFractionDigits: p.price < 10 ? 4 : 2 })}
@@ -57,16 +57,16 @@ export function Landing() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white antialiased">
+    <div className="min-h-screen bg-black text-white antialiased overflow-x-hidden">
       <nav
         className={`fixed top-0 w-full z-50 transition-all duration-300 ${
           scrolled ? "bg-black/90 backdrop-blur-lg border-b border-white/[0.06]" : "bg-transparent"
         }`}
       >
-        <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src={logoImage} alt="TradeX AI" className="h-8 w-8 rounded-full" />
-            <span className="text-white font-semibold text-lg tracking-tight">TradeX AI</span>
+            <img src={logoImage} alt="TradeX AI" className="h-7 w-7 sm:h-8 sm:w-8 rounded-full" />
+            <span className="text-white font-semibold text-base sm:text-lg tracking-tight">TradeX AI</span>
           </div>
           <div className="hidden md:flex items-center gap-8">
             <a href="#how-it-works" className="text-[13px] text-neutral-400 hover:text-white transition-colors" data-testid="link-how-it-works">
@@ -82,14 +82,14 @@ export function Landing() {
               Pricing
             </a>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link href="/login">
-              <Button variant="ghost" className="text-neutral-400 hover:text-white text-[13px] h-9" data-testid="button-login">
+              <Button variant="ghost" className="text-neutral-400 hover:text-white text-xs sm:text-[13px] h-8 sm:h-9 px-2 sm:px-4" data-testid="button-login">
                 Log In
               </Button>
             </Link>
             <Link href="/register">
-              <Button className="bg-white text-black hover:bg-neutral-200 text-[13px] h-9 rounded-lg font-medium" data-testid="button-get-started">
+              <Button className="bg-white text-black hover:bg-neutral-200 text-xs sm:text-[13px] h-8 sm:h-9 px-3 sm:px-4 rounded-lg font-medium" data-testid="button-get-started">
                 Get Started
               </Button>
             </Link>
@@ -97,26 +97,26 @@ export function Landing() {
         </div>
       </nav>
 
-      <section className="relative pt-32 pb-0 md:pt-40 md:pb-0">
+      <section className="relative pt-24 pb-0 md:pt-40 md:pb-0 overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-blue-950/20 rounded-full blur-[120px]" />
           <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-indigo-950/15 rounded-full blur-[100px]" />
         </div>
 
-        <div className="max-w-[1200px] mx-auto px-6 relative z-10">
-          <div className="grid md:grid-cols-2 gap-8 items-center min-h-[60vh]">
-            <div>
-              <h1 className="text-[clamp(2.5rem,5.5vw,4.5rem)] font-light tracking-[-0.03em] leading-[1.05] mb-6">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 relative z-10">
+          <div className="grid md:grid-cols-2 gap-8 items-center min-h-[50vh] md:min-h-[60vh]">
+            <div className="text-center md:text-left">
+              <h1 className="text-[clamp(2rem,5.5vw,4.5rem)] font-light tracking-[-0.03em] leading-[1.05] mb-4 md:mb-6">
                 AI Trading
                 <br />
                 <span className="italic font-normal text-neutral-400">for everyone</span>
               </h1>
-              <p className="text-neutral-500 text-lg leading-relaxed max-w-md mb-10">
+              <p className="text-neutral-500 text-base md:text-lg leading-relaxed max-w-md mx-auto md:mx-0 mb-8 md:mb-10">
                 Multi-AI consensus signals for 15 crypto pairs.
                 <br />
                 Set capital, get entry, stop-loss, and take-profit — automatically.
               </p>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center justify-center md:justify-start gap-4">
                 <Link href="/register">
                   <Button
                     className="bg-white text-black hover:bg-neutral-200 h-11 px-7 rounded-lg font-medium text-sm"
@@ -136,13 +136,13 @@ export function Landing() {
               </div>
             </div>
 
-            <div className="flex justify-center md:justify-end overflow-visible">
-              <div className="relative overflow-visible">
+            <div className="flex justify-center md:justify-end overflow-hidden">
+              <div className="relative w-full max-w-[400px] md:max-w-[560px]">
                 <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent rounded-full blur-[100px] scale-150" />
                 <img
                   src={heroMockup}
                   alt="TradeX AI Platform - Dashboard and Trading Interface"
-                  className="relative w-full max-w-[560px] h-auto drop-shadow-2xl"
+                  className="relative w-full h-auto drop-shadow-2xl"
                   data-testid="img-hero-mockup"
                   draggable={false}
                 />
@@ -159,8 +159,8 @@ export function Landing() {
         </div>
       </section>
 
-      <section id="how-it-works" className="py-32 border-t border-white/[0.06]">
-        <div className="max-w-[1200px] mx-auto px-6">
+      <section id="how-it-works" className="py-16 md:py-32 border-t border-white/[0.06]">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
           <div className="max-w-xl mb-20">
             <p className="text-[13px] text-neutral-500 uppercase tracking-[0.15em] font-medium mb-4">How it works</p>
             <h2 className="text-3xl md:text-[2.5rem] font-light tracking-tight leading-tight">
@@ -201,8 +201,8 @@ export function Landing() {
         </div>
       </section>
 
-      <section id="technology" className="py-32 border-t border-white/[0.06]">
-        <div className="max-w-[1200px] mx-auto px-6">
+      <section id="technology" className="py-16 md:py-32 border-t border-white/[0.06]">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
           <div className="max-w-xl mb-20">
             <p className="text-[13px] text-neutral-500 uppercase tracking-[0.15em] font-medium mb-4">Technology</p>
             <h2 className="text-3xl md:text-[2.5rem] font-light tracking-tight leading-tight">
@@ -287,8 +287,8 @@ export function Landing() {
         </div>
       </section>
 
-      <section className="py-32 border-t border-white/[0.06]">
-        <div className="max-w-[1200px] mx-auto px-6">
+      <section className="py-16 md:py-32 border-t border-white/[0.06]">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
           <div className="max-w-xl mb-20">
             <p className="text-[13px] text-neutral-500 uppercase tracking-[0.15em] font-medium mb-4">Features</p>
             <h2 className="text-3xl md:text-[2.5rem] font-light tracking-tight leading-tight">
@@ -298,7 +298,7 @@ export function Landing() {
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-px bg-white/[0.06] rounded-xl overflow-hidden">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-white/[0.06] rounded-xl overflow-hidden">
             {[
               { title: "15 Crypto Pairs", desc: "BTC, ETH, SOL, XRP, DOGE, BNB, ADA, and 8 more major pairs" },
               { title: "Live Signals", desc: "Real-time BUY/SELL/SKIP signals with confidence scores and reasoning" },
@@ -318,8 +318,8 @@ export function Landing() {
         </div>
       </section>
 
-      <section id="exchanges" className="py-32 border-t border-white/[0.06]">
-        <div className="max-w-[1200px] mx-auto px-6">
+      <section id="exchanges" className="py-16 md:py-32 border-t border-white/[0.06]">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
           <div className="max-w-xl mb-20">
             <p className="text-[13px] text-neutral-500 uppercase tracking-[0.15em] font-medium mb-4">Integrations</p>
             <h2 className="text-3xl md:text-[2.5rem] font-light tracking-tight leading-tight">
@@ -357,8 +357,8 @@ export function Landing() {
         </div>
       </section>
 
-      <section id="pricing" className="py-32 border-t border-white/[0.06]">
-        <div className="max-w-[1200px] mx-auto px-6">
+      <section id="pricing" className="py-16 md:py-32 border-t border-white/[0.06]">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
           <div className="max-w-xl mx-auto text-center mb-16">
             <p className="text-[13px] text-neutral-500 uppercase tracking-[0.15em] font-medium mb-4">Pricing</p>
             <h2 className="text-3xl md:text-[2.5rem] font-light tracking-tight">
@@ -431,8 +431,8 @@ export function Landing() {
         </div>
       </section>
 
-      <section className="py-32 border-t border-white/[0.06]">
-        <div className="max-w-[1200px] mx-auto px-6 text-center">
+      <section className="py-16 md:py-32 border-t border-white/[0.06]">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 text-center">
           <h2 className="text-3xl md:text-[2.5rem] font-light tracking-tight mb-6">
             Ready to trade <span className="italic text-neutral-400">smarter?</span>
           </h2>
@@ -448,7 +448,7 @@ export function Landing() {
       </section>
 
       <footer className="border-t border-white/[0.06] py-10">
-        <div className="max-w-[1200px] mx-auto px-6">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-3">
