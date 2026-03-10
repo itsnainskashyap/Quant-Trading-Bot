@@ -24,7 +24,10 @@ import {
   Zap,
   Infinity,
   FileText,
-  ChevronRight
+  ChevronRight,
+  Shield,
+  ShieldCheck,
+  ShieldAlert,
 } from "lucide-react";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 import { ExchangeLogo } from "@/components/ExchangeLogos";
@@ -66,6 +69,11 @@ export default function Profile() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   
+  const { data: kycData } = useQuery<{ status: string }>({
+    queryKey: ["/api/kyc/status"],
+    enabled: !!user,
+  });
+
   const { data: predictions, isLoading: predictionsLoading } = useQuery<PredictionData>({
     queryKey: ["/api/predictions"],
     enabled: !!user,
@@ -447,6 +455,46 @@ export default function Profile() {
                 </Button>
               </Link>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-[#12121a] border-white/5">
+          <CardContent className="p-4">
+            <Link href="/kyc">
+              <button
+                className="w-full flex items-center justify-between group"
+                data-testid="button-profile-kyc"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                    kycData?.status === "verified" ? "bg-emerald-500/10" :
+                    kycData?.status === "pending" ? "bg-amber-500/10" :
+                    "bg-red-500/10"
+                  }`}>
+                    {kycData?.status === "verified" ? (
+                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    ) : kycData?.status === "pending" ? (
+                      <Shield className="w-4 h-4 text-amber-400" />
+                    ) : (
+                      <ShieldAlert className="w-4 h-4 text-red-400" />
+                    )}
+                  </div>
+                  <div className="text-left">
+                    <div className="text-sm font-medium text-white">KYC Verification</div>
+                    <div className={`text-xs ${
+                      kycData?.status === "verified" ? "text-emerald-400" :
+                      kycData?.status === "pending" ? "text-amber-400" :
+                      "text-red-400"
+                    }`}>
+                      {kycData?.status === "verified" ? "Identity verified" :
+                       kycData?.status === "pending" ? "Verification pending" :
+                       "Not verified - Required for deposits"}
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gray-400 transition-colors" />
+              </button>
+            </Link>
           </CardContent>
         </Card>
 

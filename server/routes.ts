@@ -15,6 +15,7 @@ import { evaluateSignal, getMetaJudgeSummary, type MetaJudgeResult } from "./met
 import { checkLossAvoidance, recordTradeOutcome, getLossAvoidanceSummary, getDefensiveRiskMultiplier, type LossAvoidanceState } from "./lossAvoidance";
 import { getSession } from "./replit_integrations/auth";
 import { setupWalletRoutes } from "./walletRoutes";
+import { setupKycRoutes } from "./kycRoutes";
 
 // Helper function to get user ID from either Replit Auth or email/password session
 function getUserIdFromRequest(req: any): string | null {
@@ -1610,6 +1611,7 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
   };
 
   setupWalletRoutes(app, verifyAdminSession);
+  setupKycRoutes(app, verifyAdminSession);
   
   // Get all users with subscription status
   app.get("/api/admin/users", async (req, res) => {

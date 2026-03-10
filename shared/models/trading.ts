@@ -237,6 +237,23 @@ export const userBalances = pgTable("user_balances", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const kycDocuments = pgTable("kyc_documents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  documentType: varchar("document_type").notNull(), // aadhaar, pancard, voter_id, id_card
+  documentImage: text("document_image").notNull(), // base64 image
+  extractedName: varchar("extracted_name"),
+  extractedDob: varchar("extracted_dob"),
+  extractedDocNumber: varchar("extracted_doc_number"),
+  extractedFatherName: varchar("extracted_father_name"),
+  extractedAddress: text("extracted_address"),
+  extractedGender: varchar("extracted_gender"),
+  status: varchar("status").notNull().default("pending"), // pending, verified, rejected
+  adminNotes: text("admin_notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  verifiedAt: timestamp("verified_at"),
+});
+
 export type AdminPaymentMethod = typeof adminPaymentMethods.$inferSelect;
 export type InsertAdminPaymentMethod = typeof adminPaymentMethods.$inferInsert;
 export type Deposit = typeof deposits.$inferSelect;
@@ -245,3 +262,5 @@ export type Withdrawal = typeof withdrawals.$inferSelect;
 export type InsertWithdrawal = typeof withdrawals.$inferInsert;
 export type UserBalance = typeof userBalances.$inferSelect;
 export type InsertUserBalance = typeof userBalances.$inferInsert;
+export type KycDocument = typeof kycDocuments.$inferSelect;
+export type InsertKycDocument = typeof kycDocuments.$inferInsert;

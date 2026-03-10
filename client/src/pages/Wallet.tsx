@@ -23,6 +23,9 @@ import {
   QrCode,
   IndianRupee,
   Bitcoin,
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
@@ -660,13 +663,21 @@ function HistoryTab() {
 export default function WalletPage() {
   const { user } = useAuth();
   const [balance, setBalance] = useState(0);
+  const [kycStatus, setKycStatus] = useState<string>("loading");
 
   useEffect(() => {
     fetch("/api/user/balance", { credentials: "include" })
       .then(r => r.json())
       .then(d => setBalance(d.balance || 0))
       .catch(() => {});
+
+    fetch("/api/kyc/status", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => setKycStatus(d.status || "not_submitted"))
+      .catch(() => setKycStatus("not_submitted"));
   }, []);
+
+  const isKycVerified = kycStatus === "verified";
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
@@ -681,6 +692,40 @@ export default function WalletPage() {
           <h1 className="text-xl font-bold">Wallet</h1>
         </div>
 
+        {!isKycVerified && kycStatus !== "loading" && (
+          <Card className={`mb-4 ${kycStatus === "pending" ? "bg-amber-500/5 border-amber-500/20" : "bg-red-500/5 border-red-500/20"}`}>
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <ShieldAlert className={`w-6 h-6 flex-shrink-0 ${kycStatus === "pending" ? "text-amber-400" : "text-red-400"}`} />
+                <div className="flex-1">
+                  <h3 className={`font-semibold text-sm ${kycStatus === "pending" ? "text-amber-400" : "text-red-400"}`}>
+                    {kycStatus === "pending" ? "KYC Verification Pending" : "KYC Verification Required"}
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {kycStatus === "pending"
+                      ? "Your identity is being verified. Deposits will be enabled once approved."
+                      : "Complete KYC verification to enable deposits. Upload a valid government ID to get started."}
+                  </p>
+                  {kycStatus !== "pending" && (
+                    <Link href="/kyc">
+                      <Button size="sm" className="mt-3 bg-white text-black hover:bg-neutral-200 font-semibold" data-testid="button-verify-kyc">
+                        <Shield className="w-4 h-4 mr-1" /> Verify Identity
+                      </Button>
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {isKycVerified && (
+          <div className="flex items-center gap-2 mb-4 px-1">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs text-emerald-400 font-medium">KYC Verified</span>
+          </div>
+        )}
+
         <Card className="bg-gradient-to-br from-[#1a1a2e] to-[#12121a] border-cyan-500/20 mb-6">
           <CardContent className="p-6 text-center">
             <WalletIcon className="w-10 h-10 text-cyan-400 mx-auto mb-2" />
@@ -692,8 +737,11 @@ export default function WalletPage() {
 
         <Tabs defaultValue="deposit" className="w-full">
           <TabsList className="w-full bg-[#12121a] border border-[#1a1a2e]">
-            <TabsTrigger value="deposit" className="flex-1 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400" data-testid="tab-deposit">
+            <TabsTrigger value="deposit" className="flex-1 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400 relative" data-testid="tab-deposit">
               <ArrowDownToLine className="w-4 h-4 mr-1" /> Deposit
+              {isKycVerified && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse" />
+              )}
             </TabsTrigger>
             <TabsTrigger value="withdraw" className="flex-1 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400" data-testid="tab-withdraw">
               <ArrowUpFromLine className="w-4 h-4 mr-1" /> Withdraw
@@ -704,9 +752,28 @@ export default function WalletPage() {
           </TabsList>
 
           <TabsContent value="deposit" className="mt-4">
-            <Card className="bg-[#12121a] border-[#1a1a2e]">
+            <Card className={`${isKycVerified ? "bg-[#12121a] border-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.05)]" : "bg-[#12121a] border-[#1a1a2e]"}`}>
               <CardContent className="p-4">
-                <DepositTab />
+                {isKycVerified ? (
+                  <DepositTab />
+                ) : (
+                  <div className="text-center py-8">
+                    <ShieldAlert className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                    <h3 className="text-white font-semibold mb-2">KYC Required for Deposits</h3>
+                    <p className="text-gray-400 text-sm mb-4">
+                      {kycStatus === "pending"
+                        ? "Your KYC is being reviewed. Please wait for verification."
+                        : "Verify your identity to start making deposits."}
+                    </p>
+                    {kycStatus !== "pending" && (
+                      <Link href="/kyc">
+                        <Button className="bg-white text-black hover:bg-neutral-200 font-semibold px-6" data-testid="button-kyc-from-deposit">
+                          <Shield className="w-4 h-4 mr-2" /> Complete KYC Verification
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

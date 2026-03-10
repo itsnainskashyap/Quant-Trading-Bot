@@ -116,6 +116,40 @@ export default function Admin() {
   const [newMethodQr, setNewMethodQr] = useState("");
   const [processingTxId, setProcessingTxId] = useState<string | null>(null);
 
+  const [kycSubmissions, setKycSubmissions] = useState<any[]>([]);
+  const [processingKycId, setProcessingKycId] = useState<string | null>(null);
+
+  const fetchKycSubmissions = async () => {
+    if (!sessionId) return;
+    try {
+      const res = await fetch("/api/admin/kyc", { headers: { "x-admin-session": sessionId } });
+      if (res.ok) setKycSubmissions(await res.json());
+    } catch {}
+  };
+
+  const handleKycAction = async (id: string, action: "verified" | "rejected", notes?: string) => {
+    if (!sessionId) return;
+    setProcessingKycId(id);
+    try {
+      const res = await fetch(`/api/admin/kyc/${id}/action`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-session": sessionId },
+        body: JSON.stringify({ action, notes }),
+      });
+      if (res.ok) {
+        toast({ title: "Success", description: `KYC ${action}` });
+        fetchKycSubmissions();
+      } else {
+        const data = await res.json();
+        toast({ title: "Error", description: data.message, variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to process KYC", variant: "destructive" });
+    } finally {
+      setProcessingKycId(null);
+    }
+  };
+
   const fetchPaymentMethods = async () => {
     if (!sessionId) return;
     try {
@@ -225,6 +259,7 @@ export default function Admin() {
       fetchPaymentMethods();
       fetchAdminDeposits();
       fetchAdminWithdrawals();
+      fetchKycSubmissions();
     }
   }, [isLoggedIn]);
 
@@ -1262,6 +1297,82 @@ export default function Admin() {
                           </Button>
                         </div>
                       ) : null}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="bg-[#12121a] border-white/5">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Shield className="w-5 h-5 text-blue-400" />
+                KYC Submissions
+                {kycSubmissions.filter(k => k.status === "pending").length > 0 && (
+                  <Badge className="bg-amber-500/20 text-amber-400 ml-2">{kycSubmissions.filter(k => k.status === "pending").length} pending</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {kycSubmissions.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center py-4">No KYC submissions</p>
+              ) : (
+                <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                  {kycSubmissions.map(k => (
+                    <div key={k.id} className="p-3 bg-white/[0.02] rounded-lg border border-white/5" data-testid={`card-admin-kyc-${k.id}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-white capitalize">{k.documentType?.replace("_", " ")}</span>
+                          <Badge className={
+                            k.status === "verified" ? "bg-green-500/20 text-green-400" :
+                            k.status === "rejected" ? "bg-red-500/20 text-red-400" :
+                            "bg-amber-500/20 text-amber-400"
+                          }>{k.status}</Badge>
+                        </div>
+                        <span className="text-xs text-gray-500">{k.userName || k.userEmail || "Unknown"}</span>
+                      </div>
+                      <div className="text-xs text-gray-400 space-y-1 mb-2">
+                        {k.extractedName && <p>Name: <span className="text-white">{k.extractedName}</span></p>}
+                        {k.extractedDob && <p>DOB: <span className="text-white">{k.extractedDob}</span></p>}
+                        {k.extractedDocNumber && <p>Doc #: <span className="text-white font-mono">{k.extractedDocNumber}</span></p>}
+                        {k.extractedGender && <p>Gender: <span className="text-white">{k.extractedGender}</span></p>}
+                        <p>Submitted: {new Date(k.createdAt).toLocaleString()}</p>
+                      </div>
+                      {k.documentImage && (
+                        <div className="mb-2">
+                          <img src={k.documentImage} alt="Document" className="max-h-32 rounded border border-white/10" />
+                        </div>
+                      )}
+                      {k.status === "pending" && (
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            className="bg-green-500/20 text-green-400 hover:bg-green-500/30 h-7 text-xs"
+                            onClick={() => handleKycAction(k.id, "verified")}
+                            disabled={processingKycId === k.id}
+                            data-testid={`button-kyc-approve-${k.id}`}
+                          >
+                            {processingKycId === k.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3 mr-1" />}
+                            Verify
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="bg-red-500/20 text-red-400 hover:bg-red-500/30 h-7 text-xs"
+                            onClick={() => {
+                              const reason = prompt("Rejection reason:");
+                              if (reason) handleKycAction(k.id, "rejected", reason);
+                            }}
+                            disabled={processingKycId === k.id}
+                            data-testid={`button-kyc-reject-${k.id}`}
+                          >
+                            <XCircle className="w-3 h-3 mr-1" /> Reject
+                          </Button>
+                        </div>
+                      )}
+                      {k.adminNotes && (
+                        <p className="text-xs text-amber-400 mt-2">Note: {k.adminNotes}</p>
+                      )}
                     </div>
                   ))}
                 </div>

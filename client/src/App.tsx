@@ -14,6 +14,7 @@ import Personalize from "@/pages/Personalize";
 import Plans from "@/pages/Plans";
 import Payment from "@/pages/Payment";
 import Wallet from "@/pages/Wallet";
+import KYC from "@/pages/KYC";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 
@@ -71,6 +72,11 @@ function AuthenticatedRoutes() {
       <Route path="/wallet">
         <OnboardingGuard>
           <Wallet />
+        </OnboardingGuard>
+      </Route>
+      <Route path="/kyc">
+        <OnboardingGuard>
+          <KYC />
         </OnboardingGuard>
       </Route>
       <Route component={NotFound} />

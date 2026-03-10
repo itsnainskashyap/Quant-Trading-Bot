@@ -1,6 +1,6 @@
 import type { Express, Request, Response, RequestHandler } from "express";
 import { db } from "./db";
-import { deposits, withdrawals, userBalances, adminPaymentMethods } from "@shared/models/trading";
+import { deposits, withdrawals, userBalances, adminPaymentMethods, kycDocuments } from "@shared/models/trading";
 import { users } from "@shared/models/auth";
 import { eq, desc, and, sql } from "drizzle-orm";
 
@@ -54,6 +54,12 @@ export function setupWalletRoutes(app: Express, verifyAdminSession?: (sessionId:
     try {
       const userId = getUserIdFromRequest(req);
       if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+      const kycDocs = await db.select().from(kycDocuments).where(eq(kycDocuments.userId, userId));
+      const isKycVerified = kycDocs.some((d) => d.status === "verified");
+      if (!isKycVerified) {
+        return res.status(403).json({ message: "KYC verification required before making deposits. Please verify your identity first.", kycRequired: true });
+      }
 
       const { type, crypto, chain, amountInr, amountUsdt, txHash, utr, toAddress } = req.body;
 
