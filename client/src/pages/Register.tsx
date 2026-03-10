@@ -3,10 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
 import { Loader2, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
+import { TermsContent } from "@/components/TermsAndConditions";
 
 export function Register() {
   const [, setLocation] = useLocation();
@@ -17,6 +21,8 @@ export function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +39,11 @@ export function Register() {
 
     if (password.length < 6) {
       toast({ title: "Error", description: "Password must be at least 6 characters", variant: "destructive" });
+      return;
+    }
+
+    if (!agreedToTerms) {
+      toast({ title: "Error", description: "Please agree to the Terms & Conditions", variant: "destructive" });
       return;
     }
 
@@ -135,10 +146,31 @@ export function Register() {
                 </div>
               </div>
 
+              <div className="flex items-start gap-2 pt-1">
+                <Checkbox
+                  id="terms"
+                  checked={agreedToTerms}
+                  onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+                  className="mt-0.5 border-gray-600 data-[state=checked]:bg-cyan-500 data-[state=checked]:border-cyan-500"
+                  data-testid="checkbox-terms"
+                />
+                <label htmlFor="terms" className="text-xs text-gray-400 leading-relaxed cursor-pointer">
+                  I agree to the{" "}
+                  <button
+                    type="button"
+                    onClick={() => setShowTermsModal(true)}
+                    className="text-cyan-400 hover:underline font-medium"
+                    data-testid="button-view-terms"
+                  >
+                    Terms & Conditions
+                  </button>
+                </label>
+              </div>
+
               <Button
                 type="submit"
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white"
+                disabled={isLoading || !agreedToTerms}
+                className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white disabled:opacity-50"
                 data-testid="button-register"
               >
                 {isLoading ? (
@@ -163,6 +195,29 @@ export function Register() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={showTermsModal} onOpenChange={setShowTermsModal}>
+        <DialogContent className="bg-[#12121a] border-[#1a1a2e] text-white max-w-lg max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="text-white">Terms & Conditions</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh] pr-4">
+            <TermsContent />
+          </ScrollArea>
+          <div className="pt-3 border-t border-white/5">
+            <Button
+              onClick={() => {
+                setAgreedToTerms(true);
+                setShowTermsModal(false);
+              }}
+              className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white"
+              data-testid="button-accept-terms"
+            >
+              I Accept the Terms & Conditions
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

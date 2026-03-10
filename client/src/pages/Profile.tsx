@@ -6,6 +6,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   ArrowLeft, 
   TrendingUp,
@@ -20,11 +22,14 @@ import {
   Link2,
   Crown,
   Zap,
-  Infinity
+  Infinity,
+  FileText,
+  ChevronRight
 } from "lucide-react";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 import { ExchangeLogo } from "@/components/ExchangeLogos";
 import { PaymentModal } from "@/components/PaymentModal";
+import { TermsContent } from "@/components/TermsAndConditions";
 
 interface PredictionData {
   predictions: Array<{
@@ -59,6 +64,7 @@ interface SubscriptionData {
 export default function Profile() {
   const { user, logout, isLoggingOut, isLoading: authLoading } = useAuth();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   
   const { data: predictions, isLoading: predictionsLoading } = useQuery<PredictionData>({
     queryKey: ["/api/predictions"],
@@ -444,6 +450,27 @@ export default function Profile() {
           </CardContent>
         </Card>
 
+        <Card className="bg-[#12121a] border-white/5">
+          <CardContent className="p-4">
+            <button
+              onClick={() => setShowTermsModal(true)}
+              className="w-full flex items-center justify-between group"
+              data-testid="button-profile-terms"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+                  <FileText className="w-4 h-4 text-cyan-400" />
+                </div>
+                <div className="text-left">
+                  <div className="text-sm font-medium text-white">Terms & Conditions</div>
+                  <div className="text-xs text-gray-500">View platform rules and policies</div>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gray-400 transition-colors" />
+            </button>
+          </CardContent>
+        </Card>
+
         <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
           <div className="flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
@@ -458,6 +485,17 @@ export default function Profile() {
         isOpen={showPaymentModal} 
         onClose={() => setShowPaymentModal(false)} 
       />
+
+      <Dialog open={showTermsModal} onOpenChange={setShowTermsModal}>
+        <DialogContent className="bg-[#12121a] border-[#1a1a2e] text-white max-w-lg max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="text-white">Terms & Conditions</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh] pr-4">
+            <TermsContent />
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
