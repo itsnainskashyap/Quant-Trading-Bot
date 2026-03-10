@@ -141,6 +141,7 @@ export function Landing() {
                   data-testid="img-hero-mockup"
                   draggable={false}
                 />
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-[60px] bg-white/[0.04] blur-[40px] rounded-full" />
               </div>
             </div>
           </div>
