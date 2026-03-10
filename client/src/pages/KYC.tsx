@@ -232,7 +232,8 @@ export default function KYC() {
               </Button>
             </Link>
             <div className="flex items-center gap-3">
-              <img src={logoImage} alt="TradeX" className="w-8 h-8" />
+              <img src={logoImage} alt="TradeX AI" className="w-8 h-8 rounded-full" />
+              <span className="text-white font-semibold text-base tracking-tight">TradeX AI</span>
               <h1 className="text-lg font-light">KYC Verification</h1>
             </div>
           </div>

@@ -112,7 +112,10 @@ export default function ForgotPassword() {
     <div className="min-h-screen bg-black flex items-center justify-center p-4" data-testid="page-forgot-password">
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
-          <img src={logoImage} alt="TradeX AI" className="h-9 mx-auto mb-8" />
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <img src={logoImage} alt="TradeX AI" className="h-9 w-9 rounded-full" />
+            <span className="text-white font-semibold text-xl tracking-tight">TradeX AI</span>
+          </div>
           <h1 className="text-2xl font-light text-white tracking-tight mb-2">
             {step === "email" ? "Reset Password" : step === "otp" ? "Enter Code" : "New Password"}
           </h1>

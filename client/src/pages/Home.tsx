@@ -133,7 +133,8 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <Link href="/dashboard">
-              <img src={logoImage} alt="TradeX AI" className="h-8 w-auto cursor-pointer" data-testid="link-logo" />
+              <img src={logoImage} alt="TradeX AI" className="h-8 w-8 rounded-full cursor-pointer" data-testid="link-logo" />
+              <span className="text-white font-semibold text-base tracking-tight hidden sm:inline">TradeX AI</span>
             </Link>
             <nav className="hidden md:flex items-center gap-1">
               <Link href="/dashboard" className="px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-white/[0.06]" data-testid="nav-dashboard">

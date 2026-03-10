@@ -141,7 +141,10 @@ export function Personalize() {
       <div className="relative z-10 py-8 px-4">
         <div className="max-w-xl mx-auto">
           <div className="text-center mb-6">
-            <img src={logoImage} alt="TradeX AI" className="h-10 mx-auto mb-4" />
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <img src={logoImage} alt="TradeX AI" className="h-9 w-9 rounded-full" />
+              <span className="text-white font-semibold text-xl tracking-tight">TradeX AI</span>
+            </div>
             <div className="flex items-center justify-center gap-2 text-neutral-400 mb-2">
               <Settings2 className="w-5 h-5" />
               <span className="text-sm font-medium">Setting up your experience</span>

@@ -64,7 +64,10 @@ export function Landing() {
         }`}
       >
         <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
-          <img src={logoImage} alt="TradeX AI" className="h-8 w-auto" />
+          <div className="flex items-center gap-2">
+            <img src={logoImage} alt="TradeX AI" className="h-8 w-8 rounded-full" />
+            <span className="text-white font-semibold text-lg tracking-tight">TradeX AI</span>
+          </div>
           <div className="hidden md:flex items-center gap-8">
             <a href="#how-it-works" className="text-[13px] text-neutral-400 hover:text-white transition-colors" data-testid="link-how-it-works">
               How it Works
@@ -448,7 +451,10 @@ export function Landing() {
         <div className="max-w-[1200px] mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
             <div>
-              <img src={logoImage} alt="TradeX AI" className="h-7 w-auto opacity-70 mb-3" />
+              <div className="flex items-center gap-2 mb-3">
+                <img src={logoImage} alt="TradeX AI" className="h-7 w-7 rounded-full opacity-70" />
+                <span className="text-white/70 font-semibold text-sm tracking-tight">TradeX AI</span>
+              </div>
               <p className="text-[11px] text-neutral-600 leading-relaxed">
                 AI-powered crypto trading signals using Multi-AI Consensus technology.
               </p>

@@ -1221,6 +1221,9 @@ function HistoryTab() {
     <div className="space-y-3">
       {transactions.map((tx: any, i: number) => (
         <div key={tx.id} className="bg-black border border-white/[0.06] rounded-lg p-3" data-testid={`card-transaction-${i}`}>
+          {tx.orderId && (
+            <p className="text-[10px] text-neutral-500 font-mono mb-1.5">Order: {tx.orderId}</p>
+          )}
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               {tx.txType === "deposit" ? (
@@ -1308,7 +1311,8 @@ export default function WalletPage() {
               <ArrowLeft className="w-4 h-4" />
             </Button>
           </Link>
-          <img src={logoImage} alt="TradeX AI" className="h-8" />
+          <img src={logoImage} alt="TradeX AI" className="h-8 w-8 rounded-full" />
+          <span className="text-white font-semibold text-lg tracking-tight">TradeX AI</span>
           <h1 className="text-xl font-bold">Wallet</h1>
         </div>
 

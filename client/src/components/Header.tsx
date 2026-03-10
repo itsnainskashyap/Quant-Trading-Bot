@@ -49,9 +49,10 @@ export function Header({ isDataFeedHealthy }: HeaderProps) {
             <img 
               src={logoImage} 
               alt="TradeX AI" 
-              className="h-8 w-auto"
+              className="h-8 w-8 rounded-full"
               data-testid="img-logo"
             />
+            <span className="text-white font-semibold text-base tracking-tight">TradeX AI</span>
           </div>
           
           <div className="flex items-center gap-3">

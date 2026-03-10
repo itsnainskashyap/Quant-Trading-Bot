@@ -118,7 +118,10 @@ export function Plans() {
       <div className="relative z-10 py-8 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
-            <img src={logoImage} alt="TradeX AI" className="h-12 mx-auto mb-4" />
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <img src={logoImage} alt="TradeX AI" className="h-10 w-10 rounded-full" />
+              <span className="text-white font-semibold text-xl tracking-tight">TradeX AI</span>
+            </div>
             <div className="flex items-center justify-center gap-2 text-neutral-400 mb-3">
               <Gem className="w-5 h-5" />
               <span className="text-sm font-medium">Choose Your Trading Power</span>

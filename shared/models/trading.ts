@@ -202,6 +202,7 @@ export const adminPaymentMethods = pgTable("admin_payment_methods", {
 
 export const deposits = pgTable("deposits", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").notNull().default(sql`'TXD-' || to_char(now(), 'YYYYMMDD') || '-' || substr(gen_random_uuid()::text, 1, 6)`),
   userId: varchar("user_id").notNull().references(() => users.id),
   type: varchar("type").notNull(), // crypto, upi, imps, skrill, volet
   crypto: varchar("crypto"),
@@ -222,6 +223,7 @@ export const deposits = pgTable("deposits", {
 
 export const withdrawals = pgTable("withdrawals", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").notNull().default(sql`'TXW-' || to_char(now(), 'YYYYMMDD') || '-' || substr(gen_random_uuid()::text, 1, 6)`),
   userId: varchar("user_id").notNull().references(() => users.id),
   type: varchar("type").notNull(), // crypto, upi, imps, binance_pay, wire_transfer
   crypto: varchar("crypto"),

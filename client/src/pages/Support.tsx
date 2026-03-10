@@ -124,7 +124,10 @@ export default function Support() {
         </div>
 
         <div className="text-center mb-8">
-          <img src={logoImage} alt="TradeX AI" className="h-8 mx-auto mb-6" />
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <img src={logoImage} alt="TradeX AI" className="h-8 w-8 rounded-full" />
+            <span className="text-white font-semibold text-lg tracking-tight">TradeX AI</span>
+          </div>
           <div className="w-14 h-14 rounded-full bg-white/[0.05] border border-white/[0.08] flex items-center justify-center mx-auto mb-5">
             <Headphones className="w-6 h-6 text-white" />
           </div>

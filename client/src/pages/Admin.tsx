@@ -536,7 +536,10 @@ export default function Admin() {
         <Card className="w-full max-w-md bg-white/[0.03] border-white/10">
           <CardContent className="p-8">
             <div className="text-center mb-6">
-              <img src={logoImage} alt="TradeX AI" className="h-12 w-auto mx-auto mb-4" />
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <img src={logoImage} alt="TradeX AI" className="h-10 w-10 rounded-full" />
+                <span className="text-white font-semibold text-xl tracking-tight">TradeX AI</span>
+              </div>
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Shield className="w-6 h-6 text-red-500" />
                 <h1 className="text-xl font-bold text-white">Admin Panel</h1>
@@ -598,7 +601,8 @@ export default function Admin() {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
             </Link>
-            <img src={logoImage} alt="TradeX AI" className="h-8 w-auto" />
+            <img src={logoImage} alt="TradeX AI" className="h-8 w-8 rounded-full" />
+            <span className="text-white font-semibold text-base tracking-tight">TradeX AI</span>
             <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
               <Shield className="w-3 h-3 mr-1" />
               Admin
@@ -1247,9 +1251,10 @@ export default function Admin() {
                 <div className="space-y-3 max-h-[400px] overflow-y-auto">
                   {adminDeposits.map(d => (
                     <div key={d.id} className="p-3 bg-white/[0.02] rounded-lg border border-white/5" data-testid={`card-admin-deposit-${d.id}`}>
+                      {d.orderId && <p className="text-[10px] text-neutral-500 font-mono mb-1">Order: {d.orderId}</p>}
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-white">{d.amountUsdt?.toFixed(2)} USDT</span>
+                          <span className="text-sm font-semibold text-white">{d.amountUsdt?.toFixed(2)} USD</span>
                           <Badge variant="outline" className="text-xs">{d.type === "upi" ? "UPI" : d.type === "imps" ? "IMPS" : d.type === "skrill" ? "Skrill" : d.type === "volet" ? "Volet" : `${d.crypto} (${d.chain})`}</Badge>
                         </div>
                         <Badge className={
@@ -1307,9 +1312,10 @@ export default function Admin() {
                 <div className="space-y-3 max-h-[400px] overflow-y-auto">
                   {adminWithdrawals.map(w => (
                     <div key={w.id} className="p-3 bg-white/[0.02] rounded-lg border border-white/5" data-testid={`card-admin-withdrawal-${w.id}`}>
+                      {w.orderId && <p className="text-[10px] text-neutral-500 font-mono mb-1">Order: {w.orderId}</p>}
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-white">{w.amountUsdt?.toFixed(2)} USDT</span>
+                          <span className="text-sm font-semibold text-white">{w.amountUsdt?.toFixed(2)} USD</span>
                           <Badge variant="outline" className="text-xs">{w.type === "imps" ? "IMPS" : w.type === "upi" ? "UPI" : w.type === "binance_pay" ? "Binance Pay" : w.type === "wire_transfer" ? "Wire Transfer" : `${w.crypto} (${w.chain})`}</Badge>
                         </div>
                         <Badge className={

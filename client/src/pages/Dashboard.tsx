@@ -546,7 +546,8 @@ export default function Dashboard() {
         <div className="max-w-[1600px] mx-auto px-4 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <Link href="/dashboard">
-              <img src={logoImage} alt="TradeX AI" className="h-8 w-auto cursor-pointer" />
+              <img src={logoImage} alt="TradeX AI" className="h-8 w-8 rounded-full cursor-pointer" />
+              <span className="text-white font-semibold text-base tracking-tight hidden sm:inline">TradeX AI</span>
             </Link>
             <nav className="hidden md:flex items-center gap-1">
               <Link href="/dashboard" className="px-3 py-1.5 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-white/[0.04] transition-colors" data-testid="nav-dashboard">

@@ -125,7 +125,8 @@ export default function Profile() {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
             </Link>
-            <img src={logoImage} alt="TradeX AI" className="h-7 w-auto" />
+            <img src={logoImage} alt="TradeX AI" className="h-7 w-7 rounded-full" />
+            <span className="text-white font-semibold text-base tracking-tight">TradeX AI</span>
           </div>
           <Button 
             variant="ghost" 

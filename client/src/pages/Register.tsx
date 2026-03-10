@@ -211,7 +211,10 @@ export function Register() {
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <img src={logoImage} alt="TradeX AI" className="h-9 mx-auto mb-8" />
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <img src={logoImage} alt="TradeX AI" className="h-9 w-9 rounded-full" />
+            <span className="text-white font-semibold text-xl tracking-tight">TradeX AI</span>
+          </div>
           {step === "register" ? (
             <>
               <h1 className="text-2xl font-light text-white tracking-tight mb-2">Create account</h1>
