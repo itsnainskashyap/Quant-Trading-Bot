@@ -35,7 +35,7 @@ import upiLogo from "@assets/image_1773144638368.png";
 import impsLogo from "@assets/Picsart_26-03-10_19-32-00-972_1773166568501.png";
 import binanceLogo from "@assets/binance_logo.png";
 
-const INR_TO_USDT = 92;
+const INR_TO_USD = 92;
 
 function CryptoIcon({ symbol, className = "w-7 h-7" }: { symbol: string; className?: string }) {
   const icons: Record<string, { bg: string; text: string; label: string }> = {
@@ -96,18 +96,18 @@ function StatusBadge({ status }: { status: string }) {
 
 function SkrillLogo({ className = "w-5 h-5" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} fill="none">
-      <rect width="24" height="24" rx="6" fill="#862165" />
-      <text x="12" y="16" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="sans-serif">S</text>
+    <svg viewBox="0 0 256 256" className={className}>
+      <rect width="256" height="256" rx="40" fill="#862165" />
+      <path d="M178.5 80.5c-5.3-5.3-11.9-9.4-19.5-12.1-7.6-2.7-16-4-24.9-4H89v28h45.1c5.5 0 10.3.8 14.1 2.5 3.8 1.7 5.8 4.5 5.8 8.3 0 3.5-1.9 6.1-5.6 7.9-3.7 1.8-8.5 2.7-14.3 2.7h-15.4L89 143.6V172h37.3l30.7-30.2c3.3.4 6.4 1.2 9.3 2.4 5.5 2.3 8.2 5.8 8.2 10.6 0 4.4-2.4 7.8-7.2 10.2-4.8 2.4-11 3.6-18.5 3.6H89v28h59.8c9.5 0 18.2-1.5 25.9-4.4 7.8-2.9 13.9-7.3 18.4-13.1 4.5-5.8 6.8-12.8 6.8-21 0-7.5-2-13.8-5.9-19-3.9-5.2-9.3-9.3-16.1-12.3 5.4-3.3 9.6-7.4 12.5-12.4 2.9-5 4.4-10.7 4.4-17 0-7.8-2.1-14.3-6.3-19.5-.6-.7-1.3-1.4-2-2.1l-8 7.2z" fill="white" />
     </svg>
   );
 }
 
 function VoletLogo({ className = "w-5 h-5" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} fill="none">
-      <rect width="24" height="24" rx="6" fill="#00B4D8" />
-      <text x="12" y="16" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="sans-serif">V</text>
+    <svg viewBox="0 0 256 256" className={className}>
+      <rect width="256" height="256" rx="40" fill="#1B998B" />
+      <path d="M68 72h28l32 84 32-84h28L144 192h-32L68 72z" fill="white" />
     </svg>
   );
 }
@@ -168,7 +168,7 @@ function DepositTab() {
     setAmountInr(val);
     const inr = parseFloat(val);
     if (!isNaN(inr) && inr > 0) {
-      setAmount((inr / INR_TO_USDT).toFixed(2));
+      setAmount((inr / INR_TO_USD).toFixed(2));
     } else {
       setAmount("");
     }
@@ -178,7 +178,7 @@ function DepositTab() {
     setAmount(val);
     const usdt = parseFloat(val);
     if (!isNaN(usdt) && usdt > 0) {
-      setAmountInr((usdt * INR_TO_USDT).toFixed(2));
+      setAmountInr((usdt * INR_TO_USD).toFixed(2));
     } else {
       setAmountInr("");
     }
@@ -372,10 +372,10 @@ function DepositTab() {
           )}
 
           <div>
-            <Label className="text-gray-300">Amount (USDT)</Label>
+            <Label className="text-gray-300">Amount (USD)</Label>
             <Input
               type="number"
-              placeholder="Enter USDT amount"
+              placeholder="Enter USD amount"
               value={amount}
               onChange={e => setAmount(e.target.value)}
               className="bg-black border-white/[0.06] text-white"
@@ -411,9 +411,9 @@ function DepositTab() {
           </div>
           <div className="bg-black border border-white/[0.06] rounded-lg p-3 flex items-center justify-between">
             <span className="text-gray-400 text-sm">You will receive</span>
-            <span className="text-white font-bold">{amount ? `${amount} USDT` : "0 USDT"}</span>
+            <span className="text-white font-bold">{amount ? `${amount} USD` : "0 USD"}</span>
           </div>
-          <p className="text-xs text-gray-500">Conversion Rate: ₹{INR_TO_USDT} = 1 USDT</p>
+          <p className="text-xs text-gray-500">Conversion Rate: ₹{INR_TO_USD} = 1 USD</p>
 
           {upiMethod ? (
             <div className="bg-black border border-white/[0.06] rounded-lg p-4 space-y-3">
@@ -485,9 +485,9 @@ function DepositTab() {
           </div>
           <div className="bg-black border border-white/[0.06] rounded-lg p-3 flex items-center justify-between">
             <span className="text-gray-400 text-sm">You will receive</span>
-            <span className="text-white font-bold">{amount ? `${amount} USDT` : "0 USDT"}</span>
+            <span className="text-white font-bold">{amount ? `${amount} USD` : "0 USD"}</span>
           </div>
-          <p className="text-xs text-gray-500">Conversion Rate: ₹{INR_TO_USDT} = 1 USDT</p>
+          <p className="text-xs text-gray-500">Conversion Rate: ₹{INR_TO_USD} = 1 USD</p>
 
           {impsMethod ? (
             <div className="bg-black border border-white/[0.06] rounded-lg p-4 space-y-3">
@@ -563,10 +563,10 @@ function DepositTab() {
             </div>
           </div>
           <div>
-            <Label className="text-gray-300">Amount (USDT)</Label>
+            <Label className="text-gray-300">Amount (USD)</Label>
             <Input
               type="number"
-              placeholder="Enter USDT amount"
+              placeholder="Enter USD amount"
               value={amount}
               onChange={e => setAmount(e.target.value)}
               className="bg-black border-white/[0.06] text-white"
@@ -607,10 +607,10 @@ function DepositTab() {
             </div>
           </div>
           <div>
-            <Label className="text-gray-300">Amount (USDT)</Label>
+            <Label className="text-gray-300">Amount (USD)</Label>
             <Input
               type="number"
-              placeholder="Enter USDT amount"
+              placeholder="Enter USD amount"
               value={amount}
               onChange={e => setAmount(e.target.value)}
               className="bg-black border-white/[0.06] text-white"
@@ -706,7 +706,7 @@ function WithdrawTab() {
   }, [selectedCrypto]);
 
   const amountUsdt = parseFloat(amount) || 0;
-  const amountInr = (withdrawType === "upi" || withdrawType === "imps") ? (amountUsdt * INR_TO_USDT).toFixed(2) : null;
+  const amountInr = (withdrawType === "upi" || withdrawType === "imps") ? (amountUsdt * INR_TO_USD).toFixed(2) : null;
 
   const validateForm = (): boolean => {
     if (!amountUsdt || amountUsdt <= 0) {
@@ -836,7 +836,7 @@ function WithdrawTab() {
     <div className="space-y-4">
       <div className="bg-black border border-white/[0.06] rounded-lg p-3 flex items-center justify-between">
         <span className="text-gray-400">Available Balance</span>
-        <span className="text-white font-bold text-lg">{balance.toFixed(2)} USDT</span>
+        <span className="text-white font-bold text-lg">{balance.toFixed(2)} USD</span>
       </div>
 
       <div className="grid grid-cols-5 gap-2">
@@ -1115,7 +1115,7 @@ function WithdrawTab() {
       )}
 
       <div>
-        <Label className="text-gray-300">Amount (USDT)</Label>
+        <Label className="text-gray-300">Amount (USD)</Label>
         <Input
           type="number"
           placeholder="Enter amount"
@@ -1243,7 +1243,7 @@ function HistoryTab() {
             <span className="text-gray-400">
               {(tx.type === "upi" || tx.type === "imps") && tx.amountInr ? `₹${tx.amountInr.toFixed(2)}` : ""}
             </span>
-            <span className="text-white font-bold">{tx.amountUsdt.toFixed(2)} USDT</span>
+            <span className="text-white font-bold">{tx.amountUsdt.toFixed(2)} USD</span>
           </div>
           {(tx.txHash || tx.utr) && (
             <p className="text-xs text-gray-500 mt-1 font-mono truncate">
@@ -1352,8 +1352,8 @@ export default function WalletPage() {
           <CardContent className="p-6 text-center">
             <WalletIcon className="w-10 h-10 text-neutral-400 mx-auto mb-2" />
             <p className="text-gray-400 text-sm">Total Balance</p>
-            <p className="text-3xl font-bold text-white" data-testid="text-balance">{balance.toFixed(2)} USDT</p>
-            <p className="text-sm text-gray-500 mt-1">≈ ₹{(balance * INR_TO_USDT).toFixed(2)} INR</p>
+            <p className="text-3xl font-bold text-white" data-testid="text-balance">{balance.toFixed(2)} USD</p>
+            <p className="text-sm text-gray-500 mt-1">≈ ₹{(balance * INR_TO_USD).toFixed(2)} INR</p>
           </CardContent>
         </Card>
 

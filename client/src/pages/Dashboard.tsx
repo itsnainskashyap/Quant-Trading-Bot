@@ -237,7 +237,7 @@ function ManualTradeSection({ selectedPair, currentPrice, tradeMode, tradexBalan
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="text-[10px] text-gray-500 uppercase">Amount (USDT)</label>
+          <label className="text-[10px] text-gray-500 uppercase">Amount (USD)</label>
           <Input
             type="number"
             placeholder="0.00"
@@ -629,7 +629,7 @@ export default function Dashboard() {
           <a href="/wallet" className="flex items-center gap-2 min-w-0" data-testid="link-wallet-balance-mobile">
             <Coins className="w-4 h-4 text-emerald-400 flex-shrink-0" />
             <div className="flex flex-col min-w-0">
-              <span className="text-[10px] text-neutral-500 uppercase">USDT</span>
+              <span className="text-[10px] text-neutral-500 uppercase">USD</span>
               <span className="text-sm font-semibold text-emerald-400 font-mono">{usdtBalance.toFixed(2)}</span>
             </div>
           </a>

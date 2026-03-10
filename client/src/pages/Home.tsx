@@ -304,7 +304,7 @@ export default function Home() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-                      <span className="text-neutral-400">USDT Wallet</span>
+                      <span className="text-neutral-400">USD Wallet</span>
                     </div>
                     <span className="font-mono text-white" data-testid="text-wallet-balance">≈ {formatBalance(walletBalance)} USD</span>
                   </div>
@@ -399,10 +399,10 @@ export default function Home() {
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">USDT Wallet</span>
+                    <span className="font-medium text-sm">USD Wallet</span>
                   </div>
                   <div className="text-xs text-neutral-500 mt-0.5">
-                    Your funds: <span className="text-white font-mono">{formatBalance(walletBalance)} USDT</span>
+                    Your funds: <span className="text-white font-mono">{formatBalance(walletBalance)} USD</span>
                   </div>
                 </div>
               </div>
