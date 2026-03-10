@@ -49,16 +49,6 @@ export function LiveChatWidget() {
       n.LiveChatWidget = n.LiveChatWidget || e;
     })(window, document, [].slice);
 
-    const checkReady = setInterval(() => {
-      if (window.LiveChatWidget && window.LiveChatWidget.call) {
-        try {
-          window.LiveChatWidget.call("hide");
-        } catch {}
-        clearInterval(checkReady);
-      }
-    }, 300);
-
-    return () => clearInterval(checkReady);
   }, []);
 
   return null;
