@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   ArrowLeft,
   Wallet as WalletIcon,
@@ -20,15 +20,13 @@ import {
   XCircle,
   Clock,
   AlertCircle,
-  QrCode,
   IndianRupee,
-  Bitcoin,
   Shield,
   ShieldAlert,
   ShieldCheck,
-  Building2,
   Landmark,
   RefreshCw,
+  X,
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import logoImage from "@assets/Picsart_26-03-10_23-57-49-090_1773170426667.png";
@@ -42,33 +40,205 @@ import sectigoLogo from "@assets/Picsart_26-03-10_23-48-41-180_1773166854206.png
 const INR_TO_USD = 92;
 
 function CryptoIcon({ symbol, className = "w-7 h-7" }: { symbol: string; className?: string }) {
-  const icons: Record<string, { bg: string; text: string; label: string }> = {
-    BTC: { bg: "bg-orange-500", text: "text-white", label: "₿" },
-    ETH: { bg: "bg-blue-500", text: "text-white", label: "Ξ" },
-    USDT: { bg: "bg-emerald-500", text: "text-white", label: "₮" },
-    LTC: { bg: "bg-gray-400", text: "text-white", label: "Ł" },
-    USDC: { bg: "bg-blue-400", text: "text-white", label: "$" },
+  const cdnMap: Record<string, string> = {
+    BTC: "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=040",
+    ETH: "https://cryptologos.cc/logos/ethereum-eth-logo.png?v=040",
+    USDT: "https://cryptologos.cc/logos/tether-usdt-logo.png?v=040",
+    LTC: "https://cryptologos.cc/logos/litecoin-ltc-logo.png?v=040",
+    USDC: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=040",
   };
-  const config = icons[symbol] || { bg: "bg-gray-500", text: "text-white", label: symbol[0] };
+  const src = cdnMap[symbol];
+  if (src) {
+    return <img src={src} alt={symbol} className={`${className} rounded-full`} />;
+  }
   return (
-    <div className={`${className} ${config.bg} rounded-full flex items-center justify-center font-bold ${config.text} text-xs`}>
-      {config.label}
+    <div className={`${className} bg-neutral-700 rounded-full flex items-center justify-center font-semibold text-white text-[10px]`}>
+      {symbol[0]}
     </div>
   );
 }
 
 function ChainIcon({ chain, className = "w-5 h-5" }: { chain: string; className?: string }) {
-  const icons: Record<string, { bg: string; label: string }> = {
-    Bitcoin: { bg: "bg-orange-500", label: "₿" },
-    ERC20: { bg: "bg-blue-500", label: "Ξ" },
-    TRC20: { bg: "bg-red-500", label: "T" },
-    BEP20: { bg: "bg-yellow-500", label: "B" },
-    Litecoin: { bg: "bg-gray-400", label: "Ł" },
+  const chainMap: Record<string, { color: string; label: string }> = {
+    Bitcoin: { color: "border-orange-500/40 text-orange-400", label: "BTC" },
+    ERC20: { color: "border-blue-500/40 text-blue-400", label: "ERC" },
+    TRC20: { color: "border-red-500/40 text-red-400", label: "TRC" },
+    BEP20: { color: "border-yellow-500/40 text-yellow-400", label: "BSC" },
+    Litecoin: { color: "border-neutral-400/40 text-neutral-300", label: "LTC" },
   };
-  const config = icons[chain] || { bg: "bg-gray-500", label: chain[0] };
+  const config = chainMap[chain] || { color: "border-neutral-500/40 text-neutral-400", label: chain.slice(0, 3) };
   return (
-    <div className={`${className} ${config.bg} rounded-full flex items-center justify-center font-bold text-white text-[9px]`}>
+    <div className={`${className} border rounded flex items-center justify-center font-mono font-medium text-[8px] ${config.color}`}>
       {config.label}
+    </div>
+  );
+}
+
+function DepositStatusOverlay({ orderId, onClose }: { orderId: string; onClose: () => void }) {
+  const [status, setStatus] = useState<"pending" | "processing" | "approved" | "rejected">("pending");
+  const [pollError, setPollError] = useState(false);
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    let attempts = 0;
+    const maxAttempts = 120;
+    const poll = setInterval(async () => {
+      attempts++;
+      if (attempts > maxAttempts) {
+        clearInterval(poll);
+        return;
+      }
+      try {
+        const res = await fetch("/api/transactions", { credentials: "include" });
+        if (!res.ok) {
+          setPollError(true);
+          return;
+        }
+        setPollError(false);
+        const txs = await res.json();
+        if (!Array.isArray(txs)) return;
+        const tx = txs.find((t: any) => t.orderId === orderId);
+        if (tx) {
+          setStatus(tx.status);
+          if (tx.status === "approved" || tx.status === "rejected") {
+            clearInterval(poll);
+          }
+        }
+      } catch {
+        setPollError(true);
+      }
+    }, 3000);
+    return () => clearInterval(poll);
+  }, [orderId]);
+
+  const handleDone = () => {
+    if (status === "approved") {
+      setLocation("/dashboard");
+    } else {
+      onClose();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+      <div className="bg-neutral-950 border border-white/[0.08] rounded-2xl max-w-sm w-full p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-white font-semibold text-base">Payment Status</h3>
+          <button onClick={onClose} className="text-neutral-500 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="flex flex-col items-center gap-4 py-4">
+          {status === "pending" && (
+            <>
+              <div className="w-16 h-16 rounded-full border-2 border-amber-500/30 flex items-center justify-center">
+                <Clock className="w-7 h-7 text-amber-400 animate-pulse" />
+              </div>
+              <div className="text-center">
+                <p className="text-white font-medium text-sm">Payment Submitted</p>
+                <p className="text-neutral-500 text-xs mt-1">Waiting for verification...</p>
+              </div>
+            </>
+          )}
+
+          {status === "processing" && (
+            <>
+              <div className="w-16 h-16 rounded-full border-2 border-blue-500/30 flex items-center justify-center">
+                <Loader2 className="w-7 h-7 text-blue-400 animate-spin" />
+              </div>
+              <div className="text-center">
+                <p className="text-white font-medium text-sm">Verifying Payment</p>
+                <p className="text-neutral-500 text-xs mt-1">Your payment is being verified...</p>
+              </div>
+            </>
+          )}
+
+          {status === "approved" && (
+            <>
+              <div className="w-16 h-16 rounded-full bg-emerald-500/10 border-2 border-emerald-500/30 flex items-center justify-center">
+                <CheckCircle className="w-7 h-7 text-emerald-400" />
+              </div>
+              <div className="text-center">
+                <p className="text-emerald-400 font-semibold text-sm">Payment Approved</p>
+                <p className="text-neutral-500 text-xs mt-1">Your balance has been updated</p>
+              </div>
+            </>
+          )}
+
+          {status === "rejected" && (
+            <>
+              <div className="w-16 h-16 rounded-full bg-red-500/10 border-2 border-red-500/30 flex items-center justify-center">
+                <XCircle className="w-7 h-7 text-red-400" />
+              </div>
+              <div className="text-center">
+                <p className="text-red-400 font-semibold text-sm">Payment Rejected</p>
+                <p className="text-neutral-500 text-xs mt-1">Contact support for assistance</p>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="mt-4 space-y-2">
+          <div className="flex items-center gap-3">
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold ${
+              status === "pending" || status === "processing" || status === "approved" || status === "rejected"
+                ? "bg-emerald-500/20 text-emerald-400" : "bg-neutral-800 text-neutral-600"
+            }`}>1</div>
+            <div className="flex-1 flex items-center justify-between">
+              <span className="text-xs text-neutral-300">Submitted</span>
+              <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+            </div>
+          </div>
+          <div className="ml-3 w-px h-3 bg-white/[0.06]" />
+          <div className="flex items-center gap-3">
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold ${
+              status === "processing" || status === "approved"
+                ? "bg-emerald-500/20 text-emerald-400"
+                : status === "rejected" ? "bg-red-500/20 text-red-400" : "bg-neutral-800 text-neutral-600"
+            }`}>2</div>
+            <div className="flex-1 flex items-center justify-between">
+              <span className="text-xs text-neutral-300">Verifying</span>
+              {(status === "processing") && <Loader2 className="w-3.5 h-3.5 text-blue-400 animate-spin" />}
+              {status === "approved" && <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />}
+              {status === "rejected" && <XCircle className="w-3.5 h-3.5 text-red-400" />}
+              {status === "pending" && <Clock className="w-3.5 h-3.5 text-neutral-600" />}
+            </div>
+          </div>
+          <div className="ml-3 w-px h-3 bg-white/[0.06]" />
+          <div className="flex items-center gap-3">
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold ${
+              status === "approved"
+                ? "bg-emerald-500/20 text-emerald-400"
+                : status === "rejected" ? "bg-red-500/20 text-red-400" : "bg-neutral-800 text-neutral-600"
+            }`}>3</div>
+            <div className="flex-1 flex items-center justify-between">
+              <span className="text-xs text-neutral-300">{status === "rejected" ? "Rejected" : "Completed"}</span>
+              {status === "approved" && <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />}
+              {status === "rejected" && <XCircle className="w-3.5 h-3.5 text-red-400" />}
+              {(status === "pending" || status === "processing") && <Clock className="w-3.5 h-3.5 text-neutral-600" />}
+            </div>
+          </div>
+        </div>
+
+        {pollError && (
+          <p className="text-center text-[10px] text-amber-500/70 mt-3">Connection issue. Still checking...</p>
+        )}
+
+        {orderId && (
+          <p className="text-center text-[10px] text-neutral-600 font-mono mt-4">{orderId}</p>
+        )}
+
+        <Button
+          onClick={handleDone}
+          className={`w-full mt-5 ${
+            status === "approved" ? "bg-white text-black hover:bg-neutral-200" : "bg-white/[0.06] text-white hover:bg-white/[0.1]"
+          }`}
+          data-testid="button-status-done"
+        >
+          {status === "approved" ? "Go to Dashboard" : status === "rejected" ? "Close" : "Continue in Background"}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -104,10 +274,7 @@ function SkrillLogo({ className = "w-5 h-5" }: { className?: string }) {
 
 function VoletLogo({ className = "w-5 h-5" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 256 256" className={className}>
-      <rect width="256" height="256" rx="40" fill="#1B998B" />
-      <path d="M68 72h28l32 84 32-84h28L144 192h-32L68 72z" fill="white" />
-    </svg>
+    <span className={`${className} inline-flex items-center justify-center rounded bg-[#1B998B] text-white font-bold text-[10px] leading-none`}>V</span>
   );
 }
 
@@ -117,10 +284,9 @@ function BinanceLogo({ className = "w-5 h-5" }: { className?: string }) {
 
 function WireTransferLogo({ className = "w-5 h-5" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} fill="none">
-      <rect width="24" height="24" rx="6" fill="#1A56DB" />
-      <path d="M4 8h16M4 8l8-3 8 3M6 8v8M10 8v8M14 8v8M18 8v8M4 16h16M5 18h14" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
-    </svg>
+    <span className={`${className} inline-flex items-center justify-center rounded bg-blue-700 text-white font-bold text-[10px] leading-none`}>
+      <Landmark className="w-3 h-3" />
+    </span>
   );
 }
 
@@ -141,6 +307,7 @@ function DepositTab() {
   const [copied, setCopied] = useState(false);
   const [upiIndex, setUpiIndex] = useState(0);
   const [impsIndex, setImpsIndex] = useState(0);
+  const [depositOrderId, setDepositOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/payment-methods", { credentials: "include" })
@@ -273,6 +440,11 @@ function DepositTab() {
         const data = await res.json();
         throw new Error(data.message);
       }
+      const result = await res.json();
+      const oid = result?.orderId || result?.deposit?.orderId || null;
+      if (oid) {
+        setDepositOrderId(oid);
+      }
       toast({ title: "Deposit Submitted", description: "Your deposit request has been submitted for verification." });
       setAmount("");
       setAmountInr("");
@@ -289,48 +461,33 @@ function DepositTab() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-5 gap-2">
-        <Button
-          variant={depositType === "crypto" ? "default" : "outline"}
-          onClick={() => setDepositType("crypto")}
-          className="flex flex-col items-center gap-1 h-auto py-2 text-xs"
-          data-testid="button-deposit-crypto"
-        >
-          <Bitcoin className="w-4 h-4" /> Crypto
-        </Button>
-        <Button
-          variant={depositType === "upi" ? "default" : "outline"}
-          onClick={() => setDepositType("upi")}
-          className="flex flex-col items-center gap-1 h-auto py-2 text-xs"
-          data-testid="button-deposit-upi"
-        >
-          <img src={upiLogo} alt="UPI" className="h-4" /> UPI
-        </Button>
-        <Button
-          variant={depositType === "imps" ? "default" : "outline"}
-          onClick={() => setDepositType("imps")}
-          className="flex flex-col items-center gap-1 h-auto py-2 text-xs"
-          data-testid="button-deposit-imps"
-        >
-          <Landmark className="w-4 h-4" /> IMPS
-        </Button>
-        <Button
-          variant={depositType === "skrill" ? "default" : "outline"}
-          onClick={() => setDepositType("skrill")}
-          className="flex flex-col items-center gap-1 h-auto py-2 text-xs"
-          data-testid="button-deposit-skrill"
-        >
-          <SkrillLogo className="w-4 h-4" /> Skrill
-        </Button>
-        <Button
-          variant={depositType === "volet" ? "default" : "outline"}
-          onClick={() => setDepositType("volet")}
-          className="flex flex-col items-center gap-1 h-auto py-2 text-xs"
-          data-testid="button-deposit-volet"
-        >
-          <VoletLogo className="w-4 h-4" /> Volet
-        </Button>
+    <div className="space-y-5">
+      {depositOrderId && (
+        <DepositStatusOverlay orderId={depositOrderId} onClose={() => setDepositOrderId(null)} />
+      )}
+
+      <div className="grid grid-cols-5 gap-1.5">
+        {([
+          { key: "crypto" as const, label: "Crypto", icon: <CryptoIcon symbol="BTC" className="w-4 h-4" /> },
+          { key: "upi" as const, label: "UPI", icon: <img src={upiLogo} alt="UPI" className="h-3.5" /> },
+          { key: "imps" as const, label: "IMPS", icon: <img src={impsLogo} alt="IMPS" className="h-3.5" /> },
+          { key: "skrill" as const, label: "Skrill", icon: <SkrillLogo className="w-4 h-4" /> },
+          { key: "volet" as const, label: "Volet", icon: <VoletLogo className="w-4 h-4" /> },
+        ]).map(m => (
+          <button
+            key={m.key}
+            onClick={() => setDepositType(m.key)}
+            className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-[11px] font-medium transition-all ${
+              depositType === m.key
+                ? "bg-white/[0.08] text-white border border-white/[0.15]"
+                : "text-neutral-500 hover:text-neutral-300 border border-transparent"
+            }`}
+            data-testid={`button-deposit-${m.key}`}
+          >
+            {m.icon}
+            {m.label}
+          </button>
+        ))}
       </div>
 
       {depositType === "crypto" && (
@@ -429,183 +586,184 @@ function DepositTab() {
 
       {depositType === "upi" && (
         <div className="space-y-4">
+          <div className="flex items-center gap-2.5 pb-3 border-b border-white/[0.06]">
+            <img src={upiLogo} alt="UPI" className="h-5" />
+            <div>
+              <p className="text-white text-sm font-medium">UPI Payment</p>
+              <p className="text-neutral-600 text-[11px]">Scan QR or use UPI ID to pay</p>
+            </div>
+          </div>
+
           <div>
-            <Label className="text-gray-300">Amount (INR)</Label>
+            <Label className="text-neutral-400 text-xs">Amount (INR)</Label>
             <Input
               type="number"
               placeholder="Min ₹2,000"
               value={amountInr}
               onChange={e => handleInrChange(e.target.value)}
-              className="bg-black border-white/[0.06] text-white"
+              className="bg-black border-white/[0.08] text-white mt-1"
               data-testid="input-inr-amount"
             />
-            <p className="text-[11px] text-amber-400/70 mt-1">Minimum deposit: ₹2,000 INR</p>
+            <p className="text-[10px] text-neutral-600 mt-1">Minimum: ₹2,000 | Rate: ₹{INR_TO_USD} = 1 USD</p>
           </div>
-          <div className="bg-black border border-white/[0.06] rounded-lg p-3 flex items-center justify-between">
-            <span className="text-gray-400 text-sm">You will receive</span>
-            <span className="text-white font-bold">{amount ? `${amount} USD` : "0 USD"}</span>
-          </div>
-          <p className="text-xs text-gray-500">Conversion Rate: ₹{INR_TO_USD} = 1 USD</p>
+
+          {amount && parseFloat(amount) > 0 && (
+            <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 flex items-center justify-between">
+              <span className="text-neutral-500 text-xs">You receive</span>
+              <span className="text-white font-semibold text-sm">{amount} USD</span>
+            </div>
+          )}
 
           {upiMethod ? (
-            <div className="bg-black border border-white/[0.06] rounded-lg p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-gray-300">Pay to UPI</Label>
+            <div className="border border-white/[0.08] rounded-xl overflow-hidden">
+              <div className="bg-white/[0.02] px-4 py-2.5 flex items-center justify-between border-b border-white/[0.06]">
+                <span className="text-neutral-400 text-xs font-medium">Pay to UPI</span>
                 {allUpiMethods.length > 1 && (
-                  <span className="text-[10px] text-gray-500">{(upiIndex % allUpiMethods.length) + 1}/{allUpiMethods.length}</span>
+                  <span className="text-[10px] text-neutral-600">{(upiIndex % allUpiMethods.length) + 1} of {allUpiMethods.length}</span>
                 )}
               </div>
-              {amountInr && parseFloat(amountInr) > 0 ? (
-                <div className="flex items-center justify-center p-4 bg-white rounded-lg">
-                  <QRCode value={`upi://pay?pa=${upiMethod.upiId}&pn=TradeX&am=${amountInr}&cu=INR&tn=TradeX+Deposit`} size={180} />
+
+              <div className="p-4">
+                <div className="flex items-center justify-center py-3 px-4 bg-white rounded-lg mb-3">
+                  <QRCode
+                    value={amountInr && parseFloat(amountInr) > 0
+                      ? `upi://pay?pa=${upiMethod.upiId}&pn=TradeX&am=${amountInr}&cu=INR&tn=TradeX+Deposit`
+                      : `upi://pay?pa=${upiMethod.upiId}&pn=TradeX&cu=INR&tn=TradeX+Deposit`}
+                    size={160}
+                  />
                 </div>
-              ) : (
-                <div className="flex items-center justify-center p-4 bg-white rounded-lg">
-                  <QRCode value={`upi://pay?pa=${upiMethod.upiId}&pn=TradeX&cu=INR&tn=TradeX+Deposit`} size={180} />
+
+                {amountInr && parseFloat(amountInr) > 0 && (
+                  <p className="text-center text-emerald-400 font-semibold text-lg mb-3">₹{parseFloat(amountInr).toLocaleString("en-IN")}</p>
+                )}
+
+                <div className="flex items-center gap-2 bg-white/[0.03] rounded-lg p-2">
+                  <span className="flex-1 text-xs text-neutral-300 font-mono truncate pl-1">{upiMethod.upiId}</span>
+                  <button
+                    onClick={() => copyText(upiMethod.upiId)}
+                    className="shrink-0 text-neutral-500 hover:text-white p-1.5 rounded hover:bg-white/[0.06] transition"
+                    data-testid="button-copy-upi"
+                  >
+                    {copied ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
                 </div>
-              )}
-              <div className="flex items-center gap-2">
-                <Input value={upiMethod.upiId} readOnly className="bg-white/[0.03] text-sm text-gray-300" />
-                <Button size="sm" variant="outline" onClick={() => copyText(upiMethod.upiId)} data-testid="button-copy-upi">
-                  {copied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                </Button>
+
+                {allUpiMethods.length > 1 && (
+                  <button
+                    onClick={handleNewUpi}
+                    className="w-full mt-3 text-center text-[11px] text-amber-400/80 hover:text-amber-400 transition py-1.5"
+                    data-testid="button-try-another-upi"
+                  >
+                    <RefreshCw className="w-3 h-3 inline mr-1" />
+                    Payment failed? Try another UPI
+                  </button>
+                )}
               </div>
-              {amountInr && parseFloat(amountInr) > 0 && (
-                <p className="text-center text-green-400 font-semibold">Pay ₹{amountInr}</p>
-              )}
-              {allUpiMethods.length > 1 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleNewUpi}
-                  className="w-full border-amber-500/30 text-amber-400 hover:bg-amber-500/10 mt-2"
-                  data-testid="button-try-another-upi"
-                >
-                  <RefreshCw className="w-3 h-3 mr-2" />
-                  Payment Failed? Try Another UPI
-                </Button>
-              )}
             </div>
           ) : (
-            <div className="bg-black border border-amber-500/30 rounded-lg p-4 text-center">
-              <AlertCircle className="w-8 h-8 text-amber-400 mx-auto mb-2" />
-              <p className="text-amber-400 text-sm">UPI payment method not configured</p>
+            <div className="bg-black border border-neutral-800 rounded-lg p-4 text-center">
+              <AlertCircle className="w-6 h-6 text-neutral-500 mx-auto mb-2" />
+              <p className="text-neutral-500 text-xs">UPI not configured yet</p>
             </div>
           )}
 
           <div>
-            <Label className="text-gray-300">UTR Number</Label>
+            <Label className="text-neutral-400 text-xs">UTR / Reference Number</Label>
             <Input
               placeholder="Enter UTR after payment"
               value={utr}
               onChange={e => setUtr(e.target.value)}
-              className="bg-black border-white/[0.06] text-white font-mono text-sm"
+              className="bg-black border-white/[0.08] text-white font-mono text-sm mt-1"
               data-testid="input-utr"
             />
-            <p className="text-xs text-gray-500 mt-1">Enter the UTR/Reference number from your UPI app</p>
+            <p className="text-[10px] text-neutral-600 mt-1">Find this in your UPI app's transaction details</p>
           </div>
         </div>
       )}
 
       {depositType === "imps" && (
         <div className="space-y-4">
-          <div className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/[0.06]">
-            <img src={impsLogo} alt="IMPS" className="h-6" />
+          <div className="flex items-center gap-2.5 pb-3 border-b border-white/[0.06]">
+            <img src={impsLogo} alt="IMPS" className="h-5" />
             <div>
               <p className="text-white text-sm font-medium">IMPS Bank Transfer</p>
-              <p className="text-gray-500 text-xs">Immediate Payment Service - Instant bank transfer</p>
+              <p className="text-neutral-600 text-[11px]">Transfer via IMPS/NEFT to our bank account</p>
             </div>
           </div>
 
           <div>
-            <Label className="text-gray-300">Amount (INR)</Label>
+            <Label className="text-neutral-400 text-xs">Amount (INR)</Label>
             <Input
               type="number"
               placeholder="Min ₹2,000"
               value={amountInr}
               onChange={e => handleInrChange(e.target.value)}
-              className="bg-black border-white/[0.06] text-white"
+              className="bg-black border-white/[0.08] text-white mt-1"
               data-testid="input-imps-inr-amount"
             />
-            <p className="text-[11px] text-amber-400/70 mt-1">Minimum deposit: ₹2,000 INR</p>
+            <p className="text-[10px] text-neutral-600 mt-1">Minimum: ₹2,000 | Rate: ₹{INR_TO_USD} = 1 USD</p>
           </div>
-          <div className="bg-black border border-white/[0.06] rounded-lg p-3 flex items-center justify-between">
-            <span className="text-gray-400 text-sm">You will receive</span>
-            <span className="text-white font-bold">{amount ? `${amount} USD` : "0 USD"}</span>
-          </div>
-          <p className="text-xs text-gray-500">Conversion Rate: ₹{INR_TO_USD} = 1 USD</p>
+
+          {amount && parseFloat(amount) > 0 && (
+            <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 flex items-center justify-between">
+              <span className="text-neutral-500 text-xs">You receive</span>
+              <span className="text-white font-semibold text-sm">{amount} USD</span>
+            </div>
+          )}
 
           {impsMethod ? (
-            <div className="bg-black border border-white/[0.06] rounded-lg p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-gray-300">Transfer to Bank Account</Label>
+            <div className="border border-white/[0.08] rounded-xl overflow-hidden">
+              <div className="bg-white/[0.02] px-4 py-2.5 flex items-center justify-between border-b border-white/[0.06]">
+                <span className="text-neutral-400 text-xs font-medium">Transfer to Bank</span>
                 {allImpsMethods.length > 1 && (
-                  <span className="text-[10px] text-gray-500">{(impsIndex % allImpsMethods.length) + 1}/{allImpsMethods.length}</span>
+                  <span className="text-[10px] text-neutral-600">{(impsIndex % allImpsMethods.length) + 1} of {allImpsMethods.length}</span>
                 )}
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between p-2.5 bg-white/[0.03] rounded-lg">
-                  <span className="text-gray-400 text-xs">Account Holder</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-white text-sm font-medium">{impsMethod.accountHolderName}</span>
-                    <button onClick={() => copyText(impsMethod.accountHolderName)} className="text-gray-400 hover:text-white">
-                      <Copy className="w-3 h-3" />
-                    </button>
+              <div className="p-4 space-y-2">
+                {[
+                  { label: "Account Holder", value: impsMethod.accountHolderName },
+                  { label: "Account Number", value: impsMethod.accountNumber, mono: true },
+                  { label: "IFSC Code", value: impsMethod.ifscCode, mono: true },
+                  ...(impsMethod.bankName ? [{ label: "Bank Name", value: impsMethod.bankName }] : []),
+                ].map((row: any) => (
+                  <div key={row.label} className="flex items-center justify-between p-2.5 bg-white/[0.02] rounded-lg">
+                    <span className="text-neutral-500 text-[11px]">{row.label}</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-white text-xs ${row.mono ? "font-mono" : "font-medium"}`}>{row.value}</span>
+                      <button onClick={() => copyText(row.value)} className="text-neutral-600 hover:text-white p-1 rounded hover:bg-white/[0.06] transition">
+                        <Copy className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center justify-between p-2.5 bg-white/[0.03] rounded-lg">
-                  <span className="text-gray-400 text-xs">Account Number</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-white text-sm font-mono">{impsMethod.accountNumber}</span>
-                    <button onClick={() => copyText(impsMethod.accountNumber)} className="text-gray-400 hover:text-white">
-                      <Copy className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-2.5 bg-white/[0.03] rounded-lg">
-                  <span className="text-gray-400 text-xs">IFSC Code</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-white text-sm font-mono">{impsMethod.ifscCode}</span>
-                    <button onClick={() => copyText(impsMethod.ifscCode)} className="text-gray-400 hover:text-white">
-                      <Copy className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
-                {impsMethod.bankName && (
-                  <div className="flex items-center justify-between p-2.5 bg-white/[0.03] rounded-lg">
-                    <span className="text-gray-400 text-xs">Bank Name</span>
-                    <span className="text-white text-sm">{impsMethod.bankName}</span>
-                  </div>
+                ))}
+
+                {amountInr && parseFloat(amountInr) > 0 && (
+                  <p className="text-center text-emerald-400 font-semibold text-lg pt-2">₹{parseFloat(amountInr).toLocaleString("en-IN")}</p>
+                )}
+
+                {allImpsMethods.length > 1 && (
+                  <button
+                    onClick={handleNewImps}
+                    className="w-full mt-2 text-center text-[11px] text-amber-400/80 hover:text-amber-400 transition py-1.5"
+                    data-testid="button-try-another-imps"
+                  >
+                    <RefreshCw className="w-3 h-3 inline mr-1" />
+                    Payment failed? Try another bank
+                  </button>
                 )}
               </div>
-              {amountInr && parseFloat(amountInr) > 0 && (
-                <p className="text-center text-green-400 font-semibold">Transfer ₹{amountInr} via IMPS</p>
-              )}
-              {allImpsMethods.length > 1 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleNewImps}
-                  className="w-full border-amber-500/30 text-amber-400 hover:bg-amber-500/10 mt-2"
-                  data-testid="button-try-another-imps"
-                >
-                  <RefreshCw className="w-3 h-3 mr-2" />
-                  Payment Failed? Try Another Bank
-                </Button>
-              )}
             </div>
           ) : (
-            <div className="bg-black border border-amber-500/30 rounded-lg p-4 text-center">
-              <AlertCircle className="w-8 h-8 text-amber-400 mx-auto mb-2" />
-              <p className="text-amber-400 text-sm">IMPS payment method not configured</p>
-              <p className="text-gray-500 text-xs mt-1">Contact admin to set up bank details</p>
+            <div className="bg-black border border-neutral-800 rounded-lg p-4 text-center">
+              <AlertCircle className="w-6 h-6 text-neutral-500 mx-auto mb-2" />
+              <p className="text-neutral-500 text-xs">IMPS not configured yet</p>
             </div>
           )}
 
           <div>
-            <Label className="text-gray-300">IMPS Reference Number</Label>
+            <Label className="text-neutral-400 text-xs">IMPS Reference Number</Label>
             <Input
-              placeholder="Enter IMPS reference number after transfer"
+              placeholder="Enter IMPS reference after transfer"
               value={utr}
               onChange={e => setUtr(e.target.value)}
               className="bg-black border-white/[0.06] text-white font-mono text-sm"
@@ -618,15 +776,15 @@ function DepositTab() {
 
       {depositType === "skrill" && (
         <div className="space-y-4">
-          <div className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/[0.06]">
-            <SkrillLogo className="w-7 h-7" />
+          <div className="flex items-center gap-2.5 pb-3 border-b border-white/[0.06]">
+            <SkrillLogo className="w-5 h-5" />
             <div>
               <p className="text-white text-sm font-medium">Skrill</p>
-              <p className="text-gray-500 text-xs">Deposit via Skrill e-wallet</p>
+              <p className="text-neutral-600 text-[11px]">Deposit via Skrill e-wallet</p>
             </div>
           </div>
           <div>
-            <Label className="text-gray-300">Amount (USD)</Label>
+            <Label className="text-neutral-400 text-xs">Amount (USD)</Label>
             <Input
               type="number"
               placeholder="Enter USD amount"
@@ -662,15 +820,15 @@ function DepositTab() {
 
       {depositType === "volet" && (
         <div className="space-y-4">
-          <div className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/[0.06]">
-            <VoletLogo className="w-7 h-7" />
+          <div className="flex items-center gap-2.5 pb-3 border-b border-white/[0.06]">
+            <VoletLogo className="w-5 h-5" />
             <div>
               <p className="text-white text-sm font-medium">Volet</p>
-              <p className="text-gray-500 text-xs">Deposit via Volet e-wallet</p>
+              <p className="text-neutral-600 text-[11px]">Deposit via Volet e-wallet</p>
             </div>
           </div>
           <div>
-            <Label className="text-gray-300">Amount (USD)</Label>
+            <Label className="text-neutral-400 text-xs">Amount (USD)</Label>
             <Input
               type="number"
               placeholder="Enter USD amount"
@@ -905,47 +1063,28 @@ function WithdrawTab() {
         <span className="text-white font-bold text-lg">{balance.toFixed(2)} USD</span>
       </div>
 
-      <div className="grid grid-cols-5 gap-2">
-        <Button
-          variant={withdrawType === "crypto" ? "default" : "outline"}
-          onClick={() => setWithdrawType("crypto")}
-          className="flex flex-col items-center gap-1 h-auto py-2 text-xs"
-          data-testid="button-withdraw-crypto"
-        >
-          <Bitcoin className="w-4 h-4" /> Crypto
-        </Button>
-        <Button
-          variant={withdrawType === "upi" ? "default" : "outline"}
-          onClick={() => setWithdrawType("upi")}
-          className="flex flex-col items-center gap-1 h-auto py-2 text-xs"
-          data-testid="button-withdraw-upi"
-        >
-          <img src={upiLogo} alt="UPI" className="h-4" /> UPI
-        </Button>
-        <Button
-          variant={withdrawType === "imps" ? "default" : "outline"}
-          onClick={() => setWithdrawType("imps")}
-          className="flex flex-col items-center gap-1 h-auto py-2 text-xs"
-          data-testid="button-withdraw-imps"
-        >
-          <Landmark className="w-4 h-4" /> IMPS
-        </Button>
-        <Button
-          variant={withdrawType === "binance_pay" ? "default" : "outline"}
-          onClick={() => setWithdrawType("binance_pay")}
-          className="flex flex-col items-center gap-1 h-auto py-2 text-xs"
-          data-testid="button-withdraw-binance"
-        >
-          <BinanceLogo className="w-4 h-4" /> Binance
-        </Button>
-        <Button
-          variant={withdrawType === "wire_transfer" ? "default" : "outline"}
-          onClick={() => setWithdrawType("wire_transfer")}
-          className="flex flex-col items-center gap-1 h-auto py-2 text-xs"
-          data-testid="button-withdraw-wire"
-        >
-          <WireTransferLogo className="w-4 h-4" /> Wire
-        </Button>
+      <div className="grid grid-cols-5 gap-1.5">
+        {([
+          { key: "crypto" as const, label: "Crypto", icon: <CryptoIcon symbol="BTC" className="w-4 h-4" /> },
+          { key: "upi" as const, label: "UPI", icon: <img src={upiLogo} alt="UPI" className="h-3.5" /> },
+          { key: "imps" as const, label: "IMPS", icon: <img src={impsLogo} alt="IMPS" className="h-3.5" /> },
+          { key: "binance_pay" as const, label: "Binance", icon: <BinanceLogo className="w-4 h-4" /> },
+          { key: "wire_transfer" as const, label: "Wire", icon: <WireTransferLogo className="w-4 h-4" /> },
+        ]).map(m => (
+          <button
+            key={m.key}
+            onClick={() => setWithdrawType(m.key)}
+            className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-[11px] font-medium transition-all ${
+              withdrawType === m.key
+                ? "bg-white/[0.08] text-white border border-white/[0.15]"
+                : "text-neutral-500 hover:text-neutral-300 border border-transparent"
+            }`}
+            data-testid={`button-withdraw-${m.key}`}
+          >
+            {m.icon}
+            {m.label}
+          </button>
+        ))}
       </div>
 
       {withdrawType === "crypto" && (
@@ -1022,11 +1161,11 @@ function WithdrawTab() {
 
       {withdrawType === "imps" && (
         <div className="space-y-3">
-          <div className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/[0.06]">
-            <img src={impsLogo} alt="IMPS" className="h-6" />
+          <div className="flex items-center gap-2.5 pb-3 border-b border-white/[0.06]">
+            <img src={impsLogo} alt="IMPS" className="h-5" />
             <div>
               <p className="text-white text-sm font-medium">IMPS Bank Transfer</p>
-              <p className="text-gray-500 text-xs">Enter your bank details to receive funds</p>
+              <p className="text-neutral-600 text-[11px]">Enter your bank details to receive funds</p>
             </div>
           </div>
 
@@ -1092,11 +1231,11 @@ function WithdrawTab() {
 
       {withdrawType === "binance_pay" && (
         <div className="space-y-4">
-          <div className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/[0.06]">
-            <BinanceLogo className="w-7 h-7" />
+          <div className="flex items-center gap-2.5 pb-3 border-b border-white/[0.06]">
+            <BinanceLogo className="w-5 h-5" />
             <div>
               <p className="text-white text-sm font-medium">Binance Pay</p>
-              <p className="text-gray-500 text-xs">Withdraw via Binance Pay ID</p>
+              <p className="text-neutral-600 text-[11px]">Withdraw via Binance Pay ID</p>
             </div>
           </div>
           <div>
@@ -1120,11 +1259,11 @@ function WithdrawTab() {
 
       {withdrawType === "wire_transfer" && (
         <div className="space-y-4">
-          <div className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/[0.06]">
-            <WireTransferLogo className="w-7 h-7" />
+          <div className="flex items-center gap-2.5 pb-3 border-b border-white/[0.06]">
+            <WireTransferLogo className="w-5 h-5" />
             <div>
               <p className="text-white text-sm font-medium">Wire Transfer</p>
-              <p className="text-gray-500 text-xs">International bank wire (SWIFT)</p>
+              <p className="text-neutral-600 text-[11px]">International bank wire (SWIFT)</p>
             </div>
           </div>
           <div>
