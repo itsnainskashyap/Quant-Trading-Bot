@@ -26,8 +26,37 @@ import {
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
+import upiLogo from "@assets/image_1773144638368.png";
 
 const INR_TO_USDT = 92;
+
+const CHAIN_LOGOS: Record<string, string> = {
+  Bitcoin: "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=040",
+  ERC20: "https://cryptologos.cc/logos/ethereum-eth-logo.png?v=040",
+  TRC20: "https://cryptologos.cc/logos/tron-trx-logo.png?v=040",
+  BEP20: "https://cryptologos.cc/logos/bnb-bnb-logo.png?v=040",
+  Litecoin: "https://cryptologos.cc/logos/litecoin-ltc-logo.png?v=040",
+};
+
+const CRYPTO_LOGOS: Record<string, string> = {
+  BTC: "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=040",
+  ETH: "https://cryptologos.cc/logos/ethereum-eth-logo.png?v=040",
+  USDT: "https://cryptologos.cc/logos/tether-usdt-logo.png?v=040",
+  LTC: "https://cryptologos.cc/logos/litecoin-ltc-logo.png?v=040",
+  USDC: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=040",
+};
+
+function ChainLogo({ chain, className = "w-5 h-5" }: { chain: string; className?: string }) {
+  const src = CHAIN_LOGOS[chain];
+  if (!src) return null;
+  return <img src={src} alt={chain} className={`${className} rounded-full`} />;
+}
+
+function CryptoLogoImg({ crypto, className = "w-5 h-5" }: { crypto: string; className?: string }) {
+  const src = CRYPTO_LOGOS[crypto];
+  if (!src) return null;
+  return <img src={src} alt={crypto} className={`${className} rounded-full`} />;
+}
 
 const CRYPTO_OPTIONS = [
   { value: "BTC", label: "Bitcoin (BTC)", chains: [{ value: "Bitcoin", label: "Bitcoin Network" }] },
@@ -182,7 +211,7 @@ function DepositTab() {
           className="flex-1"
           data-testid="button-deposit-upi"
         >
-          <IndianRupee className="w-4 h-4 mr-2" /> UPI
+          <img src={upiLogo} alt="UPI" className="h-4 mr-2" /> UPI
         </Button>
       </div>
 
@@ -190,31 +219,45 @@ function DepositTab() {
         <div className="space-y-4">
           <div>
             <Label className="text-gray-300">Select Cryptocurrency</Label>
-            <select
-              value={selectedCrypto}
-              onChange={e => setSelectedCrypto(e.target.value)}
-              className="w-full mt-1 bg-[#0a0a0f] border border-[#1a1a2e] text-white rounded-md p-2"
-              data-testid="select-crypto"
-            >
+            <div className="grid grid-cols-5 gap-2 mt-2">
               {CRYPTO_OPTIONS.map(c => (
-                <option key={c.value} value={c.value}>{c.label}</option>
+                <button
+                  key={c.value}
+                  onClick={() => setSelectedCrypto(c.value)}
+                  className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border transition-all ${
+                    selectedCrypto === c.value
+                      ? "border-cyan-500 bg-cyan-500/10"
+                      : "border-[#1a1a2e] bg-[#0a0a0f] hover:border-white/20"
+                  }`}
+                  data-testid={`button-crypto-${c.value}`}
+                >
+                  <CryptoLogoImg crypto={c.value} className="w-7 h-7" />
+                  <span className="text-[10px] font-semibold text-white">{c.value}</span>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
           {availableChains.length > 1 && (
             <div>
               <Label className="text-gray-300">Select Chain</Label>
-              <select
-                value={selectedChain}
-                onChange={e => setSelectedChain(e.target.value)}
-                className="w-full mt-1 bg-[#0a0a0f] border border-[#1a1a2e] text-white rounded-md p-2"
-                data-testid="select-chain"
-              >
+              <div className="grid grid-cols-3 gap-2 mt-2">
                 {availableChains.map(c => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
+                  <button
+                    key={c.value}
+                    onClick={() => setSelectedChain(c.value)}
+                    className={`flex items-center gap-2 p-2.5 rounded-lg border transition-all ${
+                      selectedChain === c.value
+                        ? "border-cyan-500 bg-cyan-500/10"
+                        : "border-[#1a1a2e] bg-[#0a0a0f] hover:border-white/20"
+                    }`}
+                    data-testid={`button-chain-${c.value}`}
+                  >
+                    <ChainLogo chain={c.value} className="w-5 h-5" />
+                    <span className="text-xs text-white">{c.label}</span>
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
           )}
 
@@ -436,7 +479,7 @@ function WithdrawTab() {
           className="flex-1"
           data-testid="button-withdraw-upi"
         >
-          <IndianRupee className="w-4 h-4 mr-2" /> UPI
+          <img src={upiLogo} alt="UPI" className="h-4 mr-2" /> UPI
         </Button>
       </div>
 
@@ -444,31 +487,45 @@ function WithdrawTab() {
         <div className="space-y-4">
           <div>
             <Label className="text-gray-300">Cryptocurrency</Label>
-            <select
-              value={selectedCrypto}
-              onChange={e => setSelectedCrypto(e.target.value)}
-              className="w-full mt-1 bg-[#0a0a0f] border border-[#1a1a2e] text-white rounded-md p-2"
-              data-testid="select-withdraw-crypto"
-            >
+            <div className="grid grid-cols-5 gap-2 mt-2">
               {CRYPTO_OPTIONS.map(c => (
-                <option key={c.value} value={c.value}>{c.label}</option>
+                <button
+                  key={c.value}
+                  onClick={() => setSelectedCrypto(c.value)}
+                  className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border transition-all ${
+                    selectedCrypto === c.value
+                      ? "border-cyan-500 bg-cyan-500/10"
+                      : "border-[#1a1a2e] bg-[#0a0a0f] hover:border-white/20"
+                  }`}
+                  data-testid={`button-wcrypto-${c.value}`}
+                >
+                  <CryptoLogoImg crypto={c.value} className="w-7 h-7" />
+                  <span className="text-[10px] font-semibold text-white">{c.value}</span>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
           {availableChains.length > 1 && (
             <div>
               <Label className="text-gray-300">Chain</Label>
-              <select
-                value={selectedChain}
-                onChange={e => setSelectedChain(e.target.value)}
-                className="w-full mt-1 bg-[#0a0a0f] border border-[#1a1a2e] text-white rounded-md p-2"
-                data-testid="select-withdraw-chain"
-              >
+              <div className="grid grid-cols-3 gap-2 mt-2">
                 {availableChains.map(c => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
+                  <button
+                    key={c.value}
+                    onClick={() => setSelectedChain(c.value)}
+                    className={`flex items-center gap-2 p-2.5 rounded-lg border transition-all ${
+                      selectedChain === c.value
+                        ? "border-cyan-500 bg-cyan-500/10"
+                        : "border-[#1a1a2e] bg-[#0a0a0f] hover:border-white/20"
+                    }`}
+                    data-testid={`button-wchain-${c.value}`}
+                  >
+                    <ChainLogo chain={c.value} className="w-5 h-5" />
+                    <span className="text-xs text-white">{c.label}</span>
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
           )}
 

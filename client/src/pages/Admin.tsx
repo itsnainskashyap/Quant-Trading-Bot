@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { CryptoLogo } from "@/components/CryptoLogos";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
+import upiLogo from "@assets/image_1773144638368.png";
 import { useToast } from "@/hooks/use-toast";
 
 interface AdminSettings {
@@ -1080,7 +1081,7 @@ export default function Admin() {
                   <Bitcoin className="w-3 h-3 mr-1" /> Crypto
                 </Button>
                 <Button size="sm" variant={newMethodType === "upi" ? "default" : "outline"} onClick={() => setNewMethodType("upi")}>
-                  <IndianRupee className="w-3 h-3 mr-1" /> UPI
+                  <img src={upiLogo} alt="UPI" className="h-3 mr-1" /> UPI
                 </Button>
               </div>
 

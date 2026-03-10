@@ -157,6 +157,163 @@ const TRADE_MODES: { value: TradeMode; label: string; risk: string }[] = [
   { value: 10, label: '10 Min', risk: 'Very Low' },
 ];
 
+function ManualTradeSection({ selectedPair, currentPrice, tradeMode, tradexBalance }: {
+  selectedPair: string;
+  currentPrice: number;
+  tradeMode: number;
+  tradexBalance: number;
+}) {
+  const [tradeAmount, setTradeAmount] = useState("");
+  const [leverage, setLeverage] = useState(1);
+  const [isPlacing, setIsPlacing] = useState(false);
+  const { toast } = useToast();
+
+  const amountUsdt = parseFloat(tradeAmount) || 0;
+  const effectiveSize = amountUsdt * leverage;
+  const priceAvailable = currentPrice > 0;
+
+  const placeTrade = async (signal: "BUY" | "SELL") => {
+    if (!priceAvailable) {
+      toast({ title: "Error", description: "Price not available yet", variant: "destructive" });
+      return;
+    }
+    if (!amountUsdt || amountUsdt <= 0) {
+      toast({ title: "Error", description: "Enter a valid trade amount", variant: "destructive" });
+      return;
+    }
+    if (amountUsdt > tradexBalance) {
+      toast({ title: "Insufficient Balance", description: "Add funds to your TradeX balance first", variant: "destructive" });
+      return;
+    }
+
+    setIsPlacing(true);
+    try {
+      const riskPercent = tradeMode === 1 ? 0.0015 : tradeMode === 3 ? 0.0025 : tradeMode === 5 ? 0.004 : 0.006;
+      const rewardPercent = riskPercent * 1.5;
+      const stopLoss = signal === "BUY" ? currentPrice * (1 - riskPercent) : currentPrice * (1 + riskPercent);
+      const takeProfit = signal === "BUY" ? currentPrice * (1 + rewardPercent) : currentPrice * (1 - rewardPercent);
+
+      const res = await apiRequest("POST", "/api/tradex/trade", {
+        pair: selectedPair,
+        signal,
+        entryPrice: currentPrice,
+        amount: amountUsdt,
+        stopLoss,
+        takeProfit,
+        exitWindowMinutes: tradeMode,
+        leverage,
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Trade failed");
+      }
+
+      toast({
+        title: `${signal} Trade Placed`,
+        description: `${selectedPair} at $${currentPrice.toLocaleString()} | Size: $${amountUsdt.toFixed(2)} × ${leverage}x`,
+      });
+      setTradeAmount("");
+      queryClient.invalidateQueries({ queryKey: ['/api/tradex/trades'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/tradex/balance'] });
+    } catch (err: any) {
+      toast({ title: "Trade Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setIsPlacing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between text-xs text-gray-400">
+        <span>{selectedPair}</span>
+        {priceAvailable ? (
+          <span className="font-mono text-white">${currentPrice.toLocaleString()}</span>
+        ) : (
+          <span className="text-amber-400">Loading price...</span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-[10px] text-gray-500 uppercase">Amount (USDT)</label>
+          <Input
+            type="number"
+            placeholder="0.00"
+            value={tradeAmount}
+            onChange={e => setTradeAmount(e.target.value)}
+            className="bg-[#0a0a0f] border-[#1a1a2e] text-white text-sm h-8"
+            data-testid="input-manual-amount"
+          />
+        </div>
+        <div>
+          <label className="text-[10px] text-gray-500 uppercase">Leverage</label>
+          <div className="flex gap-1 mt-0.5">
+            {[1, 2, 5, 10].map(lev => (
+              <button
+                key={lev}
+                onClick={() => setLeverage(lev)}
+                className={`flex-1 text-xs py-1.5 rounded border transition-all ${
+                  leverage === lev
+                    ? "border-purple-500 bg-purple-500/20 text-purple-300"
+                    : "border-[#1a1a2e] text-gray-500 hover:border-white/20"
+                }`}
+                data-testid={`button-leverage-${lev}`}
+              >
+                {lev}x
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {amountUsdt > 0 && leverage > 1 && (
+        <div className="flex items-center justify-between text-xs p-2 rounded bg-[#0a0a0f] border border-[#1a1a2e]">
+          <span className="text-gray-500">Effective Position</span>
+          <span className="text-cyan-400 font-mono font-semibold">${effectiveSize.toFixed(2)}</span>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between text-xs text-gray-500">
+        <span>TradeX Balance: <span className="text-cyan-400 font-mono">${tradexBalance.toLocaleString()}</span></span>
+        <div className="flex gap-1">
+          {[25, 50, 75, 100].map(pct => (
+            <button
+              key={pct}
+              onClick={() => setTradeAmount(((tradexBalance * pct) / 100).toFixed(2))}
+              className="px-1.5 py-0.5 rounded text-[10px] bg-white/5 hover:bg-white/10 text-gray-400 transition-colors"
+              data-testid={`button-pct-${pct}`}
+            >
+              {pct}%
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <Button
+          onClick={() => placeTrade("BUY")}
+          disabled={isPlacing || !amountUsdt || !priceAvailable}
+          className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+          data-testid="button-manual-buy"
+        >
+          {isPlacing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <TrendingUp className="w-4 h-4 mr-1" />}
+          BUY
+        </Button>
+        <Button
+          onClick={() => placeTrade("SELL")}
+          disabled={isPlacing || !amountUsdt || !priceAvailable}
+          className="bg-red-600 hover:bg-red-700 text-white font-semibold"
+          data-testid="button-manual-sell"
+        >
+          {isPlacing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <TrendingDown className="w-4 h-4 mr-1" />}
+          SELL
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const [selectedPair, setSelectedPair] = useState<TradingPair>("BTC-USDT");
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
@@ -878,6 +1035,23 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Manual Trade */}
+            <Card className="bg-[#0d0d14] border-[#1a1a2e]">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Crosshair className="w-4 h-4 text-purple-400" />
+                  <h3 className="text-sm font-medium text-white">Manual Trade</h3>
+                  <Badge variant="outline" className="text-[9px] border-purple-500/30 text-purple-400 ml-auto">Direct</Badge>
+                </div>
+                <ManualTradeSection
+                  selectedPair={selectedPair}
+                  currentPrice={data?.prices?.find((p: any) => p.pair === selectedPair)?.price || 0}
+                  tradeMode={tradeMode}
+                  tradexBalance={capital}
+                />
+              </CardContent>
+            </Card>
 
             {/* Advanced Analysis and Find Trade - Pro Features */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
