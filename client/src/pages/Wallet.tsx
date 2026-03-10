@@ -34,6 +34,8 @@ import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100
 import upiLogo from "@assets/image_1773144638368.png";
 import impsLogo from "@assets/Picsart_26-03-10_19-32-00-972_1773166568501.png";
 import binanceLogo from "@assets/binance_logo.png";
+import pciDssLogo from "@assets/pcidss_(1)_1773166833303.png";
+import sectigoLogo from "@assets/Picsart_26-03-10_23-48-41-180_1773166854206.png";
 
 const INR_TO_USD = 92;
 
@@ -1416,6 +1418,11 @@ export default function WalletPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <div className="flex items-center justify-center gap-6 mt-8 mb-4">
+          <img src={pciDssLogo} alt="PCI DSS Compliant" className="h-10 opacity-60" />
+          <img src={sectigoLogo} alt="Secured by Sectigo" className="h-8 opacity-80" />
+        </div>
       </div>
     </div>
   );

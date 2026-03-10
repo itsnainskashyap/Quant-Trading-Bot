@@ -4,6 +4,8 @@ import { Link } from "wouter";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 import { ExchangeLogo } from "@/components/ExchangeLogos";
 import heroMockup from "@assets/Picsart_26-03-10_19-15-14-488_1773150540316.png";
+import pciDssLogo from "@assets/pcidss_(1)_1773166833303.png";
+import sectigoLogo from "@assets/Picsart_26-03-10_23-48-41-180_1773166854206.png";
 
 function LiveTicker() {
   const [prices, setPrices] = useState([
@@ -468,13 +470,19 @@ export function Landing() {
               </div>
             </div>
           </div>
-          <div className="border-t border-white/[0.04] pt-6 flex flex-col md:flex-row items-center justify-between gap-3">
-            <p className="text-[11px] text-neutral-600 text-center md:text-left">
-              Crypto trading involves significant risk. This is not financial advice. Trade responsibly.
-            </p>
-            <span className="text-[11px] text-neutral-700">
-              &copy; {new Date().getFullYear()} TradeX AI. All rights reserved.
-            </span>
+          <div className="border-t border-white/[0.04] pt-6 flex flex-col items-center gap-5">
+            <div className="flex items-center justify-center gap-6">
+              <img src={pciDssLogo} alt="PCI DSS Compliant" className="h-12 opacity-70" />
+              <img src={sectigoLogo} alt="Secured by Sectigo" className="h-10 opacity-90" />
+            </div>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-3 w-full">
+              <p className="text-[11px] text-neutral-600 text-center md:text-left">
+                Crypto trading involves significant risk. This is not financial advice. Trade responsibly.
+              </p>
+              <span className="text-[11px] text-neutral-700">
+                &copy; {new Date().getFullYear()} TradeX AI. All rights reserved.
+              </span>
+            </div>
           </div>
         </div>
       </footer>
