@@ -4,7 +4,7 @@ export function TermsContent() {
   return (
     <div className="space-y-4 text-sm text-gray-300">
       <div className="flex items-center gap-2 pb-2 border-b border-white/10">
-        <Shield className="w-5 h-5 text-cyan-400 flex-shrink-0" />
+        <Shield className="w-5 h-5 text-neutral-400 flex-shrink-0" />
         <h3 className="font-semibold text-white text-base">TradeX AI - Terms & Conditions</h3>
       </div>
 
@@ -85,7 +85,7 @@ export function TermsContent() {
 
         <div className="p-3 rounded-lg bg-white/[0.03] border border-white/5">
           <div className="flex items-center gap-2 mb-1.5">
-            <FileText className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+            <FileText className="w-4 h-4 text-neutral-400 flex-shrink-0" />
             <span className="font-medium text-white text-xs">UPI Conversion Rate</span>
           </div>
           <p className="text-xs text-gray-400 leading-relaxed pl-6">

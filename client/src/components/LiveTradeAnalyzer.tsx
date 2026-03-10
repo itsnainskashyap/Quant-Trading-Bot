@@ -142,7 +142,7 @@ export function LiveTradeAnalyzer({ activeTrade, currentPrice }: LiveTradeAnalyz
     : Math.max(0, Math.min(100, ((analysis.entryPrice - analysis.currentPrice) / (analysis.entryPrice - analysis.takeProfit)) * 100));
 
   return (
-    <Card className="bg-gradient-to-br from-[#12121a] to-[#1a1a2e] border-white/10">
+    <Card className="bg-white/[0.03] border-white/10">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-sm font-medium text-gray-300 flex items-center gap-2">

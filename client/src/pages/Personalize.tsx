@@ -112,17 +112,17 @@ export function Personalize() {
           <div
             className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-500 ${
               step === s
-                ? "bg-gradient-to-r from-cyan-500 to-purple-500 text-white scale-110 shadow-lg shadow-cyan-500/30"
+                ? "bg-white text-black scale-110"
                 : step > s
                 ? "bg-emerald-500 text-white"
-                : "bg-[#1a1a2e] text-gray-500"
+                : "bg-white/[0.06] text-gray-500"
             }`}
           >
             {step > s ? <Check className="w-5 h-5" /> : s}
           </div>
           {s < 4 && (
             <div className={`w-12 h-1 mx-1 rounded transition-all duration-500 ${
-              step > s ? "bg-emerald-500" : "bg-[#1a1a2e]"
+              step > s ? "bg-emerald-500" : "bg-white/[0.06]"
             }`} />
           )}
         </div>
@@ -131,9 +131,9 @@ export function Personalize() {
   );
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden">
+    <div className="min-h-screen bg-black relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white/[0.02] rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
         <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-blue-500/5 rounded-full blur-2xl animate-pulse delay-500" />
       </div>
@@ -142,7 +142,7 @@ export function Personalize() {
         <div className="max-w-xl mx-auto">
           <div className="text-center mb-6">
             <img src={logoImage} alt="TradeX AI" className="h-10 mx-auto mb-4" />
-            <div className="flex items-center justify-center gap-2 text-cyan-400 mb-2">
+            <div className="flex items-center justify-center gap-2 text-neutral-400 mb-2">
               <Settings2 className="w-5 h-5" />
               <span className="text-sm font-medium">Setting up your experience</span>
             </div>
@@ -152,10 +152,10 @@ export function Personalize() {
 
           <div className="relative">
             {step === 1 && (
-              <Card className="bg-[#12121a]/80 backdrop-blur-xl border-[#1a1a2e] animate-in fade-in slide-in-from-right-4 duration-500">
+              <Card className="bg-white/[0.04] backdrop-blur-xl border-white/[0.06] animate-in fade-in slide-in-from-right-4 duration-500">
                 <CardContent className="p-8">
                   <div className="text-center mb-8">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-cyan-500/20">
+                    <div className="w-20 h-20 rounded-full bg-white/[0.08] flex items-center justify-center mx-auto mb-4">
                       <User className="w-10 h-10 text-white" />
                     </div>
                     <h2 className="text-2xl font-bold text-white mb-2">What's your name?</h2>
@@ -170,7 +170,7 @@ export function Personalize() {
                         placeholder="Enter your first name"
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
-                        className="bg-[#0a0a0f] border-[#2a2a3e] text-white text-lg focus:border-cyan-500 transition-colors"
+                        className="bg-black border-white/[0.08] text-white text-lg focus:border-white/20 transition-colors"
                         data-testid="input-first-name"
                       />
                     </div>
@@ -181,7 +181,7 @@ export function Personalize() {
                         placeholder="Enter your last name"
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
-                        className="bg-[#0a0a0f] border-[#2a2a3e] text-white text-lg focus:border-cyan-500 transition-colors"
+                        className="bg-black border-white/[0.08] text-white text-lg focus:border-white/20 transition-colors"
                         data-testid="input-last-name"
                       />
                     </div>
@@ -190,7 +190,7 @@ export function Personalize() {
                   <Button
                     onClick={nextStep}
                     size="lg"
-                    className="w-full mt-8 bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-medium"
+                    className="w-full mt-8 bg-white text-black hover:bg-neutral-200 font-medium"
                     data-testid="button-next-step1"
                   >
                     Continue
@@ -201,10 +201,10 @@ export function Personalize() {
             )}
 
             {step === 2 && (
-              <Card className="bg-[#12121a]/80 backdrop-blur-xl border-[#1a1a2e] animate-in fade-in slide-in-from-right-4 duration-500">
+              <Card className="bg-white/[0.04] backdrop-blur-xl border-white/[0.06] animate-in fade-in slide-in-from-right-4 duration-500">
                 <CardContent className="p-8">
                   <div className="text-center mb-8">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/20">
+                    <div className="w-20 h-20 rounded-full bg-white/[0.08] flex items-center justify-center mx-auto mb-4">
                       <BarChart3 className="w-10 h-10 text-white" />
                     </div>
                     <h2 className="text-2xl font-bold text-white mb-2">Your Trading Experience</h2>
@@ -219,21 +219,21 @@ export function Personalize() {
                         onClick={() => setExperience(level.id)}
                         className={`p-5 rounded-xl border text-left transition-all duration-300 flex items-center gap-4 ${
                           experience === level.id
-                            ? "border-cyan-500 bg-cyan-500/10 shadow-lg shadow-cyan-500/10 scale-[1.02]"
-                            : "border-[#2a2a3e] bg-[#0a0a0f]/50 hover:border-[#3a3a4e] hover:bg-[#0a0a0f]"
+                            ? "border-white/20 bg-white/[0.06] scale-[1.02]"
+                            : "border-white/[0.08] bg-black/50 hover:border-white/[0.12] hover:bg-black"
                         }`}
                         data-testid={`button-experience-${level.id}`}
                       >
                         {(() => {
                         const Icon = experienceIcons[level.icon];
-                        return Icon ? <Icon className="w-8 h-8 text-cyan-400" /> : null;
+                        return Icon ? <Icon className="w-8 h-8 text-white" /> : null;
                       })()}
                         <div className="flex-1">
                           <div className="font-bold text-white">{level.label}</div>
                           <div className="text-sm text-gray-400">{level.desc}</div>
                         </div>
                         {experience === level.id && (
-                          <Check className="w-5 h-5 text-cyan-400" />
+                          <Check className="w-5 h-5 text-white" />
                         )}
                       </button>
                     ))}
@@ -244,7 +244,7 @@ export function Personalize() {
                       onClick={prevStep}
                       variant="outline"
                       size="lg"
-                      className="flex-1 border-[#2a2a3e] text-gray-300"
+                      className="flex-1 border-white/[0.08] text-gray-300"
                       data-testid="button-back-step2"
                     >
                       <ArrowLeft className="w-5 h-5 mr-2" />
@@ -253,7 +253,7 @@ export function Personalize() {
                     <Button
                       onClick={nextStep}
                       size="lg"
-                      className="flex-1 bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-medium"
+                      className="flex-1 bg-white text-black hover:bg-neutral-200 font-medium"
                       data-testid="button-next-step2"
                     >
                       Continue
@@ -265,7 +265,7 @@ export function Personalize() {
             )}
 
             {step === 3 && (
-              <Card className="bg-[#12121a]/80 backdrop-blur-xl border-[#1a1a2e] animate-in fade-in slide-in-from-right-4 duration-500">
+              <Card className="bg-white/[0.04] backdrop-blur-xl border-white/[0.06] animate-in fade-in slide-in-from-right-4 duration-500">
                 <CardContent className="p-8">
                   <div className="text-center mb-8">
                     <div className="w-20 h-20 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/20">
@@ -285,12 +285,12 @@ export function Personalize() {
                           onClick={() => setRisk(level.id)}
                           className={`p-5 rounded-xl border text-left transition-all duration-300 flex items-center gap-4 ${
                             risk === level.id
-                              ? "border-cyan-500 bg-cyan-500/10 shadow-lg shadow-cyan-500/10 scale-[1.02]"
-                              : "border-[#2a2a3e] bg-[#0a0a0f]/50 hover:border-[#3a3a4e] hover:bg-[#0a0a0f]"
+                              ? "border-white/20 bg-white/[0.06] scale-[1.02]"
+                              : "border-white/[0.08] bg-black/50 hover:border-white/[0.12] hover:bg-black"
                           }`}
                           data-testid={`button-risk-${level.id}`}
                         >
-                          <div className={`w-12 h-12 rounded-xl bg-[#1a1a2e] flex items-center justify-center ${level.color}`}>
+                          <div className={`w-12 h-12 rounded-xl bg-white/[0.06] flex items-center justify-center ${level.color}`}>
                             <Icon className="w-6 h-6" />
                           </div>
                           <div className="flex-1">
@@ -298,7 +298,7 @@ export function Personalize() {
                             <div className="text-sm text-gray-400">{level.desc}</div>
                           </div>
                           {risk === level.id && (
-                            <Check className="w-5 h-5 text-cyan-400" />
+                            <Check className="w-5 h-5 text-white" />
                           )}
                         </button>
                       );
@@ -315,8 +315,8 @@ export function Personalize() {
                           onClick={() => togglePair(pair)}
                           className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
                             selectedPairs.includes(pair)
-                              ? "bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg shadow-cyan-500/20"
-                              : "bg-[#1a1a2e] text-gray-400 hover:bg-[#2a2a3e]"
+                              ? "bg-white text-black"
+                              : "bg-white/[0.06] text-gray-400 hover:bg-white/[0.08]"
                           }`}
                           data-testid={`button-pair-${pair}`}
                         >
@@ -330,7 +330,7 @@ export function Personalize() {
                     <Button
                       onClick={prevStep}
                       variant="outline"
-                      className="flex-1 border-[#2a2a3e] text-gray-300"
+                      className="flex-1 border-white/[0.08] text-gray-300"
                       data-testid="button-back-step3"
                     >
                       <ArrowLeft className="w-5 h-5 mr-2" />
@@ -338,7 +338,7 @@ export function Personalize() {
                     </Button>
                     <Button
                       onClick={nextStep}
-                      className="flex-1 bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-medium"
+                      className="flex-1 bg-white text-black hover:bg-neutral-200 font-medium"
                       data-testid="button-next-step3"
                     >
                       Continue
@@ -350,26 +350,26 @@ export function Personalize() {
             )}
 
             {step === 4 && (
-              <Card className="bg-[#12121a]/80 backdrop-blur-xl border-[#1a1a2e] animate-in fade-in slide-in-from-right-4 duration-500">
+              <Card className="bg-white/[0.04] backdrop-blur-xl border-white/[0.06] animate-in fade-in slide-in-from-right-4 duration-500">
                 <CardContent className="p-8">
                   <div className="text-center mb-8">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/20">
+                    <div className="w-20 h-20 rounded-full bg-white/[0.08] flex items-center justify-center mx-auto mb-4">
                       <CheckCircle2 className="w-10 h-10 text-white" />
                     </div>
                     <h2 className="text-2xl font-bold text-white mb-2">Almost Done!</h2>
                     <p className="text-gray-400">Review your preferences</p>
                   </div>
 
-                  <div className="space-y-4 bg-[#0a0a0f] rounded-xl p-5 mb-8">
-                    <div className="flex justify-between items-center py-2 border-b border-[#1a1a2e]">
+                  <div className="space-y-4 bg-black rounded-xl p-5 mb-8">
+                    <div className="flex justify-between items-center py-2 border-b border-white/[0.06]">
                       <span className="text-gray-400">Name</span>
                       <span className="text-white font-medium">{firstName} {lastName}</span>
                     </div>
-                    <div className="flex justify-between items-center py-2 border-b border-[#1a1a2e]">
+                    <div className="flex justify-between items-center py-2 border-b border-white/[0.06]">
                       <span className="text-gray-400">Experience</span>
                       <span className="text-white font-medium capitalize">{experience}</span>
                     </div>
-                    <div className="flex justify-between items-center py-2 border-b border-[#1a1a2e]">
+                    <div className="flex justify-between items-center py-2 border-b border-white/[0.06]">
                       <span className="text-gray-400">Risk Tolerance</span>
                       <span className="text-white font-medium capitalize">{risk}</span>
                     </div>
@@ -377,7 +377,7 @@ export function Personalize() {
                       <span className="text-gray-400 block mb-2">Selected Pairs</span>
                       <div className="flex flex-wrap gap-2">
                         {selectedPairs.map((pair) => (
-                          <span key={pair} className="px-3 py-1 bg-cyan-500/20 text-cyan-400 rounded-full text-sm">
+                          <span key={pair} className="px-3 py-1 bg-white/[0.08] text-white rounded-full text-sm">
                             {pair.replace("-USDT", "")}
                           </span>
                         ))}
@@ -389,7 +389,7 @@ export function Personalize() {
                     <Button
                       onClick={prevStep}
                       variant="outline"
-                      className="flex-1 border-[#2a2a3e] text-gray-300"
+                      className="flex-1 border-white/[0.08] text-gray-300"
                       data-testid="button-back-step4"
                     >
                       <ArrowLeft className="w-5 h-5 mr-2" />
@@ -398,7 +398,7 @@ export function Personalize() {
                     <Button
                       onClick={handleSubmit}
                       disabled={isLoading}
-                      className="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-medium"
+                      className="flex-1 bg-white text-black hover:bg-neutral-200 font-medium"
                       data-testid="button-complete"
                     >
                       {isLoading ? (

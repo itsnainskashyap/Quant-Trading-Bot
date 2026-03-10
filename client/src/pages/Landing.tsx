@@ -34,8 +34,8 @@ function InteractiveCube() {
 
     const cx = size / 2;
     const cy = size / 2;
-    const cubeSize = 70;
-    const gap = 4;
+    const cubeSize = 75;
+    const gap = 3;
     const totalSize = cubeSize * 3 + gap * 2;
 
     function project(x: number, y: number, z: number, rx: number, ry: number) {
@@ -47,13 +47,20 @@ function InteractiveCube() {
       return { x: x1 * scale + cx, y: y1 * scale + cy, z: z2, scale };
     }
 
-    function drawFace(
+    function getNormal(corners: { x: number; y: number; z: number }[]) {
+      const ax = corners[1].x - corners[0].x, ay = corners[1].y - corners[0].y, az = corners[1].z - corners[0].z;
+      const bx = corners[2].x - corners[0].x, by = corners[2].y - corners[0].y, bz = corners[2].z - corners[0].z;
+      const nx = ay * bz - az * by, ny = az * bx - ax * bz, nz = ax * by - ay * bx;
+      const len = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+      return { x: nx / len, y: ny / len, z: nz / len };
+    }
+
+    function drawMetallicFace(
       ctx: CanvasRenderingContext2D,
       corners: { x: number; y: number; z: number }[],
       rx: number,
       ry: number,
-      baseColor: string,
-      lightIntensity: number
+      faceIdx: number,
     ) {
       const projected = corners.map((c) => project(c.x, c.y, c.z, rx, ry));
       const avgZ = projected.reduce((s, p) => s + p.z, 0) / projected.length;
@@ -65,10 +72,44 @@ function InteractiveCube() {
       }
       ctx.closePath();
 
-      const brightness = Math.max(0.08, Math.min(0.45, 0.25 + lightIntensity * 0.2));
-      ctx.fillStyle = baseColor.replace("BRIGHT", String(brightness));
+      const n = getNormal(corners);
+      const cosRx = Math.cos(rx), sinRx = Math.sin(rx);
+      const cosRy = Math.cos(ry), sinRy = Math.sin(ry);
+      const rny = n.y * cosRx - n.z * sinRx;
+      const rnz = n.y * sinRx + n.z * cosRx;
+      const rnx = n.x * cosRy + rnz * sinRy;
+      const rnzFinal = -n.x * sinRy + rnz * cosRy;
+
+      const lightDir = { x: 0.3, y: -0.6, z: 0.7 };
+      const dot = rnx * lightDir.x + rny * lightDir.y + rnzFinal * lightDir.z;
+      const diffuse = Math.max(0, dot);
+      const specPow = 32;
+      const viewDir = { x: 0, y: 0, z: 1 };
+      const reflX = 2 * dot * rnx - lightDir.x;
+      const reflY = 2 * dot * rny - lightDir.y;
+      const reflZ = 2 * dot * rnzFinal - lightDir.z;
+      const specDot = Math.max(0, reflX * viewDir.x + reflY * viewDir.y + reflZ * viewDir.z);
+      const specular = Math.pow(specDot, specPow);
+
+      const ambient = 0.12;
+      const baseR = 180, baseG = 185, baseB = 195;
+      const r = Math.min(255, Math.round(baseR * (ambient + diffuse * 0.65) + 255 * specular * 0.7));
+      const g = Math.min(255, Math.round(baseG * (ambient + diffuse * 0.65) + 255 * specular * 0.7));
+      const b = Math.min(255, Math.round(baseB * (ambient + diffuse * 0.65) + 255 * specular * 0.7));
+
+      const minX = Math.min(...projected.map(p => p.x));
+      const maxX = Math.max(...projected.map(p => p.x));
+      const minY = Math.min(...projected.map(p => p.y));
+      const maxY = Math.max(...projected.map(p => p.y));
+      const grad = ctx.createLinearGradient(minX, minY, maxX, maxY);
+      const r2 = Math.min(255, r + 20), g2 = Math.min(255, g + 20), b2 = Math.min(255, b + 20);
+      grad.addColorStop(0, `rgb(${r}, ${g}, ${b})`);
+      grad.addColorStop(0.5, `rgb(${r2}, ${g2}, ${b2})`);
+      grad.addColorStop(1, `rgb(${Math.max(0, r - 15)}, ${Math.max(0, g - 15)}, ${Math.max(0, b - 15)})`);
+
+      ctx.fillStyle = grad;
       ctx.fill();
-      ctx.strokeStyle = `rgba(255,255,255,0.04)`;
+      ctx.strokeStyle = `rgba(255,255,255,${0.06 + specular * 0.15})`;
       ctx.lineWidth = 0.5;
       ctx.stroke();
 
@@ -84,8 +125,8 @@ function InteractiveCube() {
       const mx = mouseRef.current.x;
       const my = mouseRef.current.y;
 
-      const rx = -0.55 + my * 0.003 + Math.sin(t * 0.7) * 0.08;
-      const ry = 0.65 + mx * 0.003 + Math.cos(t * 0.5) * 0.08;
+      const rx = -0.55 + my * 0.003 + Math.sin(t * 0.7) * 0.06;
+      const ry = 0.65 + mx * 0.003 + Math.cos(t * 0.5) * 0.06;
 
       ctx!.clearRect(0, 0, size, size);
 
@@ -118,7 +159,6 @@ function InteractiveCube() {
               [4, 5, 1, 0],
               [3, 2, 6, 7],
             ];
-            const lightVals = [0.0, 0.3, -0.1, 0.2, 0.4, -0.2];
 
             for (let fi = 0; fi < 6; fi++) {
               const fCorners = faceIndices[fi].map((i) => cubeCorners[i]);
@@ -132,13 +172,10 @@ function InteractiveCube() {
               const cross = e1x * e2y - e1y * e2x;
               if (cross <= 0) continue;
 
-              const distFactor = (xi + yi + zi) / 6;
-              const colorBase = `rgba(${20 + xi * 15},${20 + yi * 12},${30 + zi * 15},BRIGHT)`;
-
               faces.push({
                 z: avgZ,
                 draw: () => {
-                  drawFace(ctx!, fCorners, rx, ry, colorBase, lightVals[fi] + distFactor * 0.15);
+                  drawMetallicFace(ctx!, fCorners, rx, ry, fi);
                 },
               });
             }
@@ -149,8 +186,9 @@ function InteractiveCube() {
       faces.sort((a, b) => a.z - b.z);
       faces.forEach((f) => f.draw());
 
-      const grd = ctx!.createRadialGradient(cx, cy + 120, 0, cx, cy + 120, totalSize * 1.2);
-      grd.addColorStop(0, "rgba(100, 140, 255, 0.03)");
+      const grd = ctx!.createRadialGradient(cx, cy + 100, 0, cx, cy + 100, totalSize * 1.5);
+      grd.addColorStop(0, "rgba(200, 210, 230, 0.04)");
+      grd.addColorStop(0.5, "rgba(150, 160, 180, 0.02)");
       grd.addColorStop(1, "rgba(0, 0, 0, 0)");
       ctx!.fillStyle = grd;
       ctx!.fillRect(0, 0, size, size);

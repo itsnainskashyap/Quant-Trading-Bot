@@ -51,7 +51,7 @@ const agentColors: Record<string, string> = {
   "Technical Analyst": "text-blue-400",
   "Fundamental Analyst": "text-green-400",
   "Psychology Analyst": "text-yellow-400",
-  "Pattern Recognition": "text-cyan-400",
+  "Pattern Recognition": "text-neutral-400",
   "Smart Money Tracker": "text-purple-400",
 };
 

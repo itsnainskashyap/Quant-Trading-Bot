@@ -165,7 +165,7 @@ export function FindTrade({ pair, isPro }: FindTradeProps) {
 
   if (!isPro) {
     return (
-      <Card className="bg-gradient-to-br from-[#12121a] to-[#1a1a2e] border-amber-500/20">
+      <Card className="bg-white/[0.03] border-amber-500/20">
         <CardContent className="py-6">
           <div className="text-center">
             <div className="relative inline-block">
@@ -197,7 +197,7 @@ export function FindTrade({ pair, isPro }: FindTradeProps) {
   const showIdle = !isActive && !showResult && !showTimeout && !showCancelled;
 
   return (
-    <Card className="bg-gradient-to-br from-[#12121a] to-[#1a1a2e] border-amber-500/30 overflow-hidden min-w-0">
+    <Card className="bg-white/[0.03] border-amber-500/30 overflow-hidden min-w-0">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="text-base flex items-center gap-2 flex-wrap min-w-0">
@@ -254,7 +254,7 @@ export function FindTrade({ pair, isPro }: FindTradeProps) {
       <CardContent className="pt-0">
         {isActive && scan && (
           <div className="space-y-4">
-            <div className="relative h-2 bg-[#0a0a0f] rounded-full overflow-hidden">
+            <div className="relative h-2 bg-black rounded-full overflow-hidden">
               <div 
                 className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-1000"
                 style={{ width: `${progress}%` }}
@@ -268,7 +268,7 @@ export function FindTrade({ pair, isPro }: FindTradeProps) {
                 <span>{formatTime(timeElapsed)} / {formatTime(MAX_SEARCH_TIME)}</span>
               </div>
               <div className="flex items-center gap-2 text-gray-400">
-                <Activity className="w-4 h-4 text-cyan-400" />
+                <Activity className="w-4 h-4 text-neutral-400" />
                 <span>Scan #{scan.attempts || 0}</span>
               </div>
             </div>
@@ -322,15 +322,15 @@ export function FindTrade({ pair, isPro }: FindTradeProps) {
               </div>
 
               <div className="grid grid-cols-3 gap-3 text-sm mb-3">
-                <div className="bg-[#0a0a0f]/50 p-2 rounded-lg text-center">
+                <div className="bg-black/50 p-2 rounded-lg text-center">
                   <p className="text-gray-500 text-xs">Entry</p>
                   <p className="text-white font-mono font-medium">${scan.resultEntryPrice?.toFixed(4)}</p>
                 </div>
-                <div className="bg-[#0a0a0f]/50 p-2 rounded-lg text-center">
+                <div className="bg-black/50 p-2 rounded-lg text-center">
                   <p className="text-gray-500 text-xs">Stop Loss</p>
                   <p className="text-red-400 font-mono font-medium">${scan.resultStopLoss?.toFixed(4)}</p>
                 </div>
-                <div className="bg-[#0a0a0f]/50 p-2 rounded-lg text-center">
+                <div className="bg-black/50 p-2 rounded-lg text-center">
                   <p className="text-gray-500 text-xs">Take Profit</p>
                   <p className="text-emerald-400 font-mono font-medium">${scan.resultTakeProfit?.toFixed(4)}</p>
                 </div>

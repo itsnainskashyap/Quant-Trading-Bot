@@ -61,7 +61,7 @@ export function TradeAutomationSettings() {
 
   if (!isOpen) {
     return (
-      <Card className="bg-[#12121a] border-white/5">
+      <Card className="bg-white/[0.03] border-white/5">
         <CardContent className="p-3">
           <Button
             variant="ghost"
@@ -78,7 +78,7 @@ export function TradeAutomationSettings() {
   }
 
   return (
-    <Card className="bg-gradient-to-br from-[#12121a] to-[#1a1a2e] border-white/10">
+    <Card className="bg-white/[0.03] border-white/10">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-sm font-medium text-gray-300 flex items-center gap-2">

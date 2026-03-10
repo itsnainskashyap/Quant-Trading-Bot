@@ -194,21 +194,21 @@ export function Payment() {
 
   if (configLoading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-cyan-500" />
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-neutral-400" />
       </div>
     );
   }
 
   if (!paymentConfig?.enabled) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-4">
-        <Card className="bg-[#12121a] border-[#1a1a2e] max-w-md w-full">
+      <div className="min-h-screen bg-black flex items-center justify-center px-4">
+        <Card className="bg-white/[0.03] border-white/[0.06] max-w-md w-full">
           <CardContent className="p-8 text-center">
             <AlertCircle className="w-16 h-16 text-amber-500 mx-auto mb-4" />
             <h2 className="text-xl font-bold text-white mb-2">Payment Unavailable</h2>
             <p className="text-gray-400 mb-6">Crypto payment is currently not configured. Please contact support.</p>
-            <Button onClick={() => setLocation("/plans")} variant="outline" className="border-[#2a2a3e]">
+            <Button onClick={() => setLocation("/plans")} variant="outline" className="border-white/[0.08]">
               Back to Plans
             </Button>
           </CardContent>
@@ -218,24 +218,24 @@ export function Payment() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden">
+    <div className="min-h-screen bg-black relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-white/[0.02] rounded-full blur-3xl" />
       </div>
 
       <div className="relative z-10 py-8 px-4">
         <div className="max-w-lg mx-auto">
           <div className="text-center mb-8">
             <img src={logoImage} alt="TradeX AI" className="h-10 mx-auto mb-4" />
-            <div className="flex items-center justify-center gap-2 text-cyan-400 mb-2">
+            <div className="flex items-center justify-center gap-2 text-neutral-400 mb-2">
               <Sparkles className="w-5 h-5" />
               <span className="text-sm font-medium">Complete Your Upgrade</span>
             </div>
             <h1 className="text-2xl font-bold text-white">Pay with Crypto</h1>
           </div>
 
-          <Card className="bg-[#12121a]/80 backdrop-blur-xl border-[#1a1a2e] mb-6">
+          <Card className="bg-white/[0.04] backdrop-blur-xl border-white/[0.06] mb-6">
             <CardContent className="p-6">
               <div className="text-center mb-6">
                 <div className="flex items-center justify-center gap-2 mb-2">
@@ -247,7 +247,7 @@ export function Payment() {
                     </Badge>
                   )}
                 </div>
-                <div className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+                <div className="text-4xl font-bold text-white">
                   {promoDiscount ? (
                     <span className="flex items-center justify-center gap-2">
                       <span className="line-through text-2xl text-gray-500">{basePrice} USDT</span>
@@ -276,7 +276,7 @@ export function Payment() {
                         setPromoError(null);
                       }}
                       disabled={promoApplied}
-                      className={`bg-[#0a0a0f] border-[#2a2a3e] text-white font-mono uppercase ${promoApplied ? 'border-emerald-500/50 bg-emerald-500/5' : ''}`}
+                      className={`bg-black border-white/[0.08] text-white font-mono uppercase ${promoApplied ? 'border-emerald-500/50 bg-emerald-500/5' : ''}`}
                       data-testid="input-promo-code"
                     />
                     {promoApplied && (
@@ -331,7 +331,7 @@ export function Payment() {
                   <Button
                     onClick={activateFreeSubscription}
                     disabled={isVerifying || verificationStatus === "success"}
-                    className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-medium h-12 text-lg"
+                    className="w-full bg-white text-black hover:bg-neutral-200 font-medium h-12 text-lg"
                     data-testid="button-activate-free"
                   >
                     {isVerifying ? (
@@ -358,7 +358,7 @@ export function Payment() {
                 <Button
                   onClick={() => setSelectedNetwork("trc20")}
                   variant={selectedNetwork === "trc20" ? "default" : "outline"}
-                  className={`flex-1 ${selectedNetwork === "trc20" ? "bg-gradient-to-r from-red-500 to-orange-500" : "border-[#2a2a3e]"}`}
+                  className={`flex-1 ${selectedNetwork === "trc20" ? "bg-gradient-to-r from-red-500 to-orange-500" : "border-white/[0.08]"}`}
                   data-testid="button-network-trc20"
                 >
                   TRC20 (TRON)
@@ -366,14 +366,14 @@ export function Payment() {
                 <Button
                   onClick={() => setSelectedNetwork("bep20")}
                   variant={selectedNetwork === "bep20" ? "default" : "outline"}
-                  className={`flex-1 ${selectedNetwork === "bep20" ? "bg-gradient-to-r from-yellow-500 to-amber-500" : "border-[#2a2a3e]"}`}
+                  className={`flex-1 ${selectedNetwork === "bep20" ? "bg-gradient-to-r from-yellow-500 to-amber-500" : "border-white/[0.08]"}`}
                   data-testid="button-network-bep20"
                 >
                   BEP20 (BSC)
                 </Button>
               </div>
 
-              <div className="bg-[#0a0a0f] rounded-xl p-4 mb-6">
+              <div className="bg-black rounded-xl p-4 mb-6">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-gray-400 text-sm">Send USDT to:</span>
                   <Badge variant="outline" className="text-xs">
@@ -381,14 +381,14 @@ export function Payment() {
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 text-cyan-400 text-sm break-all font-mono bg-[#1a1a2e] p-3 rounded-lg">
+                  <code className="flex-1 text-neutral-300 text-sm break-all font-mono bg-white/[0.06] p-3 rounded-lg">
                     {currentAddress || "Not configured"}
                   </code>
                   <Button
                     size="icon"
                     variant="outline"
                     onClick={copyAddress}
-                    className="border-[#2a2a3e] flex-shrink-0"
+                    className="border-white/[0.08] flex-shrink-0"
                     data-testid="button-copy-address"
                   >
                     {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
@@ -415,7 +415,7 @@ export function Payment() {
                     placeholder="Enter your transaction hash"
                     value={txHash}
                     onChange={(e) => setTxHash(e.target.value)}
-                    className="bg-[#0a0a0f] border-[#2a2a3e] text-white font-mono"
+                    className="bg-black border-white/[0.08] text-white font-mono"
                     data-testid="input-tx-hash"
                   />
                 </div>
@@ -423,7 +423,7 @@ export function Payment() {
                 <Button
                   onClick={verifyPayment}
                   disabled={isVerifying || verificationStatus === "success"}
-                  className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-medium"
+                  className="w-full bg-white text-black hover:bg-neutral-200 font-medium"
                   data-testid="button-verify-payment"
                 >
                   {isVerifying ? (
@@ -452,7 +452,7 @@ export function Payment() {
           <div className="text-center">
             <div className="inline-flex items-center gap-4 text-sm text-gray-500">
               <div className="flex items-center gap-2">
-                <Wallet className="w-4 h-4 text-cyan-500" />
+                <Wallet className="w-4 h-4 text-neutral-400" />
                 Secure Wallet
               </div>
               <div className="flex items-center gap-2">

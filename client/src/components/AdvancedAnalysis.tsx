@@ -146,7 +146,7 @@ export function AdvancedAnalysis({ pair, tradeMode = 5, isPro = false }: Advance
   // Pro-only gate
   if (!isPro) {
     return (
-      <Card className="bg-gradient-to-br from-[#12121a] to-[#1a1a2e] border-purple-500/20">
+      <Card className="bg-white/[0.03] border-purple-500/20">
         <CardContent className="py-8">
           <div className="text-center">
             <div className="relative inline-block">
@@ -192,7 +192,7 @@ export function AdvancedAnalysis({ pair, tradeMode = 5, isPro = false }: Advance
 
   return (
     <div className="space-y-4 min-w-0">
-      <Card className="bg-[#12121a] border-white/10 overflow-hidden">
+      <Card className="bg-white/[0.03] border-white/10 overflow-hidden">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <CardTitle className="text-base flex items-center gap-2 flex-wrap">
@@ -260,7 +260,7 @@ export function AdvancedAnalysis({ pair, tradeMode = 5, isPro = false }: Advance
             </div>
 
             {analysisResult.triggerConditions.length > 0 && (
-              <Card className="bg-[#0a0a0f] border-white/5">
+              <Card className="bg-black border-white/5">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <Crosshair className="w-4 h-4 text-blue-400" />
@@ -287,7 +287,7 @@ export function AdvancedAnalysis({ pair, tradeMode = 5, isPro = false }: Advance
             )}
 
             {analysisResult.metaJudge && (
-              <Card className="bg-[#0a0a0f] border-white/5">
+              <Card className="bg-black border-white/5">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-purple-400" />
@@ -296,19 +296,19 @@ export function AdvancedAnalysis({ pair, tradeMode = 5, isPro = false }: Advance
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    <div className="p-2 bg-[#12121a] rounded">
+                    <div className="p-2 bg-white/[0.03] rounded">
                       <div className="text-xs text-gray-500">Regime</div>
                       <div className="text-sm font-medium">{analysisResult.metaJudge.marketStructure.regime}</div>
                     </div>
-                    <div className="p-2 bg-[#12121a] rounded">
+                    <div className="p-2 bg-white/[0.03] rounded">
                       <div className="text-xs text-gray-500">Quality</div>
                       <div className="text-sm font-medium">{analysisResult.metaJudge.marketStructure.quality}</div>
                     </div>
-                    <div className="p-2 bg-[#12121a] rounded">
+                    <div className="p-2 bg-white/[0.03] rounded">
                       <div className="text-xs text-gray-500">Volatility</div>
                       <div className="text-sm font-medium">{analysisResult.metaJudge.marketStructure.volatilityState}</div>
                     </div>
-                    <div className="p-2 bg-[#12121a] rounded">
+                    <div className="p-2 bg-white/[0.03] rounded">
                       <div className="text-xs text-gray-500">Trend</div>
                       <div className="text-sm font-medium">{analysisResult.metaJudge.marketStructure.trendStrength}</div>
                     </div>
@@ -338,7 +338,7 @@ export function AdvancedAnalysis({ pair, tradeMode = 5, isPro = false }: Advance
                     </div>
                   )}
 
-                  <div className="p-3 bg-[#12121a] rounded overflow-hidden">
+                  <div className="p-3 bg-white/[0.03] rounded overflow-hidden">
                     <div className="text-xs text-gray-500 mb-1">Recommendation:</div>
                     <div className="text-sm break-words">{analysisResult.metaJudge.recommendation}</div>
                   </div>
@@ -346,40 +346,40 @@ export function AdvancedAnalysis({ pair, tradeMode = 5, isPro = false }: Advance
               </Card>
             )}
 
-            <Card className="bg-[#0a0a0f] border-white/5">
+            <Card className="bg-black border-white/5">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-cyan-400" />
+                  <Activity className="w-4 h-4 text-neutral-400" />
                   Asset Intelligence & Loss Avoidance
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  <div className="p-2 bg-[#12121a] rounded">
+                  <div className="p-2 bg-white/[0.03] rounded">
                     <div className="text-xs text-gray-500">Risk Level</div>
                     <Badge className={`mt-1 ${getRiskLevelColor(analysisResult.lossAvoidance.riskLevel)}`}>
                       {analysisResult.lossAvoidance.riskLevel.toUpperCase()}
                     </Badge>
                   </div>
-                  <div className="p-2 bg-[#12121a] rounded">
+                  <div className="p-2 bg-white/[0.03] rounded">
                     <div className="text-xs text-gray-500">Stability Score</div>
                     <div className="text-lg font-bold">{analysisResult.lossAvoidance.stabilityScore}%</div>
                   </div>
-                  <div className="p-2 bg-[#12121a] rounded">
+                  <div className="p-2 bg-white/[0.03] rounded">
                     <div className="text-xs text-gray-500">Consecutive Losses</div>
                     <div className={`text-lg font-bold ${analysisResult.lossAvoidance.consecutiveLosses >= 2 ? 'text-red-400' : ''}`}>
                       {analysisResult.lossAvoidance.consecutiveLosses}
                     </div>
                   </div>
-                  <div className="p-2 bg-[#12121a] rounded">
+                  <div className="p-2 bg-white/[0.03] rounded">
                     <div className="text-xs text-gray-500">Win Rate</div>
                     <div className="text-lg font-bold">{analysisResult.assetIntelligence.memory.winRate.toFixed(0)}%</div>
                   </div>
-                  <div className="p-2 bg-[#12121a] rounded">
+                  <div className="p-2 bg-white/[0.03] rounded">
                     <div className="text-xs text-gray-500">Performance Score</div>
                     <div className="text-lg font-bold">{analysisResult.assetIntelligence.memory.performanceScore}</div>
                   </div>
-                  <div className="p-2 bg-[#12121a] rounded">
+                  <div className="p-2 bg-white/[0.03] rounded">
                     <div className="text-xs text-gray-500">Asset Category</div>
                     <div className="text-sm font-medium capitalize">{analysisResult.assetIntelligence.profile.category}</div>
                   </div>
@@ -396,7 +396,7 @@ export function AdvancedAnalysis({ pair, tradeMode = 5, isPro = false }: Advance
               </CardContent>
             </Card>
 
-            <Card className="bg-[#0a0a0f] border-white/5">
+            <Card className="bg-black border-white/5">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <Cpu className="w-4 h-4 text-purple-400" />
@@ -406,7 +406,7 @@ export function AdvancedAnalysis({ pair, tradeMode = 5, isPro = false }: Advance
               <CardContent>
                 <div className="space-y-2">
                   {analysisResult.agents.map((agent, i) => (
-                    <div key={i} className="flex items-center justify-between p-2 bg-[#12121a] rounded" data-testid={`agent-vote-${agent.agent.toLowerCase()}`}>
+                    <div key={i} className="flex items-center justify-between p-2 bg-white/[0.03] rounded" data-testid={`agent-vote-${agent.agent.toLowerCase()}`}>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{agent.agent}</span>
                         <Badge variant="outline" className="text-xs">
@@ -431,7 +431,7 @@ export function AdvancedAnalysis({ pair, tradeMode = 5, isPro = false }: Advance
             </Card>
 
             {analysisResult.tradeRecommendation && (
-              <Card className="bg-[#0a0a0f] border-white/5">
+              <Card className="bg-black border-white/5">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <Crosshair className="w-4 h-4 text-blue-400" />
@@ -440,19 +440,19 @@ export function AdvancedAnalysis({ pair, tradeMode = 5, isPro = false }: Advance
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className="p-2 bg-[#12121a] rounded">
+                    <div className="p-2 bg-white/[0.03] rounded">
                       <div className="text-xs text-gray-500">Entry</div>
                       <div className="text-sm font-mono">${analysisResult.tradeRecommendation.entryPrice.toLocaleString()}</div>
                     </div>
-                    <div className="p-2 bg-[#12121a] rounded">
+                    <div className="p-2 bg-white/[0.03] rounded">
                       <div className="text-xs text-gray-500">Stop Loss</div>
                       <div className="text-sm font-mono text-red-400">${analysisResult.tradeRecommendation.stopLoss.toLocaleString()}</div>
                     </div>
-                    <div className="p-2 bg-[#12121a] rounded">
+                    <div className="p-2 bg-white/[0.03] rounded">
                       <div className="text-xs text-gray-500">Take Profit</div>
                       <div className="text-sm font-mono text-emerald-400">${analysisResult.tradeRecommendation.takeProfit.toLocaleString()}</div>
                     </div>
-                    <div className="p-2 bg-[#12121a] rounded">
+                    <div className="p-2 bg-white/[0.03] rounded">
                       <div className="text-xs text-gray-500">Risk/Reward</div>
                       <div className="text-sm font-medium">1:{analysisResult.tradeRecommendation.riskRewardRatio}</div>
                     </div>

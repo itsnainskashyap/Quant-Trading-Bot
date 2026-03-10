@@ -136,11 +136,11 @@ export function BrokerSettings() {
   const hasAutoTradeEnabled = connections?.some(c => c.autoTrade);
 
   return (
-    <Card className="bg-[#12121a] border-white/5">
+    <Card className="bg-white/[0.03] border-white/5">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <Link2 className="w-4 h-4 text-cyan-400" />
+            <Link2 className="w-4 h-4 text-neutral-400" />
             Broker Connections
           </CardTitle>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -149,7 +149,7 @@ export function BrokerSettings() {
                 + Add Broker
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-[#12121a] border-white/10">
+            <DialogContent className="bg-white/[0.03] border-white/10">
               <DialogHeader>
                 <DialogTitle>Connect Exchange</DialogTitle>
               </DialogHeader>
@@ -157,10 +157,10 @@ export function BrokerSettings() {
                 <div>
                   <Label>Exchange</Label>
                   <Select value={selectedExchange} onValueChange={setSelectedExchange}>
-                    <SelectTrigger className="bg-[#0a0a0f] border-white/10" data-testid="select-exchange">
+                    <SelectTrigger className="bg-black border-white/10" data-testid="select-exchange">
                       <SelectValue placeholder="Select exchange" />
                     </SelectTrigger>
-                    <SelectContent className="bg-[#12121a] border-white/10">
+                    <SelectContent className="bg-white/[0.03] border-white/10">
                       {supportedExchanges?.filter(ex => !ex.isVirtual).map((ex) => (
                         <SelectItem key={ex.id} value={ex.id}>
                           <span className="flex items-center gap-2">
@@ -180,7 +180,7 @@ export function BrokerSettings() {
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
                     placeholder="Enter your API key"
-                    className="bg-[#0a0a0f] border-white/10"
+                    className="bg-black border-white/10"
                     data-testid="input-api-key"
                   />
                 </div>
@@ -192,7 +192,7 @@ export function BrokerSettings() {
                     value={apiSecret}
                     onChange={(e) => setApiSecret(e.target.value)}
                     placeholder="Enter your API secret"
-                    className="bg-[#0a0a0f] border-white/10"
+                    className="bg-black border-white/10"
                     data-testid="input-api-secret"
                   />
                 </div>
@@ -205,7 +205,7 @@ export function BrokerSettings() {
                       value={passphrase}
                       onChange={(e) => setPassphrase(e.target.value)}
                       placeholder="Enter passphrase"
-                      className="bg-[#0a0a0f] border-white/10"
+                      className="bg-black border-white/10"
                       data-testid="input-passphrase"
                     />
                   </div>
@@ -239,7 +239,7 @@ export function BrokerSettings() {
                 <Button 
                   onClick={handleConnect} 
                   disabled={connectMutation.isPending}
-                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-600"
+                  className="w-full bg-white text-black hover:bg-neutral-200"
                   data-testid="button-connect-broker"
                 >
                   {connectMutation.isPending ? (
@@ -281,7 +281,7 @@ export function BrokerSettings() {
               return (
                 <div 
                   key={conn.id} 
-                  className="p-2 rounded-lg bg-[#0a0a0f] border border-white/5"
+                  className="p-2 rounded-lg bg-black border border-white/5"
                   data-testid={`broker-connection-${conn.exchange}`}
                 >
                   <div className="flex items-center justify-between mb-2">

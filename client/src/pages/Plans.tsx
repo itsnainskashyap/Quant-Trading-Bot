@@ -109,17 +109,17 @@ export function Plans() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden">
+    <div className="min-h-screen bg-black relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-white/[0.02] rounded-full blur-3xl" />
       </div>
 
       <div className="relative z-10 py-8 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
             <img src={logoImage} alt="TradeX AI" className="h-12 mx-auto mb-4" />
-            <div className="flex items-center justify-center gap-2 text-cyan-400 mb-3">
+            <div className="flex items-center justify-center gap-2 text-neutral-400 mb-3">
               <Gem className="w-5 h-5" />
               <span className="text-sm font-medium">Choose Your Trading Power</span>
             </div>
@@ -133,16 +133,16 @@ export function Plans() {
             {plans.map((plan) => (
               <Card 
                 key={plan.id}
-                className={`relative bg-[#12121a]/80 backdrop-blur-xl overflow-hidden transition-all duration-300 ${
+                className={`relative bg-white/[0.04] backdrop-blur-xl overflow-hidden transition-all duration-300 ${
                   plan.popular 
-                    ? "border-cyan-500 border-2 shadow-lg shadow-cyan-500/20" 
-                    : "border-[#1a1a2e]"
+                    ? "border-white/20 border-2" 
+                    : "border-white/[0.06]"
                 }`}
                 data-testid={`card-plan-${plan.id}`}
               >
                 {plan.popular && (
                   <div className="absolute top-0 right-0">
-                    <Badge className="rounded-none rounded-bl-lg bg-gradient-to-r from-cyan-500 to-purple-500 text-white px-4 py-1.5">
+                    <Badge className="rounded-none rounded-bl-lg bg-white text-black px-4 py-1.5">
                       <Award className="w-3 h-3 mr-1" />
                       Best Value
                     </Badge>
@@ -156,7 +156,7 @@ export function Plans() {
                       {plan.oldPrice && (
                         <span className="text-2xl text-gray-500 line-through">{plan.oldPrice}</span>
                       )}
-                      <span className={`text-4xl font-bold ${plan.popular ? "bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent" : "text-white"}`}>
+                      <span className={`text-4xl font-bold ${plan.popular ? "text-white" : "text-white"}`}>
                         {plan.price}
                       </span>
                       <span className="text-gray-500">{plan.period}</span>
@@ -198,8 +198,8 @@ export function Plans() {
                     size="lg"
                     className={`w-full font-medium ${
                       plan.popular
-                        ? "bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg shadow-cyan-500/20"
-                        : "bg-[#1a1a2e] text-white"
+                        ? "bg-white text-black hover:bg-neutral-200"
+                        : "bg-white/[0.06] text-white"
                     }`}
                     data-testid={`button-select-${plan.id}`}
                   >

@@ -137,9 +137,9 @@ export function PhoneLogin({ onSuccess }: PhoneLoginProps) {
   ];
 
   return (
-    <Card className="w-full max-w-md bg-[#12121a] border-white/10">
+    <Card className="w-full max-w-md bg-white/[0.03] border-white/10">
       <CardHeader className="text-center pb-2">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/[0.08] flex items-center justify-center">
           <Phone className="w-8 h-8 text-white" />
         </div>
         <h2 className="text-2xl font-bold text-white">
@@ -181,7 +181,7 @@ export function PhoneLogin({ onSuccess }: PhoneLoginProps) {
             <Button
               onClick={handleSendOTP}
               disabled={isLoading || !phone}
-              className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 h-12"
+              className="w-full bg-white text-black hover:bg-neutral-200 h-12"
               data-testid="button-send-otp"
             >
               {isLoading ? (
@@ -213,7 +213,7 @@ export function PhoneLogin({ onSuccess }: PhoneLoginProps) {
             <Button
               onClick={handleVerifyOTP}
               disabled={isLoading || otp.length !== 6}
-              className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 h-12"
+              className="w-full bg-white text-black hover:bg-neutral-200 h-12"
               data-testid="button-verify-otp"
             >
               {isLoading ? (
@@ -236,7 +236,7 @@ export function PhoneLogin({ onSuccess }: PhoneLoginProps) {
               variant="ghost"
               onClick={handleSendOTP}
               disabled={isLoading}
-              className="w-full text-cyan-400 hover:text-cyan-300"
+              className="w-full text-neutral-400 hover:text-white"
               data-testid="button-resend-otp"
             >
               Resend code
@@ -332,7 +332,7 @@ function ProfileSetup({ onComplete }: { onComplete: () => void }) {
       <Button
         onClick={handleSaveProfile}
         disabled={isLoading || !firstName}
-        className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 h-12"
+        className="w-full bg-white text-black hover:bg-neutral-200 h-12"
         data-testid="button-save-profile"
       >
         {isLoading ? (

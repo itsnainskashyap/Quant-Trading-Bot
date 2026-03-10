@@ -89,7 +89,7 @@ export function PortfolioDashboard({ confidence = 75, onTradeSizeChange }: Portf
   }
 
   return (
-    <Card className="bg-[#12121a] border-white/5">
+    <Card className="bg-white/[0.03] border-white/5">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-sm font-medium text-gray-300 flex items-center gap-2">

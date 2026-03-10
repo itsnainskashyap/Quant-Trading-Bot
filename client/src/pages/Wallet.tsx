@@ -229,8 +229,8 @@ function DepositTab() {
                   onClick={() => setSelectedCrypto(c.value)}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border transition-all ${
                     selectedCrypto === c.value
-                      ? "border-cyan-500 bg-cyan-500/10"
-                      : "border-[#1a1a2e] bg-[#0a0a0f] hover:border-white/20"
+                      ? "border-white/20 bg-white/[0.06]"
+                      : "border-white/[0.06] bg-black hover:border-white/20"
                   }`}
                   data-testid={`button-crypto-${c.value}`}
                 >
@@ -251,8 +251,8 @@ function DepositTab() {
                     onClick={() => setSelectedChain(c.value)}
                     className={`flex items-center gap-2 p-2.5 rounded-lg border transition-all ${
                       selectedChain === c.value
-                        ? "border-cyan-500 bg-cyan-500/10"
-                        : "border-[#1a1a2e] bg-[#0a0a0f] hover:border-white/20"
+                        ? "border-white/20 bg-white/[0.06]"
+                        : "border-white/[0.06] bg-black hover:border-white/20"
                     }`}
                     data-testid={`button-chain-${c.value}`}
                   >
@@ -265,13 +265,13 @@ function DepositTab() {
           )}
 
           {depositAddress ? (
-            <div className="bg-[#0a0a0f] border border-[#1a1a2e] rounded-lg p-4 space-y-3">
+            <div className="bg-black border border-white/[0.06] rounded-lg p-4 space-y-3">
               <Label className="text-gray-300">Deposit Address</Label>
               <div className="flex items-center justify-center p-4 bg-white rounded-lg">
                 <QRCode value={depositAddress} size={180} />
               </div>
               <div className="flex items-center gap-2">
-                <Input value={depositAddress} readOnly className="bg-[#12121a] text-xs text-gray-300 font-mono" />
+                <Input value={depositAddress} readOnly className="bg-white/[0.03] text-xs text-gray-300 font-mono" />
                 <Button size="sm" variant="outline" onClick={() => copyAddress(depositAddress)} data-testid="button-copy-address">
                   {copied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </Button>
@@ -279,7 +279,7 @@ function DepositTab() {
               <p className="text-xs text-amber-400">Only send {selectedCrypto} on {selectedChain} network to this address</p>
             </div>
           ) : (
-            <div className="bg-[#0a0a0f] border border-amber-500/30 rounded-lg p-4 text-center">
+            <div className="bg-black border border-amber-500/30 rounded-lg p-4 text-center">
               <AlertCircle className="w-8 h-8 text-amber-400 mx-auto mb-2" />
               <p className="text-amber-400 text-sm">No deposit address configured for {selectedCrypto} ({selectedChain})</p>
               <p className="text-gray-500 text-xs mt-1">Contact admin to set up this payment method</p>
@@ -293,7 +293,7 @@ function DepositTab() {
               placeholder="Enter USDT amount"
               value={amount}
               onChange={e => setAmount(e.target.value)}
-              className="bg-[#0a0a0f] border-[#1a1a2e] text-white"
+              className="bg-black border-white/[0.06] text-white"
               data-testid="input-deposit-amount"
             />
           </div>
@@ -304,7 +304,7 @@ function DepositTab() {
               placeholder="Enter tx hash after sending"
               value={txHash}
               onChange={e => setTxHash(e.target.value)}
-              className="bg-[#0a0a0f] border-[#1a1a2e] text-white font-mono text-sm"
+              className="bg-black border-white/[0.06] text-white font-mono text-sm"
               data-testid="input-tx-hash"
             />
           </div>
@@ -318,18 +318,18 @@ function DepositTab() {
               placeholder="Enter INR amount"
               value={amountInr}
               onChange={e => handleInrChange(e.target.value)}
-              className="bg-[#0a0a0f] border-[#1a1a2e] text-white"
+              className="bg-black border-white/[0.06] text-white"
               data-testid="input-inr-amount"
             />
           </div>
-          <div className="bg-[#0a0a0f] border border-[#1a1a2e] rounded-lg p-3 flex items-center justify-between">
+          <div className="bg-black border border-white/[0.06] rounded-lg p-3 flex items-center justify-between">
             <span className="text-gray-400 text-sm">You will receive</span>
-            <span className="text-cyan-400 font-bold">{amount ? `${amount} USDT` : "0 USDT"}</span>
+            <span className="text-white font-bold">{amount ? `${amount} USDT` : "0 USDT"}</span>
           </div>
           <p className="text-xs text-gray-500">Conversion Rate: ₹{INR_TO_USDT} = 1 USDT</p>
 
           {upiMethod ? (
-            <div className="bg-[#0a0a0f] border border-[#1a1a2e] rounded-lg p-4 space-y-3">
+            <div className="bg-black border border-white/[0.06] rounded-lg p-4 space-y-3">
               <Label className="text-gray-300">Pay to UPI</Label>
               {amountInr && parseFloat(amountInr) > 0 ? (
                 <div className="flex items-center justify-center p-4 bg-white rounded-lg">
@@ -345,7 +345,7 @@ function DepositTab() {
                 </div>
               )}
               <div className="flex items-center gap-2">
-                <Input value={upiMethod.upiId} readOnly className="bg-[#12121a] text-sm text-gray-300" />
+                <Input value={upiMethod.upiId} readOnly className="bg-white/[0.03] text-sm text-gray-300" />
                 <Button size="sm" variant="outline" onClick={() => copyAddress(upiMethod.upiId)} data-testid="button-copy-upi">
                   {copied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </Button>
@@ -355,7 +355,7 @@ function DepositTab() {
               )}
             </div>
           ) : (
-            <div className="bg-[#0a0a0f] border border-amber-500/30 rounded-lg p-4 text-center">
+            <div className="bg-black border border-amber-500/30 rounded-lg p-4 text-center">
               <AlertCircle className="w-8 h-8 text-amber-400 mx-auto mb-2" />
               <p className="text-amber-400 text-sm">UPI payment method not configured</p>
             </div>
@@ -367,7 +367,7 @@ function DepositTab() {
               placeholder="Enter UTR after payment"
               value={utr}
               onChange={e => setUtr(e.target.value)}
-              className="bg-[#0a0a0f] border-[#1a1a2e] text-white font-mono text-sm"
+              className="bg-black border-white/[0.06] text-white font-mono text-sm"
               data-testid="input-utr"
             />
             <p className="text-xs text-gray-500 mt-1">Enter the UTR/Reference number from your UPI app</p>
@@ -462,9 +462,9 @@ function WithdrawTab() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-[#0a0a0f] border border-[#1a1a2e] rounded-lg p-3 flex items-center justify-between">
+      <div className="bg-black border border-white/[0.06] rounded-lg p-3 flex items-center justify-between">
         <span className="text-gray-400">Available Balance</span>
-        <span className="text-cyan-400 font-bold text-lg">{balance.toFixed(2)} USDT</span>
+        <span className="text-white font-bold text-lg">{balance.toFixed(2)} USDT</span>
       </div>
 
       <div className="flex gap-2">
@@ -497,8 +497,8 @@ function WithdrawTab() {
                   onClick={() => setSelectedCrypto(c.value)}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border transition-all ${
                     selectedCrypto === c.value
-                      ? "border-cyan-500 bg-cyan-500/10"
-                      : "border-[#1a1a2e] bg-[#0a0a0f] hover:border-white/20"
+                      ? "border-white/20 bg-white/[0.06]"
+                      : "border-white/[0.06] bg-black hover:border-white/20"
                   }`}
                   data-testid={`button-wcrypto-${c.value}`}
                 >
@@ -519,8 +519,8 @@ function WithdrawTab() {
                     onClick={() => setSelectedChain(c.value)}
                     className={`flex items-center gap-2 p-2.5 rounded-lg border transition-all ${
                       selectedChain === c.value
-                        ? "border-cyan-500 bg-cyan-500/10"
-                        : "border-[#1a1a2e] bg-[#0a0a0f] hover:border-white/20"
+                        ? "border-white/20 bg-white/[0.06]"
+                        : "border-white/[0.06] bg-black hover:border-white/20"
                     }`}
                     data-testid={`button-wchain-${c.value}`}
                   >
@@ -538,7 +538,7 @@ function WithdrawTab() {
               placeholder={`Enter ${selectedCrypto} ${selectedChain} address`}
               value={address}
               onChange={e => setAddress(e.target.value)}
-              className="bg-[#0a0a0f] border-[#1a1a2e] text-white font-mono text-sm"
+              className="bg-black border-white/[0.06] text-white font-mono text-sm"
               data-testid="input-withdraw-address"
             />
           </div>
@@ -550,7 +550,7 @@ function WithdrawTab() {
             placeholder="Enter your UPI ID (e.g., name@upi)"
             value={address}
             onChange={e => setAddress(e.target.value)}
-            className="bg-[#0a0a0f] border-[#1a1a2e] text-white"
+            className="bg-black border-white/[0.06] text-white"
             data-testid="input-withdraw-upi"
           />
         </div>
@@ -563,11 +563,11 @@ function WithdrawTab() {
           placeholder="Enter amount"
           value={amount}
           onChange={e => setAmount(e.target.value)}
-          className="bg-[#0a0a0f] border-[#1a1a2e] text-white"
+          className="bg-black border-white/[0.06] text-white"
           data-testid="input-withdraw-amount"
         />
         <div className="flex justify-between mt-1">
-          <button onClick={() => setAmount(String(balance))} className="text-xs text-cyan-400 hover:underline" data-testid="button-max-amount">Max</button>
+          <button onClick={() => setAmount(String(balance))} className="text-xs text-white hover:underline" data-testid="button-max-amount">Max</button>
           {withdrawType === "upi" && amountUsdt > 0 && (
             <span className="text-xs text-green-400">You will receive ₹{amountInr}</span>
           )}
@@ -603,7 +603,7 @@ function HistoryTab() {
   if (isLoading) {
     return (
       <div className="flex justify-center py-8">
-        <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
+        <Loader2 className="w-6 h-6 animate-spin text-neutral-400" />
       </div>
     );
   }
@@ -620,7 +620,7 @@ function HistoryTab() {
   return (
     <div className="space-y-3">
       {transactions.map((tx: any, i: number) => (
-        <div key={tx.id} className="bg-[#0a0a0f] border border-[#1a1a2e] rounded-lg p-3" data-testid={`card-transaction-${i}`}>
+        <div key={tx.id} className="bg-black border border-white/[0.06] rounded-lg p-3" data-testid={`card-transaction-${i}`}>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               {tx.txType === "deposit" ? (
@@ -680,7 +680,7 @@ export default function WalletPage() {
   const isKycVerified = kycStatus === "verified";
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className="min-h-screen bg-black text-white">
       <div className="max-w-lg mx-auto p-4">
         <div className="flex items-center gap-3 mb-6">
           <Link href="/dashboard">
@@ -726,17 +726,17 @@ export default function WalletPage() {
           </div>
         )}
 
-        <Card className="bg-gradient-to-br from-[#1a1a2e] to-[#12121a] border-cyan-500/20 mb-6">
+        <Card className="bg-white/[0.03] border-white/[0.08] mb-6">
           <CardContent className="p-6 text-center">
-            <WalletIcon className="w-10 h-10 text-cyan-400 mx-auto mb-2" />
+            <WalletIcon className="w-10 h-10 text-neutral-400 mx-auto mb-2" />
             <p className="text-gray-400 text-sm">Total Balance</p>
-            <p className="text-3xl font-bold text-cyan-400" data-testid="text-balance">{balance.toFixed(2)} USDT</p>
+            <p className="text-3xl font-bold text-white" data-testid="text-balance">{balance.toFixed(2)} USDT</p>
             <p className="text-sm text-gray-500 mt-1">≈ ₹{(balance * INR_TO_USDT).toFixed(2)} INR</p>
           </CardContent>
         </Card>
 
         <Tabs defaultValue="deposit" className="w-full">
-          <TabsList className="w-full bg-[#12121a] border border-[#1a1a2e]">
+          <TabsList className="w-full bg-white/[0.03] border border-white/[0.06]">
             <TabsTrigger value="deposit" className="flex-1 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400 relative" data-testid="tab-deposit">
               <ArrowDownToLine className="w-4 h-4 mr-1" /> Deposit
               {isKycVerified && (
@@ -746,13 +746,13 @@ export default function WalletPage() {
             <TabsTrigger value="withdraw" className="flex-1 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400" data-testid="tab-withdraw">
               <ArrowUpFromLine className="w-4 h-4 mr-1" /> Withdraw
             </TabsTrigger>
-            <TabsTrigger value="history" className="flex-1 data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400" data-testid="tab-history">
+            <TabsTrigger value="history" className="flex-1 data-[state=active]:bg-white/[0.08] data-[state=active]:text-white" data-testid="tab-history">
               <History className="w-4 h-4 mr-1" /> History
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="deposit" className="mt-4">
-            <Card className={`${isKycVerified ? "bg-[#12121a] border-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.05)]" : "bg-[#12121a] border-[#1a1a2e]"}`}>
+            <Card className={`${isKycVerified ? "bg-white/[0.03] border-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.05)]" : "bg-white/[0.03] border-white/[0.06]"}`}>
               <CardContent className="p-4">
                 {isKycVerified ? (
                   <DepositTab />
@@ -779,7 +779,7 @@ export default function WalletPage() {
           </TabsContent>
 
           <TabsContent value="withdraw" className="mt-4">
-            <Card className="bg-[#12121a] border-[#1a1a2e]">
+            <Card className="bg-white/[0.03] border-white/[0.06]">
               <CardContent className="p-4">
                 <WithdrawTab />
               </CardContent>
@@ -787,7 +787,7 @@ export default function WalletPage() {
           </TabsContent>
 
           <TabsContent value="history" className="mt-4">
-            <Card className="bg-[#12121a] border-[#1a1a2e]">
+            <Card className="bg-white/[0.03] border-white/[0.06]">
               <CardContent className="p-4">
                 <HistoryTab />
               </CardContent>

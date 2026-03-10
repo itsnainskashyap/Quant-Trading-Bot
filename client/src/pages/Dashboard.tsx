@@ -242,7 +242,7 @@ function ManualTradeSection({ selectedPair, currentPrice, tradeMode, tradexBalan
             placeholder="0.00"
             value={tradeAmount}
             onChange={e => setTradeAmount(e.target.value)}
-            className="bg-[#0a0a0f] border-[#1a1a2e] text-white text-sm h-8"
+            className="bg-black border-white/[0.06] text-white text-sm h-8"
             data-testid="input-manual-amount"
           />
         </div>
@@ -256,7 +256,7 @@ function ManualTradeSection({ selectedPair, currentPrice, tradeMode, tradexBalan
                 className={`flex-1 text-xs py-1.5 rounded border transition-all ${
                   leverage === lev
                     ? "border-purple-500 bg-purple-500/20 text-purple-300"
-                    : "border-[#1a1a2e] text-gray-500 hover:border-white/20"
+                    : "border-white/[0.06] text-gray-500 hover:border-white/20"
                 }`}
                 data-testid={`button-leverage-${lev}`}
               >
@@ -268,14 +268,14 @@ function ManualTradeSection({ selectedPair, currentPrice, tradeMode, tradexBalan
       </div>
 
       {amountUsdt > 0 && leverage > 1 && (
-        <div className="flex items-center justify-between text-xs p-2 rounded bg-[#0a0a0f] border border-[#1a1a2e]">
+        <div className="flex items-center justify-between text-xs p-2 rounded bg-black border border-white/[0.06]">
           <span className="text-gray-500">Effective Position</span>
-          <span className="text-cyan-400 font-mono font-semibold">${effectiveSize.toFixed(2)}</span>
+          <span className="text-white font-mono font-semibold">${effectiveSize.toFixed(2)}</span>
         </div>
       )}
 
       <div className="flex items-center justify-between text-xs text-gray-500">
-        <span>TradeX Balance: <span className="text-cyan-400 font-mono">${tradexBalance.toLocaleString()}</span></span>
+        <span>TradeX Balance: <span className="text-white font-mono">${tradexBalance.toLocaleString()}</span></span>
         <div className="flex gap-1">
           {[25, 50, 75, 100].map(pct => (
             <button
@@ -518,7 +518,7 @@ export default function Dashboard() {
 
   if (isLoading || authLoading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f]">
+      <div className="min-h-screen bg-black">
         <div className="w-full px-4 lg:px-8 py-6">
           <Skeleton className="h-16 mb-6 bg-white/5 rounded-xl" />
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-4">
@@ -540,8 +540,8 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white font-sans" data-testid="dashboard">
-      <header className="border-b border-white/5 bg-[#0a0a0f]/90 backdrop-blur-xl sticky top-0 z-50">
+    <div className="min-h-screen bg-black text-white font-sans" data-testid="dashboard">
+      <header className="border-b border-white/5 bg-black/90 backdrop-blur-xl sticky top-0 z-50">
         <div className="w-full px-4 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <img src={logoImage} alt="TradeX AI" className="h-10 w-auto" />
@@ -552,11 +552,11 @@ export default function Dashboard() {
           </div>
           
           <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-4 px-4 py-2 rounded-xl bg-gradient-to-r from-[#12121a] to-[#0d0d14] border border-white/5">
+            <div className="hidden md:flex items-center gap-4 px-4 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06]">
               <div className="flex items-center gap-2">
-                <Wallet className="w-4 h-4 text-cyan-400" />
+                <Wallet className="w-4 h-4 text-neutral-400" />
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-gray-500 uppercase">TradeX Balance</span>
+                  <span className="text-[10px] text-neutral-500 uppercase">TradeX Balance</span>
                   <span className="text-sm font-semibold text-white font-mono">${capital.toLocaleString()}</span>
                 </div>
               </div>
@@ -613,17 +613,44 @@ export default function Dashboard() {
       </header>
 
       <main className="w-full px-4 lg:px-8 py-4">
+        <div className="md:hidden mb-4 flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] overflow-x-auto">
+          <div className="flex items-center gap-2 min-w-0">
+            <Wallet className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+            <div className="flex flex-col min-w-0">
+              <span className="text-[10px] text-neutral-500 uppercase">TradeX</span>
+              <span className="text-sm font-semibold text-white font-mono">${capital.toLocaleString()}</span>
+            </div>
+          </div>
+          <div className="w-px h-8 bg-white/10 flex-shrink-0" />
+          <a href="/wallet" className="flex items-center gap-2 min-w-0" data-testid="link-wallet-balance-mobile">
+            <Coins className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            <div className="flex flex-col min-w-0">
+              <span className="text-[10px] text-neutral-500 uppercase">USDT</span>
+              <span className="text-sm font-semibold text-emerald-400 font-mono">{usdtBalance.toFixed(2)}</span>
+            </div>
+          </a>
+          <div className="w-px h-8 bg-white/10 flex-shrink-0" />
+          <div className="flex items-center gap-2 min-w-0">
+            <Cpu className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+            <div className="flex flex-col min-w-0">
+              <span className="text-[10px] text-neutral-500 uppercase">AI</span>
+              <span className="text-sm font-semibold text-white font-mono">
+                {isPro ? '∞' : `${dailyAnalysesRemaining}/${dailyLimit}`}
+              </span>
+            </div>
+          </div>
+        </div>
         {/* Quick Stats Bar */}
         <div className="mb-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-[#0d0d14] to-[#12121a] border border-[#1a1a2e]">
+          <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
             <div className="flex items-center gap-2 mb-1">
-              <Crosshair className="w-3.5 h-3.5 text-cyan-400" />
+              <Crosshair className="w-3.5 h-3.5 text-neutral-400" />
               <span className="text-[10px] text-gray-500 uppercase">Selected Pair</span>
             </div>
             <div className="font-semibold text-white">{selectedPair}</div>
           </div>
           
-          <div className="p-3 rounded-xl bg-gradient-to-br from-[#0d0d14] to-[#12121a] border border-[#1a1a2e]">
+          <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
             <div className="flex items-center gap-2 mb-1">
               <Timer className="w-3.5 h-3.5 text-purple-400" />
               <span className="text-[10px] text-gray-500 uppercase">Duration</span>
@@ -631,7 +658,7 @@ export default function Dashboard() {
             <div className="font-semibold text-white">{tradeMode} Minutes</div>
           </div>
           
-          <div className="p-3 rounded-xl bg-gradient-to-br from-[#0d0d14] to-[#12121a] border border-[#1a1a2e]">
+          <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
             <div className="flex items-center gap-2 mb-1">
               <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
               <span className="text-[10px] text-gray-500 uppercase">Risk Level</span>
@@ -645,7 +672,7 @@ export default function Dashboard() {
             </div>
           </div>
           
-          <div className="p-3 rounded-xl bg-gradient-to-br from-[#0d0d14] to-[#12121a] border border-[#1a1a2e]">
+          <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
             <div className="flex items-center gap-2 mb-1">
               <Coins className="w-3.5 h-3.5 text-emerald-400" />
               <span className="text-[10px] text-gray-500 uppercase">Position Size</span>
@@ -653,7 +680,7 @@ export default function Dashboard() {
             <div className="font-semibold text-white">{analysis?.positionPercent || '5-15'}%</div>
           </div>
           
-          <div className="hidden lg:block p-3 rounded-xl bg-gradient-to-br from-[#0d0d14] to-[#12121a] border border-[#1a1a2e]">
+          <div className="hidden lg:block p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
             <div className="flex items-center gap-2 mb-1">
               <Bolt className="w-3.5 h-3.5 text-yellow-400" />
               <span className="text-[10px] text-gray-500 uppercase">Market Status</span>
@@ -664,17 +691,17 @@ export default function Dashboard() {
             </div>
           </div>
           
-          <div className="hidden lg:block p-3 rounded-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20">
+          <div className="hidden lg:block p-3 rounded-xl bg-white/[0.05] border border-white/[0.08]">
             <div className="flex items-center gap-2 mb-1">
-              <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="text-[10px] text-cyan-400 uppercase">AI Ready</span>
+              <Cpu className="w-3.5 h-3.5 text-neutral-400" />
+              <span className="text-[10px] text-neutral-400 uppercase">AI Ready</span>
             </div>
             <div className="font-semibold text-white">3 Models Active</div>
           </div>
         </div>
 
         {/* Trade Duration Selection */}
-        <div className="mb-4 p-3 rounded-xl bg-[#0d0d14] border border-[#1a1a2e]">
+        <div className="mb-4 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Timer className="w-4 h-4 text-purple-400" />
@@ -683,7 +710,7 @@ export default function Dashboard() {
             <Button
               size="sm"
               variant="ghost"
-              className="text-cyan-400 hover:text-cyan-300 text-xs"
+              className="text-neutral-400 hover:text-white text-xs"
               onClick={() => {
                 const tradexSection = document.querySelector('[data-testid="tradex-broker-section"]');
                 if (tradexSection) {
@@ -706,8 +733,8 @@ export default function Dashboard() {
                 }}
                 className={`py-3 px-4 rounded-xl text-center transition-all ${
                   tradeMode === mode.value
-                    ? 'bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/50 text-cyan-400 shadow-lg shadow-cyan-500/10'
-                    : 'bg-[#12121a] border border-[#1a1a2e] text-gray-400 hover:border-gray-600 hover:bg-[#15151f]'
+                    ? 'bg-white/[0.08] border border-white/20 text-white'
+                    : 'bg-white/[0.03] border border-white/[0.06] text-gray-400 hover:border-gray-600 hover:bg-white/[0.05]'
                 }`}
                 data-testid={`button-mode-${mode.value}min`}
               >
@@ -715,17 +742,17 @@ export default function Dashboard() {
                 <div className={`text-xs mt-1 ${
                   mode.risk === 'High' ? 'text-red-400' :
                   mode.risk === 'Medium' ? 'text-amber-400' :
-                  mode.risk === 'Low' ? 'text-emerald-400' : 'text-cyan-400'
+                  mode.risk === 'Low' ? 'text-emerald-400' : 'text-blue-400'
                 }`}>{mode.risk} Risk</div>
               </button>
             ))}
           </div>
         </div>
 
-        <div className="mb-4 p-4 rounded-xl bg-[#0d0d14] border border-[#1a1a2e]">
+        <div className="mb-4 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-cyan-400" />
+              <Activity className="w-4 h-4 text-neutral-400" />
               <h2 className="text-sm font-medium text-white">Select Trading Pair</h2>
               <Badge variant="outline" className="text-[10px] text-gray-500 border-gray-700">15 Pairs</Badge>
             </div>
@@ -734,7 +761,7 @@ export default function Dashboard() {
               size="sm"
               onClick={() => refetch()}
               disabled={isRefetching}
-              className="text-cyan-400 hover:text-cyan-300 text-xs"
+              className="text-neutral-400 hover:text-white text-xs"
             >
               <RefreshCw className={`w-3 h-3 mr-1 ${isRefetching ? 'animate-spin' : ''}`} />
               Refresh Prices
@@ -753,8 +780,8 @@ export default function Dashboard() {
                   }}
                   className={`p-2 rounded-lg border transition-all text-left ${
                     selectedPair === price.pair
-                      ? 'bg-cyan-500/10 border-cyan-500/50 ring-1 ring-cyan-500/30'
-                      : 'bg-[#12121a] border-white/5 hover:border-white/10'
+                      ? 'bg-white/[0.08] border-white/20 ring-1 ring-white/20'
+                      : 'bg-white/[0.03] border-white/5 hover:border-white/10'
                   }`}
                   data-testid={`button-select-${price.pair.toLowerCase()}`}
                 >
@@ -794,9 +821,9 @@ export default function Dashboard() {
 
         <div className="grid xl:grid-cols-5 gap-4">
           <div className="xl:col-span-4 space-y-4">
-            <Card className="bg-[#0d0d14] border-[#1a1a2e] overflow-hidden">
+            <Card className="bg-white/[0.03] border-white/[0.06] overflow-hidden">
               <CardContent className="p-0">
-                <div className="px-4 py-3 border-b border-[#1a1a2e] flex items-center justify-between flex-wrap gap-2">
+                <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-3">
                     <CryptoIcon symbol={selectedPair.split('-')[0]} />
                     <div>
@@ -812,7 +839,7 @@ export default function Dashboard() {
                     )}
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#12121a] border border-[#1a1a2e]">
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06]">
                       <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                       <span className="text-xs text-gray-400 uppercase">Live Data</span>
                     </div>
@@ -835,7 +862,7 @@ export default function Dashboard() {
             </Card>
 
             {!analysis && !isAnalyzing && (
-              <Card className="bg-[#0d0d14] border-[#1a1a2e]">
+              <Card className="bg-white/[0.03] border-white/[0.06]">
                 <CardContent className="p-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
@@ -847,7 +874,7 @@ export default function Dashboard() {
                     <Button
                       size="default"
                       onClick={handleAnalyze}
-                      className="w-full sm:w-auto bg-cyan-600 hover:bg-cyan-700 text-white font-medium"
+                      className="w-full sm:w-auto bg-white text-black hover:bg-neutral-200 font-medium"
                       data-testid="button-analyze"
                     >
                       <BarChart3 className="w-4 h-4 mr-2" />
@@ -859,7 +886,7 @@ export default function Dashboard() {
             )}
 
             {isAnalyzing && (
-              <Card className="bg-[#0d0d14] border-[#1a1a2e] overflow-hidden">
+              <Card className="bg-white/[0.03] border-white/[0.06] overflow-hidden">
                 <CardContent className="p-6 relative">
                   <div className="absolute inset-0 overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-500/3 via-purple-500/5 to-blue-500/3" 
@@ -873,7 +900,7 @@ export default function Dashboard() {
                            style={{ animationDuration: '1.2s' }} />
                       <div className="absolute inset-2 rounded-full border border-transparent border-t-purple-500/60 animate-spin" 
                            style={{ animationDuration: '1.8s', animationDirection: 'reverse' }} />
-                      <div className="absolute inset-4 rounded-full border border-transparent border-t-cyan-500/40 animate-spin" 
+                      <div className="absolute inset-4 rounded-full border border-transparent border-t-white/30 animate-spin" 
                            style={{ animationDuration: '2.4s' }} />
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-sm flex items-center justify-center">
@@ -918,7 +945,7 @@ export default function Dashboard() {
             )}
 
             {analysis && (
-              <Card className="bg-[#0d0d14] border-[#1a1a2e] overflow-hidden">
+              <Card className="bg-white/[0.03] border-white/[0.06] overflow-hidden">
                 <CardContent className="p-0">
                   <div className={`p-4 border-l-4 ${
                     analysis.signal === 'BUY' ? 'border-l-emerald-500 bg-emerald-500/5' :
@@ -942,11 +969,11 @@ export default function Dashboard() {
                       
                       {analysis.signal !== 'SKIP' && (
                         <div className="flex flex-wrap gap-3 text-xs">
-                          <div className="flex flex-col items-center px-3 py-1.5 rounded bg-[#12121a] border border-[#1a1a2e]">
+                          <div className="flex flex-col items-center px-3 py-1.5 rounded bg-white/[0.03] border border-white/[0.06]">
                             <span className="text-[10px] text-gray-500 uppercase">Duration</span>
-                            <span className="font-mono font-semibold text-cyan-400">{analysis.holdTime}m</span>
+                            <span className="font-mono font-semibold text-white">{analysis.holdTime}m</span>
                           </div>
-                          <div className="flex flex-col items-center px-3 py-1.5 rounded bg-[#12121a] border border-[#1a1a2e]">
+                          <div className="flex flex-col items-center px-3 py-1.5 rounded bg-white/[0.03] border border-white/[0.06]">
                             <span className="text-[10px] text-gray-500 uppercase">Entry</span>
                             <span className="font-mono font-semibold text-white">${analysis.entryPrice.toLocaleString()}</span>
                           </div>
@@ -997,27 +1024,27 @@ export default function Dashboard() {
                   </div>
 
                   {analysis.tradeRecommendation && analysis.signal !== 'SKIP' && (
-                    <div className="p-4 border-t border-[#1a1a2e] bg-[#0a0a0f]">
+                    <div className="p-4 border-t border-white/[0.06] bg-black">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div className="p-3 rounded bg-[#12121a] border border-[#1a1a2e]">
+                        <div className="p-3 rounded bg-white/[0.03] border border-white/[0.06]">
                           <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Position Size</div>
-                          <div className="font-mono font-bold text-cyan-400 text-base">
+                          <div className="font-mono font-bold text-white text-base">
                             ${analysis.tradeRecommendation.tradeSize.toLocaleString()}
                           </div>
                         </div>
-                        <div className="p-3 rounded bg-[#12121a] border-l-2 border-l-red-500 border border-[#1a1a2e]">
+                        <div className="p-3 rounded bg-white/[0.03] border-l-2 border-l-red-500 border border-white/[0.06]">
                           <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Stop Loss</div>
                           <div className="font-mono font-bold text-red-400 text-base">
                             ${analysis.tradeRecommendation.stopLoss.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                           </div>
                         </div>
-                        <div className="p-3 rounded bg-[#12121a] border-l-2 border-l-emerald-500 border border-[#1a1a2e]">
+                        <div className="p-3 rounded bg-white/[0.03] border-l-2 border-l-emerald-500 border border-white/[0.06]">
                           <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Take Profit</div>
                           <div className="font-mono font-bold text-emerald-400 text-base">
                             ${analysis.tradeRecommendation.takeProfit.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                           </div>
                         </div>
-                        <div className="p-3 rounded bg-[#12121a] border border-[#1a1a2e]">
+                        <div className="p-3 rounded bg-white/[0.03] border border-white/[0.06]">
                           <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Risk:Reward</div>
                           <div className="font-mono font-bold text-white text-base">
                             {analysis.tradeRecommendation.riskRewardRatio}
@@ -1037,7 +1064,7 @@ export default function Dashboard() {
             )}
 
             {/* Manual Trade */}
-            <Card className="bg-[#0d0d14] border-[#1a1a2e]">
+            <Card className="bg-white/[0.03] border-white/[0.06]">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Crosshair className="w-4 h-4 text-purple-400" />
@@ -1062,11 +1089,11 @@ export default function Dashboard() {
 
           <div className="space-y-4 xl:col-span-1">
             {/* Trade History Card */}
-            <Card className="bg-[#0d0d14] border-[#1a1a2e]">
+            <Card className="bg-white/[0.03] border-white/[0.06]">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <History className="w-4 h-4 text-cyan-400" />
+                    <History className="w-4 h-4 text-neutral-400" />
                     <h3 className="text-sm font-medium text-white">Your Trades</h3>
                   </div>
                 </div>
@@ -1085,27 +1112,27 @@ export default function Dashboard() {
             <TradeAutomationSettings />
 
             {/* How It Works Card */}
-            <Card className="bg-gradient-to-br from-[#0d0d14] to-[#12121a] border-[#1a1a2e]">
+            <Card className="bg-white/[0.03] border-white/[0.06]">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <Gem className="w-4 h-4 text-cyan-400" />
+                  <Gem className="w-4 h-4 text-neutral-400" />
                   <h3 className="text-sm font-medium text-white">How It Works</h3>
                 </div>
-                <ol className="space-y-2 text-xs text-gray-400">
+                <ol className="space-y-2 text-xs text-neutral-400">
                   <li className="flex gap-3 items-center">
-                    <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-[10px] font-bold">1</span>
+                    <span className="w-5 h-5 rounded-full bg-white/[0.08] text-white flex items-center justify-center text-[10px] font-bold">1</span>
                     <span>Set your capital above</span>
                   </li>
                   <li className="flex gap-3 items-center">
-                    <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-[10px] font-bold">2</span>
+                    <span className="w-5 h-5 rounded-full bg-white/[0.08] text-white flex items-center justify-center text-[10px] font-bold">2</span>
                     <span>Select any crypto pair</span>
                   </li>
                   <li className="flex gap-3 items-center">
-                    <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-[10px] font-bold">3</span>
+                    <span className="w-5 h-5 rounded-full bg-white/[0.08] text-white flex items-center justify-center text-[10px] font-bold">3</span>
                     <span>Click "Analyze"</span>
                   </li>
                   <li className="flex gap-3 items-center">
-                    <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-[10px] font-bold">4</span>
+                    <span className="w-5 h-5 rounded-full bg-white/[0.08] text-white flex items-center justify-center text-[10px] font-bold">4</span>
                     <span>Follow exact SL/TP levels</span>
                   </li>
                 </ol>
@@ -1134,7 +1161,7 @@ export default function Dashboard() {
               technicalStrength: data?.metrics?.technicalStrength,
             } as MarketMetrics : undefined} />
 
-            <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/5 to-cyan-500/5 border border-emerald-500/10">
+            <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
               <div className="flex items-start gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-400 mt-0.5" />
                 <div>
@@ -1165,17 +1192,17 @@ export default function Dashboard() {
 
       <button
         onClick={() => setShowHelpChat(!showHelpChat)}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/30 flex items-center justify-center hover:scale-105 transition-transform z-50"
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-white text-black shadow-lg shadow-white/10 flex items-center justify-center hover:scale-105 transition-transform z-50"
         data-testid="button-help-chat"
       >
         {showHelpChat ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </button>
 
       {showHelpChat && (
-        <div className="fixed bottom-24 right-6 w-80 bg-[#12121a] rounded-2xl border border-white/10 shadow-xl shadow-black/50 z-50 overflow-hidden">
-          <div className="p-4 border-b border-white/5 bg-gradient-to-r from-cyan-500/10 to-blue-500/10">
-            <h4 className="font-medium">AI Trading Assistant</h4>
-            <p className="text-xs text-gray-400">Ask me anything about trading</p>
+        <div className="fixed bottom-24 right-6 w-[calc(100%-3rem)] max-w-80 bg-black rounded-2xl border border-white/[0.08] shadow-xl shadow-black/50 z-50 overflow-hidden">
+          <div className="p-4 border-b border-white/[0.06]">
+            <h4 className="font-medium text-white">AI Trading Assistant</h4>
+            <p className="text-xs text-neutral-500">Ask me anything about trading</p>
           </div>
           <div className="h-64 p-4 overflow-y-auto" data-testid="chat-messages">
             <div className="space-y-3 text-sm">
@@ -1184,35 +1211,35 @@ export default function Dashboard() {
                   key={idx}
                   className={`p-3 rounded-xl ${
                     msg.role === 'assistant' 
-                      ? 'bg-cyan-500/10 text-gray-300' 
-                      : 'bg-blue-500/20 text-white ml-4'
+                      ? 'bg-white/[0.04] text-neutral-300' 
+                      : 'bg-white/[0.08] text-white ml-4'
                   }`}
                 >
                   {msg.content}
                 </div>
               ))}
               {chatMutation.isPending && (
-                <div className="p-3 rounded-xl bg-cyan-500/10 text-gray-400 flex items-center gap-2">
+                <div className="p-3 rounded-xl bg-white/[0.04] text-neutral-400 flex items-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   Thinking...
                 </div>
               )}
             </div>
           </div>
-          <div className="p-3 border-t border-white/5">
+          <div className="p-3 border-t border-white/[0.06]">
             <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="flex gap-2">
               <Input
                 value={helpMessage}
                 onChange={(e) => setHelpMessage(e.target.value)}
                 placeholder="Ask a question..."
-                className="flex-1 h-9 bg-[#0a0a0f] border-white/10 text-sm"
+                className="flex-1 h-9 bg-white/[0.04] border-white/[0.08] text-sm"
                 data-testid="input-help-message"
                 disabled={chatMutation.isPending}
               />
               <Button 
                 type="submit" 
                 size="sm" 
-                className="bg-cyan-500 hover:bg-cyan-600 h-9 px-3"
+                className="bg-white text-black hover:bg-neutral-200 h-9 px-3"
                 disabled={chatMutation.isPending || !helpMessage.trim()}
                 data-testid="button-send-chat"
               >
@@ -1240,7 +1267,7 @@ function CandleTimer() {
   }, []);
 
   return (
-    <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#0a0a0f] text-xs">
+    <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-black text-xs">
       <div className={`w-1.5 h-1.5 rounded-full ${secondsLeft <= 5 ? 'bg-emerald-500 animate-pulse' : 'bg-yellow-500'}`} />
       <span className="text-gray-500">Candle:</span>
       <span className={`font-mono font-medium ${secondsLeft <= 5 ? 'text-emerald-400' : 'text-white'}`}>
@@ -1323,23 +1350,23 @@ function TradeHistory({ currentPrices }: { currentPrices?: Map<string, number> }
   return (
     <div>
       <div className="grid grid-cols-2 gap-2 mb-3">
-        <div className="text-center p-1.5 rounded-lg bg-[#0a0a0f]">
+        <div className="text-center p-1.5 rounded-lg bg-black">
           <div className="text-sm font-semibold">{stats.completedTrades}</div>
           <div className="text-[10px] text-gray-500">Completed</div>
         </div>
-        <div className="text-center p-1.5 rounded-lg bg-[#0a0a0f]">
-          <div className="text-sm font-semibold text-cyan-400">{stats.winRate}%</div>
+        <div className="text-center p-1.5 rounded-lg bg-black">
+          <div className="text-sm font-semibold text-white">{stats.winRate}%</div>
           <div className="text-[10px] text-gray-500">Win Rate</div>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-2 mb-3">
-        <div className="text-center p-1.5 rounded-lg bg-[#0a0a0f]">
+        <div className="text-center p-1.5 rounded-lg bg-black">
           <div className={`text-sm font-semibold ${stats.totalPnL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
             {stats.totalPnL >= 0 ? '+' : ''}{Number(stats.totalPnL).toFixed(1)}%
           </div>
           <div className="text-[10px] text-gray-500">P/L %</div>
         </div>
-        <div className="text-center p-1.5 rounded-lg bg-[#0a0a0f]">
+        <div className="text-center p-1.5 rounded-lg bg-black">
           <div className={`text-sm font-semibold ${stats.totalDollarProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
             {stats.totalDollarProfit >= 0 ? '+' : '-'}${Math.abs(stats.totalDollarProfit).toFixed(2)}
           </div>
@@ -1356,7 +1383,7 @@ function TradeHistory({ currentPrices }: { currentPrices?: Map<string, number> }
           return (
             <div 
               key={pred.id} 
-              className={`p-2 rounded-lg text-[11px] ${isActive ? 'bg-gradient-to-r from-[#0a0a0f] to-[#0d1117] border border-cyan-500/20' : 'bg-[#0a0a0f]'}`}
+              className={`p-2 rounded-lg text-[11px] ${isActive ? 'bg-white/[0.05] border border-white/[0.08]' : 'bg-black'}`}
             >
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-1.5">
@@ -1394,7 +1421,7 @@ function TradeHistory({ currentPrices }: { currentPrices?: Map<string, number> }
                 </div>
                 <div className="flex items-center gap-1">
                   {isActive ? (
-                    <span className="text-cyan-400 font-mono">{timeRemaining} left</span>
+                    <span className="text-white font-mono">{timeRemaining} left</span>
                   ) : (
                     <span>{formatTimeAgo(pred.createdAt)}</span>
                   )}

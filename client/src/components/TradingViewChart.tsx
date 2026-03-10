@@ -88,7 +88,7 @@ export function TradingViewChart({ pair, entryPrice, signal, stopLoss, takeProfi
             {signal} @ ${entryPrice.toLocaleString()}
           </div>
           {tradeSize && (
-            <div className="px-2 py-1 rounded text-xs font-medium bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+            <div className="px-2 py-1 rounded text-xs font-medium bg-white/[0.06] text-neutral-400 border border-white/[0.10]">
               Trade: ${tradeSize.toLocaleString()}
             </div>
           )}

@@ -253,7 +253,7 @@ export function TradexBroker({ selectedPair, currentPrice, signal }: TradexBroke
   };
 
   return (
-    <Card className="bg-gradient-to-br from-[#12121a] to-[#1a1a2e] border-blue-500/20" data-testid="tradex-broker-section">
+    <Card className="bg-white/[0.03] border-blue-500/20" data-testid="tradex-broker-section">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -281,7 +281,7 @@ export function TradexBroker({ selectedPair, currentPrice, signal }: TradexBroke
         </div>
       </CardHeader>
       <CardContent className="pt-2 space-y-3">
-        <div className="p-3 rounded-lg bg-[#0a0a0f]/80 border border-white/5">
+        <div className="p-3 rounded-lg bg-black/80 border border-white/5">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Wallet className="w-4 h-4 text-blue-400" />
@@ -294,7 +294,7 @@ export function TradexBroker({ selectedPair, currentPrice, signal }: TradexBroke
                   Add Funds
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-[#12121a] border-white/10">
+              <DialogContent className="bg-white/[0.03] border-white/10">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <ExchangeLogo exchange="tradex" className="w-6 h-6" />
@@ -310,7 +310,7 @@ export function TradexBroker({ selectedPair, currentPrice, signal }: TradexBroke
                     value={addAmount}
                     onChange={(e) => setAddAmount(e.target.value)}
                     placeholder="Enter amount (e.g., 1000)"
-                    className="bg-[#0a0a0f] border-white/10"
+                    className="bg-black border-white/10"
                     data-testid="input-add-balance"
                   />
                   <div className="flex gap-2">
@@ -362,7 +362,7 @@ export function TradexBroker({ selectedPair, currentPrice, signal }: TradexBroke
             {openTrades.map((trade) => (
               <div 
                 key={trade.id} 
-                className="p-3 rounded-lg bg-[#0a0a0f]/80 border border-white/5"
+                className="p-3 rounded-lg bg-black/80 border border-white/5"
                 data-testid={`tradex-trade-${trade.id}`}
               >
                 <div className="flex items-center justify-between mb-2">

@@ -518,8 +518,8 @@ export default function Admin() {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4">
-        <Card className="w-full max-w-md bg-gradient-to-br from-[#12121a] to-[#0d0d14] border-white/10">
+      <div className="min-h-screen bg-black flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-white/[0.03] border-white/10">
           <CardContent className="p-8">
             <div className="text-center mb-6">
               <img src={logoImage} alt="TradeX AI" className="h-12 w-auto mx-auto mb-4" />
@@ -538,7 +538,7 @@ export default function Admin() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@email.com"
-                  className="bg-[#0a0a0f] border-white/10"
+                  className="bg-black border-white/10"
                   data-testid="input-admin-email"
                 />
               </div>
@@ -549,7 +549,7 @@ export default function Admin() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="bg-[#0a0a0f] border-white/10"
+                  className="bg-black border-white/10"
                   data-testid="input-admin-password"
                   onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
                 />
@@ -575,8 +575,8 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
-      <header className="border-b border-white/5 bg-[#0a0a0f]/95 backdrop-blur-xl sticky top-0 z-50">
+    <div className="min-h-screen bg-black text-white">
+      <header className="border-b border-white/5 bg-black/95 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/">
@@ -606,7 +606,7 @@ export default function Admin() {
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20">
+          <Card className="bg-white/[0.03] border-white/[0.06]">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
@@ -650,7 +650,7 @@ export default function Admin() {
         </div>
 
         {/* Income Analytics Section */}
-        <Card className="bg-[#12121a] border-white/5">
+        <Card className="bg-white/[0.03] border-white/5">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
               <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -686,8 +686,8 @@ export default function Admin() {
                     <div className="text-2xl font-bold text-emerald-400">${analytics.stats.totalIncome.toFixed(2)}</div>
                     <div className="text-xs text-gray-400 mt-1">Total Income</div>
                   </div>
-                  <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4 text-center">
-                    <div className="text-2xl font-bold text-cyan-400">{analytics.stats.totalPayments}</div>
+                  <div className="bg-white/[0.06] border border-white/[0.08] rounded-xl p-4 text-center">
+                    <div className="text-2xl font-bold text-white">{analytics.stats.totalPayments}</div>
                     <div className="text-xs text-gray-400 mt-1">Total Payments</div>
                   </div>
                   <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 text-center">
@@ -750,11 +750,11 @@ export default function Admin() {
           </CardContent>
         </Card>
 
-        <Card className="bg-[#12121a] border-white/5">
+        <Card className="bg-white/[0.03] border-white/5">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
               <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Users className="w-5 h-5 text-cyan-400" />
+                <Users className="w-5 h-5 text-neutral-400" />
                 All Users
               </h2>
               <div className="relative">
@@ -763,7 +763,7 @@ export default function Admin() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search users..."
-                  className="pl-10 bg-[#0a0a0f] border-white/10 w-64"
+                  className="pl-10 bg-black border-white/10 w-64"
                   data-testid="input-search-users"
                 />
               </div>
@@ -791,7 +791,7 @@ export default function Admin() {
                       <tr key={user.id} className="border-b border-white/5 hover:bg-white/[0.02]">
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-xs font-bold">
+                            <div className="w-8 h-8 rounded-full bg-white/[0.12] flex items-center justify-center text-xs font-bold">
                               {(user.firstName?.[0] || user.email?.[0] || 'U').toUpperCase()}
                             </div>
                             <span className="font-medium">
@@ -882,7 +882,7 @@ export default function Admin() {
         </Card>
 
         {/* Promo Codes Section */}
-        <Card className="bg-[#12121a] border-white/5 mb-6">
+        <Card className="bg-white/[0.03] border-white/5 mb-6">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Tag className="w-5 h-5 text-purple-400" />
@@ -898,7 +898,7 @@ export default function Admin() {
                   value={newPromoCode}
                   onChange={(e) => setNewPromoCode(e.target.value.toUpperCase())}
                   placeholder="PROMO20"
-                  className="bg-[#0a0a0f] border-white/10 font-mono uppercase"
+                  className="bg-black border-white/10 font-mono uppercase"
                   data-testid="input-promo-code"
                 />
               </div>
@@ -910,7 +910,7 @@ export default function Admin() {
                   onChange={(e) => setNewPromoDiscount(Number(e.target.value))}
                   min={1}
                   max={100}
-                  className="bg-[#0a0a0f] border-white/10"
+                  className="bg-black border-white/10"
                   data-testid="input-promo-discount"
                 />
               </div>
@@ -921,7 +921,7 @@ export default function Admin() {
                   value={newPromoMaxUses}
                   onChange={(e) => setNewPromoMaxUses(e.target.value)}
                   placeholder="Unlimited"
-                  className="bg-[#0a0a0f] border-white/10"
+                  className="bg-black border-white/10"
                   data-testid="input-promo-max-uses"
                 />
               </div>
@@ -1011,10 +1011,10 @@ export default function Admin() {
         </Card>
 
         <div className="grid lg:grid-cols-2 gap-6">
-          <Card className="bg-[#12121a] border-white/5">
+          <Card className="bg-white/[0.03] border-white/5">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Wallet className="w-5 h-5 text-cyan-400" />
+                <Wallet className="w-5 h-5 text-neutral-400" />
                 Payment Wallet Settings
               </CardTitle>
             </CardHeader>
@@ -1029,7 +1029,7 @@ export default function Admin() {
                     type="number"
                     value={proPrice}
                     onChange={(e) => setProPrice(Number(e.target.value))}
-                    className="w-24 bg-[#0a0a0f] border-white/10"
+                    className="w-24 bg-black border-white/10"
                     min={1}
                     data-testid="input-pro-price"
                   />
@@ -1047,7 +1047,7 @@ export default function Admin() {
                     value={trc20Address}
                     onChange={(e) => setTrc20Address(e.target.value)}
                     placeholder="Enter your TRC20 USDT address (starts with T)"
-                    className="font-mono text-sm bg-[#0a0a0f] border-white/10"
+                    className="font-mono text-sm bg-black border-white/10"
                     data-testid="input-trc20-address"
                   />
                   {trc20Address && trc20Address.startsWith('T') && (
@@ -1067,7 +1067,7 @@ export default function Admin() {
                     value={bep20Address}
                     onChange={(e) => setBep20Address(e.target.value)}
                     placeholder="Enter your BEP20 USDT address (starts with 0x)"
-                    className="font-mono text-sm bg-[#0a0a0f] border-white/10"
+                    className="font-mono text-sm bg-black border-white/10"
                     data-testid="input-bep20-address"
                   />
                   {bep20Address && bep20Address.startsWith('0x') && (
@@ -1082,7 +1082,7 @@ export default function Admin() {
               <Button 
                 onClick={handleSaveSettings}
                 disabled={isSavingSettings}
-                className="w-full bg-cyan-600 hover:bg-cyan-700"
+                className="w-full bg-white text-black hover:bg-neutral-200"
                 data-testid="button-save-settings"
               >
                 {isSavingSettings ? (
@@ -1103,10 +1103,10 @@ export default function Admin() {
           </Card>
           
           {/* Payment Methods Management */}
-          <Card className="bg-[#12121a] border-white/5">
+          <Card className="bg-white/[0.03] border-white/5">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Wallet className="w-5 h-5 text-cyan-400" />
+                <Wallet className="w-5 h-5 text-neutral-400" />
                 Deposit Payment Methods
               </CardTitle>
             </CardHeader>
@@ -1125,7 +1125,7 @@ export default function Admin() {
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <Label className="text-gray-400 text-xs">Crypto</Label>
-                      <select value={newMethodCrypto} onChange={e => setNewMethodCrypto(e.target.value)} className="w-full bg-[#0a0a0f] border border-white/10 text-white rounded-md p-2 text-sm" data-testid="select-admin-crypto">
+                      <select value={newMethodCrypto} onChange={e => setNewMethodCrypto(e.target.value)} className="w-full bg-black border border-white/10 text-white rounded-md p-2 text-sm" data-testid="select-admin-crypto">
                         <option value="BTC">Bitcoin (BTC)</option>
                         <option value="ETH">Ethereum (ETH)</option>
                         <option value="USDT">Tether (USDT)</option>
@@ -1135,7 +1135,7 @@ export default function Admin() {
                     </div>
                     <div>
                       <Label className="text-gray-400 text-xs">Chain</Label>
-                      <select value={newMethodChain} onChange={e => setNewMethodChain(e.target.value)} className="w-full bg-[#0a0a0f] border border-white/10 text-white rounded-md p-2 text-sm" data-testid="select-admin-chain">
+                      <select value={newMethodChain} onChange={e => setNewMethodChain(e.target.value)} className="w-full bg-black border border-white/10 text-white rounded-md p-2 text-sm" data-testid="select-admin-chain">
                         <option value="Bitcoin">Bitcoin</option>
                         <option value="ERC20">ERC20</option>
                         <option value="TRC20">TRC20 (TRON)</option>
@@ -1146,26 +1146,26 @@ export default function Admin() {
                   </div>
                   <div>
                     <Label className="text-gray-400 text-xs">Wallet Address</Label>
-                    <Input value={newMethodAddress} onChange={e => setNewMethodAddress(e.target.value)} placeholder="Enter wallet address" className="bg-[#0a0a0f] border-white/10 font-mono text-sm" data-testid="input-admin-wallet" />
+                    <Input value={newMethodAddress} onChange={e => setNewMethodAddress(e.target.value)} placeholder="Enter wallet address" className="bg-black border-white/10 font-mono text-sm" data-testid="input-admin-wallet" />
                   </div>
                 </div>
               ) : (
                 <div className="space-y-3">
                   <div>
                     <Label className="text-gray-400 text-xs">UPI ID</Label>
-                    <Input value={newMethodUpiId} onChange={e => setNewMethodUpiId(e.target.value)} placeholder="Enter UPI ID" className="bg-[#0a0a0f] border-white/10 text-sm" data-testid="input-admin-upi" />
+                    <Input value={newMethodUpiId} onChange={e => setNewMethodUpiId(e.target.value)} placeholder="Enter UPI ID" className="bg-black border-white/10 text-sm" data-testid="input-admin-upi" />
                   </div>
                   <div>
                     <Label className="text-gray-400 text-xs">QR Image (optional)</Label>
                     <div className="flex gap-2">
-                      <Input type="file" accept="image/*" onChange={handleQrUpload} className="bg-[#0a0a0f] border-white/10 text-sm" data-testid="input-admin-qr" />
+                      <Input type="file" accept="image/*" onChange={handleQrUpload} className="bg-black border-white/10 text-sm" data-testid="input-admin-qr" />
                     </div>
                     {newMethodQr && <img src={newMethodQr} alt="QR Preview" className="w-24 h-24 mt-2 rounded border border-white/10" />}
                   </div>
                 </div>
               )}
 
-              <Button onClick={handleAddPaymentMethod} className="w-full bg-cyan-600 hover:bg-cyan-700" size="sm" data-testid="button-add-method">
+              <Button onClick={handleAddPaymentMethod} className="w-full bg-white text-black hover:bg-neutral-200" size="sm" data-testid="button-add-method">
                 <Plus className="w-3 h-3 mr-1" /> Add Payment Method
               </Button>
 
@@ -1192,7 +1192,7 @@ export default function Admin() {
           </Card>
 
           {/* Deposit Requests */}
-          <Card className="bg-[#12121a] border-white/5">
+          <Card className="bg-white/[0.03] border-white/5">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <ArrowDownToLine className="w-5 h-5 text-green-400" />
@@ -1249,7 +1249,7 @@ export default function Admin() {
           </Card>
 
           {/* Withdrawal Requests */}
-          <Card className="bg-[#12121a] border-white/5">
+          <Card className="bg-white/[0.03] border-white/5">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <ArrowUpFromLine className="w-5 h-5 text-red-400" />
@@ -1304,7 +1304,7 @@ export default function Admin() {
             </CardContent>
           </Card>
 
-          <Card className="bg-[#12121a] border-white/5">
+          <Card className="bg-white/[0.03] border-white/5">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Shield className="w-5 h-5 text-blue-400" />
@@ -1380,7 +1380,7 @@ export default function Admin() {
             </CardContent>
           </Card>
 
-          <Card className="bg-[#12121a] border-white/5">
+          <Card className="bg-white/[0.03] border-white/5">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-emerald-400" />

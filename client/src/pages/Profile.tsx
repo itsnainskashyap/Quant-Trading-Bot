@@ -88,7 +88,7 @@ export default function Profile() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f]">
+      <div className="min-h-screen bg-black">
         <div className="max-w-2xl mx-auto p-6">
           <Skeleton className="h-16 mb-6 bg-white/5" />
           <Skeleton className="h-32 mb-6 bg-white/5" />
@@ -100,7 +100,7 @@ export default function Profile() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-400 mb-4">Please log in to view your profile</p>
           <Button asChild>
@@ -116,8 +116,8 @@ export default function Profile() {
   const winRate = parseFloat(stats?.winRate || '0');
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
-      <header className="border-b border-white/5 bg-[#0a0a0f]/95 backdrop-blur-xl sticky top-0 z-50">
+    <div className="min-h-screen bg-black text-white">
+      <header className="border-b border-white/5 bg-black/95 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/">
@@ -141,10 +141,10 @@ export default function Profile() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-4">
-        <Card className="bg-gradient-to-br from-[#12121a] to-[#0d0d14] border-white/5 overflow-hidden">
+        <Card className="bg-white/[0.03] border-white/5 overflow-hidden">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-xl font-bold shadow-lg shadow-cyan-500/20">
+              <div className="w-14 h-14 rounded-full bg-white/[0.12] flex items-center justify-center text-xl font-bold shadow-none">
                 {initials}
               </div>
               <div className="flex-1 min-w-0">
@@ -170,7 +170,7 @@ export default function Profile() {
         </Card>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Card className="bg-[#12121a] border-white/5">
+          <Card className="bg-white/[0.03] border-white/5">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <BarChart3 className="w-4 h-4 text-gray-500" />
@@ -179,7 +179,7 @@ export default function Profile() {
               <div className="text-xs text-gray-500">Total Trades</div>
             </CardContent>
           </Card>
-          <Card className="bg-[#12121a] border-white/5">
+          <Card className="bg-white/[0.03] border-white/5">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -188,7 +188,7 @@ export default function Profile() {
               <div className="text-xs text-gray-500">Wins</div>
             </CardContent>
           </Card>
-          <Card className="bg-[#12121a] border-white/5">
+          <Card className="bg-white/[0.03] border-white/5">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <XCircle className="w-4 h-4 text-red-500" />
@@ -197,7 +197,7 @@ export default function Profile() {
               <div className="text-xs text-gray-500">Losses</div>
             </CardContent>
           </Card>
-          <Card className="bg-[#12121a] border-white/5">
+          <Card className="bg-white/[0.03] border-white/5">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <Target className="w-4 h-4 text-blue-500" />
@@ -211,7 +211,7 @@ export default function Profile() {
         </div>
 
         {stats && stats.total > 0 && (
-          <Card className="bg-[#12121a] border-white/5">
+          <Card className="bg-white/[0.03] border-white/5">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-400">Win Rate</span>
@@ -221,7 +221,7 @@ export default function Profile() {
               </div>
               <div className="h-2 bg-white/5 rounded-full overflow-hidden">
                 <div 
-                  className={`h-full transition-all duration-500 ${winRate >= 50 ? 'bg-gradient-to-r from-emerald-500 to-cyan-500' : 'bg-gradient-to-r from-amber-500 to-orange-500'}`}
+                  className={`h-full transition-all duration-500 ${winRate >= 50 ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' : 'bg-gradient-to-r from-amber-500 to-orange-500'}`}
                   style={{ width: `${Math.min(winRate, 100)}%` }}
                 />
               </div>
@@ -263,7 +263,7 @@ export default function Profile() {
             </CardContent>
           </Card>
         ) : (
-          <Card className="bg-gradient-to-br from-[#12121a] via-[#0d0d14] to-[#0a0a0f] border-white/10 overflow-hidden relative">
+          <Card className="bg-white/[0.03] border-white/10 overflow-hidden relative">
             <div className="absolute top-0 right-0 bg-gradient-to-l from-red-500 to-red-600 text-white text-xs font-bold px-4 py-1 rounded-bl-lg">
               95% OFF
             </div>
@@ -291,7 +291,7 @@ export default function Profile() {
               
               <div className="space-y-2 mb-5">
                 <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.03] border border-white/5">
-                  <Infinity className="w-5 h-5 text-cyan-400" />
+                  <Infinity className="w-5 h-5 text-neutral-400" />
                   <span className="text-sm text-gray-300">Unlimited AI Analyses</span>
                 </div>
                 <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.03] border border-white/5">
@@ -337,7 +337,7 @@ export default function Profile() {
           </Card>
         )}
 
-        <Card className="bg-[#12121a] border-white/5">
+        <Card className="bg-white/[0.03] border-white/5">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold">Trade History</h2>
@@ -417,7 +417,7 @@ export default function Profile() {
           </CardContent>
         </Card>
 
-        <Card className="bg-[#12121a] border-white/5">
+        <Card className="bg-white/[0.03] border-white/5">
           <CardContent className="p-5">
             <div className="flex items-center gap-2 mb-4">
               <Link2 className="w-4 h-4 text-blue-400" />
@@ -458,7 +458,7 @@ export default function Profile() {
           </CardContent>
         </Card>
 
-        <Card className="bg-[#12121a] border-white/5">
+        <Card className="bg-white/[0.03] border-white/5">
           <CardContent className="p-4">
             <Link href="/kyc">
               <button
@@ -498,7 +498,7 @@ export default function Profile() {
           </CardContent>
         </Card>
 
-        <Card className="bg-[#12121a] border-white/5">
+        <Card className="bg-white/[0.03] border-white/5">
           <CardContent className="p-4">
             <button
               onClick={() => setShowTermsModal(true)}
@@ -506,8 +506,8 @@ export default function Profile() {
               data-testid="button-profile-terms"
             >
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-cyan-500/10 flex items-center justify-center">
-                  <FileText className="w-4 h-4 text-cyan-400" />
+                <div className="w-9 h-9 rounded-lg bg-white/[0.06] flex items-center justify-center">
+                  <FileText className="w-4 h-4 text-neutral-400" />
                 </div>
                 <div className="text-left">
                   <div className="text-sm font-medium text-white">Terms & Conditions</div>
@@ -535,7 +535,7 @@ export default function Profile() {
       />
 
       <Dialog open={showTermsModal} onOpenChange={setShowTermsModal}>
-        <DialogContent className="bg-[#12121a] border-[#1a1a2e] text-white max-w-lg max-h-[80vh]">
+        <DialogContent className="bg-white/[0.03] border-white/[0.06] text-white max-w-lg max-h-[80vh]">
           <DialogHeader>
             <DialogTitle className="text-white">Terms & Conditions</DialogTitle>
           </DialogHeader>
