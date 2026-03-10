@@ -48,7 +48,10 @@ async function verifyPassword(password: string, hash: string): Promise<boolean> 
 
 export async function registerUser(
   email: string,
-  password: string
+  password: string,
+  country?: string,
+  countryCode?: string,
+  phone?: string
 ): Promise<{ success: boolean; userId?: string; message: string }> {
   try {
     const [existingUser] = await db.select().from(users).where(eq(users.email, email));
@@ -63,6 +66,9 @@ export async function registerUser(
         email,
         password: hashedPassword,
         isEmailVerified: false,
+        country: country || null,
+        countryCode: countryCode || null,
+        phone: phone || null,
       })
       .returning();
 
@@ -97,7 +103,7 @@ export async function loginUser(
 
 export function setupEmailAuth(app: Express): void {
   app.post("/api/auth/register", (async (req: Request, res: Response) => {
-    const { email, password } = req.body;
+    const { email, password, country, countryCode, phone } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ success: false, message: "Email and password required" });
@@ -112,7 +118,7 @@ export function setupEmailAuth(app: Express): void {
       return res.status(400).json({ success: false, message: "Invalid email format" });
     }
 
-    const result = await registerUser(email, password);
+    const result = await registerUser(email, password, country, countryCode, phone);
     if (!result.success) {
       return res.status(400).json(result);
     }

@@ -442,15 +442,38 @@ export function Landing() {
         </div>
       </section>
 
-      <footer className="border-t border-white/[0.06] py-8">
+      <footer className="border-t border-white/[0.06] py-10">
         <div className="max-w-[1200px] mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <img src={logoImage} alt="TradeX AI" className="h-7 w-auto opacity-50" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            <div>
+              <img src={logoImage} alt="TradeX AI" className="h-7 w-auto opacity-70 mb-3" />
+              <p className="text-[11px] text-neutral-600 leading-relaxed">
+                AI-powered crypto trading signals using Multi-AI Consensus technology.
+              </p>
+            </div>
+            <div>
+              <h4 className="text-xs font-medium text-neutral-400 mb-3 uppercase tracking-wider">Contact</h4>
+              <div className="space-y-2">
+                <p className="text-[11px] text-neutral-500">Office 1205, Jumeirah Bay X2 Tower</p>
+                <p className="text-[11px] text-neutral-500">Cluster X, JLT, Dubai, UAE</p>
+                <a href="mailto:support@tradexai.in" className="text-[11px] text-neutral-400 hover:text-white transition block">support@tradexai.in</a>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-xs font-medium text-neutral-400 mb-3 uppercase tracking-wider">Support</h4>
+              <div className="space-y-2">
+                <Link href="/support" className="text-[11px] text-neutral-400 hover:text-white transition block" data-testid="link-footer-support">Contact Support</Link>
+                <Link href="/register" className="text-[11px] text-neutral-400 hover:text-white transition block">Create Account</Link>
+                <Link href="/login" className="text-[11px] text-neutral-400 hover:text-white transition block">Sign In</Link>
+              </div>
+            </div>
+          </div>
+          <div className="border-t border-white/[0.04] pt-6 flex flex-col md:flex-row items-center justify-between gap-3">
             <p className="text-[11px] text-neutral-600 text-center md:text-left">
               Crypto trading involves significant risk. This is not financial advice. Trade responsibly.
             </p>
             <span className="text-[11px] text-neutral-700">
-              &copy; {new Date().getFullYear()} TradeX AI
+              &copy; {new Date().getFullYear()} TradeX AI. All rights reserved.
             </span>
           </div>
         </div>

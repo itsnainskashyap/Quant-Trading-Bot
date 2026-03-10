@@ -17,6 +17,7 @@ import Plans from "@/pages/Plans";
 import Payment from "@/pages/Payment";
 import Wallet from "@/pages/Wallet";
 import KYC from "@/pages/KYC";
+import Support from "@/pages/Support";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 
@@ -86,6 +87,7 @@ function AuthenticatedRoutes() {
           <KYC />
         </OnboardingGuard>
       </Route>
+      <Route path="/support" component={Support} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -98,6 +100,7 @@ function UnauthenticatedRoutes() {
       <Route path="/register" component={Register} />
       <Route path="/login" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/support" component={Support} />
       <Route path="/personalize">
         <Redirect to="/login" />
       </Route>

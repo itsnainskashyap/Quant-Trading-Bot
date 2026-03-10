@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
@@ -10,6 +11,69 @@ import { Loader2, ArrowRight, Mail, ShieldCheck } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 import { TermsContent } from "@/components/TermsAndConditions";
+
+const COUNTRIES = [
+  { code: "AF", name: "Afghanistan", dial: "+93" },
+  { code: "AL", name: "Albania", dial: "+355" },
+  { code: "DZ", name: "Algeria", dial: "+213" },
+  { code: "AR", name: "Argentina", dial: "+54" },
+  { code: "AU", name: "Australia", dial: "+61" },
+  { code: "AT", name: "Austria", dial: "+43" },
+  { code: "BD", name: "Bangladesh", dial: "+880" },
+  { code: "BE", name: "Belgium", dial: "+32" },
+  { code: "BR", name: "Brazil", dial: "+55" },
+  { code: "CA", name: "Canada", dial: "+1" },
+  { code: "CN", name: "China", dial: "+86" },
+  { code: "CO", name: "Colombia", dial: "+57" },
+  { code: "EG", name: "Egypt", dial: "+20" },
+  { code: "FR", name: "France", dial: "+33" },
+  { code: "DE", name: "Germany", dial: "+49" },
+  { code: "GH", name: "Ghana", dial: "+233" },
+  { code: "HK", name: "Hong Kong", dial: "+852" },
+  { code: "IN", name: "India", dial: "+91" },
+  { code: "ID", name: "Indonesia", dial: "+62" },
+  { code: "IR", name: "Iran", dial: "+98" },
+  { code: "IQ", name: "Iraq", dial: "+964" },
+  { code: "IE", name: "Ireland", dial: "+353" },
+  { code: "IL", name: "Israel", dial: "+972" },
+  { code: "IT", name: "Italy", dial: "+39" },
+  { code: "JP", name: "Japan", dial: "+81" },
+  { code: "JO", name: "Jordan", dial: "+962" },
+  { code: "KE", name: "Kenya", dial: "+254" },
+  { code: "KW", name: "Kuwait", dial: "+965" },
+  { code: "LB", name: "Lebanon", dial: "+961" },
+  { code: "MY", name: "Malaysia", dial: "+60" },
+  { code: "MX", name: "Mexico", dial: "+52" },
+  { code: "MA", name: "Morocco", dial: "+212" },
+  { code: "NP", name: "Nepal", dial: "+977" },
+  { code: "NL", name: "Netherlands", dial: "+31" },
+  { code: "NZ", name: "New Zealand", dial: "+64" },
+  { code: "NG", name: "Nigeria", dial: "+234" },
+  { code: "NO", name: "Norway", dial: "+47" },
+  { code: "OM", name: "Oman", dial: "+968" },
+  { code: "PK", name: "Pakistan", dial: "+92" },
+  { code: "PH", name: "Philippines", dial: "+63" },
+  { code: "PL", name: "Poland", dial: "+48" },
+  { code: "PT", name: "Portugal", dial: "+351" },
+  { code: "QA", name: "Qatar", dial: "+974" },
+  { code: "RO", name: "Romania", dial: "+40" },
+  { code: "RU", name: "Russia", dial: "+7" },
+  { code: "SA", name: "Saudi Arabia", dial: "+966" },
+  { code: "SG", name: "Singapore", dial: "+65" },
+  { code: "ZA", name: "South Africa", dial: "+27" },
+  { code: "KR", name: "South Korea", dial: "+82" },
+  { code: "ES", name: "Spain", dial: "+34" },
+  { code: "LK", name: "Sri Lanka", dial: "+94" },
+  { code: "SE", name: "Sweden", dial: "+46" },
+  { code: "CH", name: "Switzerland", dial: "+41" },
+  { code: "TW", name: "Taiwan", dial: "+886" },
+  { code: "TH", name: "Thailand", dial: "+66" },
+  { code: "TR", name: "Turkey", dial: "+90" },
+  { code: "AE", name: "United Arab Emirates", dial: "+971" },
+  { code: "GB", name: "United Kingdom", dial: "+44" },
+  { code: "US", name: "United States", dial: "+1" },
+  { code: "VN", name: "Vietnam", dial: "+84" },
+];
 
 export function Register() {
   const [, setLocation] = useLocation();
@@ -26,12 +90,22 @@ export function Register() {
   const [otp, setOtp] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [phone, setPhone] = useState("");
+
+  const countryObj = COUNTRIES.find(c => c.code === selectedCountry);
+  const dialCode = countryObj?.dial || "";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password || !confirmPassword) {
-      toast({ title: "Error", description: "Please fill all fields", variant: "destructive" });
+      toast({ title: "Error", description: "Please fill all required fields", variant: "destructive" });
+      return;
+    }
+
+    if (!selectedCountry) {
+      toast({ title: "Error", description: "Please select your country", variant: "destructive" });
       return;
     }
 
@@ -52,10 +126,17 @@ export function Register() {
 
     setIsLoading(true);
     try {
+      const fullPhone = phone ? `${dialCode}${phone}` : undefined;
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+          country: countryObj?.name,
+          countryCode: dialCode,
+          phone: fullPhone,
+        }),
         credentials: "include",
       });
 
@@ -129,7 +210,7 @@ export function Register() {
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-10">
+        <div className="text-center mb-8">
           <img src={logoImage} alt="TradeX AI" className="h-9 mx-auto mb-8" />
           {step === "register" ? (
             <>
@@ -148,7 +229,7 @@ export function Register() {
         </div>
 
         {step === "register" ? (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3.5">
             <div className="space-y-1.5">
               <label className="text-xs text-neutral-400 font-medium">Email</label>
               <Input
@@ -159,6 +240,44 @@ export function Register() {
                 className="bg-white/[0.04] border-white/[0.08] text-white h-10 rounded-lg placeholder:text-neutral-600 focus:border-white/20 focus:ring-0"
                 data-testid="input-email"
               />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs text-neutral-400 font-medium">Country</label>
+              <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+                <SelectTrigger className="bg-white/[0.04] border-white/[0.08] text-white h-10 rounded-lg" data-testid="select-country">
+                  <SelectValue placeholder="Select your country" />
+                </SelectTrigger>
+                <SelectContent className="bg-neutral-950 border-white/[0.08] max-h-[240px]">
+                  {COUNTRIES.map(c => (
+                    <SelectItem key={c.code} value={c.code} className="text-white hover:bg-white/[0.05]">
+                      {c.name} ({c.dial})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs text-neutral-400 font-medium">Mobile Number <span className="text-neutral-600">(optional)</span></label>
+              <div className="flex gap-2">
+                <div className="flex-shrink-0 w-[72px]">
+                  <Input
+                    value={dialCode}
+                    readOnly
+                    className="bg-white/[0.03] border-white/[0.08] text-neutral-400 h-10 rounded-lg text-center text-sm cursor-default"
+                    tabIndex={-1}
+                  />
+                </div>
+                <Input
+                  type="tel"
+                  placeholder="Mobile number"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                  className="bg-white/[0.04] border-white/[0.08] text-white h-10 rounded-lg placeholder:text-neutral-600 focus:border-white/20 focus:ring-0 font-mono"
+                  data-testid="input-phone"
+                />
+              </div>
             </div>
 
             <div className="space-y-1.5">

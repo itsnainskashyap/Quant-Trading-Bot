@@ -7,6 +7,7 @@ import { getMultiAIConsensus, generateConsensusExplanation } from "./consensus";
 import { getEnhancedAIConsensus } from "./enhancedAI";
 import { setupPhoneAuth, getUserById } from "./phoneAuth";
 import { setupEmailAuth } from "./emailAuth";
+import { sendSupportTicket, sendSupportConfirmation } from "./emailService";
 import { startTradeMonitor } from "./tradeAI";
 import { startFindTradeScanner } from "./findTradeScanner";
 import { getAssetProfile, getAssetMemory, getAssetSpecificThresholds, isAssetInCooldown, getCooldownReason, updateAssetMemory } from "./assetIntelligence";
@@ -1571,6 +1572,48 @@ Keep responses concise (2-3 sentences max), helpful, and focused on trading educ
 
   // ==================== ADMIN ENDPOINTS ====================
   
+  const supportRateLimit = new Map<string, { count: number; resetAt: number }>();
+  app.post("/api/support", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    const clientIp = req.ip || req.socket.remoteAddress || "unknown";
+    const now = Date.now();
+    const rateEntry = supportRateLimit.get(clientIp);
+    if (rateEntry && rateEntry.resetAt > now) {
+      if (rateEntry.count >= 3) {
+        return res.status(429).json({ success: false, message: "Too many requests. Please try again later." });
+      }
+      rateEntry.count++;
+    } else {
+      supportRateLimit.set(clientIp, { count: 1, resetAt: now + 15 * 60 * 1000 });
+    }
+
+    try {
+      const { department, subject, description, email: guestEmail } = req.body;
+
+      if (!department || !subject || !description) {
+        return res.status(400).json({ success: false, message: "Department, subject, and description are required" });
+      }
+
+      let userEmail = guestEmail;
+      if (userId) {
+        const user = await getUserById(userId);
+        if (user) userEmail = user.email;
+      }
+
+      if (!userEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail)) {
+        return res.status(400).json({ success: false, message: "A valid email is required" });
+      }
+
+      await sendSupportTicket(userEmail, department, subject, description);
+      await sendSupportConfirmation(userEmail, department, subject);
+
+      return res.json({ success: true, message: "Support request submitted successfully. Check your email for confirmation." });
+    } catch (e: any) {
+      console.error("[Support] Error:", e.message);
+      return res.status(500).json({ success: false, message: "Failed to submit support request" });
+    }
+  });
+
   // Admin credentials (hardcoded for simplicity)
   const ADMIN_EMAIL = "itsnainskashyap@gmail.com";
   const ADMIN_PASSWORD = "Nains@1357";

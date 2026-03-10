@@ -259,6 +259,65 @@ If this wasn't you, please change your password immediately.
   }
 }
 
+export async function sendSupportTicket(
+  userEmail: string,
+  department: string,
+  subject: string,
+  description: string
+): Promise<void> {
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: "support@tradexai.in",
+      replyTo: userEmail,
+      subject: `[${department}] ${subject}`,
+      html: baseTemplate(`Support Request — ${department}`, `
+<div style="margin:0 0 20px 0;padding:16px;background:#000;border-radius:8px;border:1px solid rgba(255,255,255,0.06);">
+${infoRow("From", userEmail)}
+${infoRow("Department", department)}
+${infoRow("Subject", subject)}
+${infoRow("Time", new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }))}
+</div>
+<div style="margin:16px 0 0 0;">
+<p style="color:#888;font-size:12px;margin:0 0 8px 0;text-transform:uppercase;letter-spacing:1px;">Description</p>
+<p style="color:#ccc;font-size:14px;line-height:1.6;margin:0;white-space:pre-wrap;">${description}</p>
+</div>`),
+    });
+    console.log("[Email] Support ticket sent from", userEmail);
+  } catch (e: any) {
+    console.error("[Email] Failed to send support ticket:", e.message);
+    throw e;
+  }
+}
+
+export async function sendSupportConfirmation(
+  userEmail: string,
+  department: string,
+  subject: string
+): Promise<void> {
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: userEmail,
+      subject: "TradeX AI — Support Request Received",
+      html: baseTemplate("We've Received Your Request", `
+<p style="color:#ccc;font-size:14px;line-height:1.6;margin:0 0 16px 0;">
+Thank you for reaching out. We've received your support request and our team will get back to you within 24 hours.
+</p>
+<div style="margin:20px 0;padding:16px;background:#000;border-radius:8px;border:1px solid rgba(255,255,255,0.06);">
+${infoRow("Department", department)}
+${infoRow("Subject", subject)}
+</div>
+<p style="color:#888;font-size:13px;margin:0;">
+If you have additional information, reply to this email or submit another request.
+</p>`),
+    });
+    console.log("[Email] Support confirmation sent to", userEmail);
+  } catch (e: any) {
+    console.error("[Email] Failed to send support confirmation:", e.message);
+  }
+}
+
 export async function sendLoginAlertEmail(email: string): Promise<void> {
   try {
     await resend.emails.send({
