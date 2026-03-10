@@ -30,7 +30,7 @@ import {
   Landmark,
 } from "lucide-react";
 import QRCode from "react-qr-code";
-import logoImage from "@assets/Picsart_26-03-10_23-57-49-090_1773167302165.png";
+import logoImage from "@assets/Picsart_26-03-10_23-57-49-090_1773170426667.png";
 import upiLogo from "@assets/image_1773144638368.png";
 import impsLogo from "@assets/Picsart_26-03-10_19-32-00-972_1773166568501.png";
 import binanceLogo from "@assets/binance_logo.png";

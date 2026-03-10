@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
-import logoImage from "@assets/Picsart_26-03-10_23-57-49-090_1773167302165.png";
+import logoImage from "@assets/Picsart_26-03-10_23-57-49-090_1773170426667.png";
 import { ExchangeLogo } from "@/components/ExchangeLogos";
 import heroMockup from "@assets/Picsart_26-03-10_19-15-14-488_1773150540316.png";
 import pciDssLogo from "@assets/pcidss_(1)_1773166833303.png";

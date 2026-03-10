@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
 import { Loader2, Send, Mail, Building2, ArrowLeft, CheckCircle, Headphones } from "lucide-react";
-import logoImage from "@assets/Picsart_26-03-10_23-57-49-090_1773167302165.png";
+import logoImage from "@assets/Picsart_26-03-10_23-57-49-090_1773170426667.png";
 
 const DEPARTMENTS = [
   { value: "payment", label: "Payment & Billing" },

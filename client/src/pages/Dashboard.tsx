@@ -53,7 +53,7 @@ import { TradexBroker } from "@/components/TradexBroker";
 import { AdvancedAnalysis } from "@/components/AdvancedAnalysis";
 import { FindTrade } from "@/components/FindTrade";
 import type { TradingPair, ConsensusResult, MarketMetrics } from "@shared/schema";
-import logoImage from "@assets/Picsart_26-03-10_23-57-49-090_1773167302165.png";
+import logoImage from "@assets/Picsart_26-03-10_23-57-49-090_1773170426667.png";
 
 const CRYPTO_ICONS: Record<string, { color: string; symbol: string }> = {
   'BTC': { color: '#F7931A', symbol: '₿' },

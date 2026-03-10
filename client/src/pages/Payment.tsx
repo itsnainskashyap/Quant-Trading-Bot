@@ -21,7 +21,7 @@ import {
   X
 } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
-import logoImage from "@assets/Picsart_26-03-10_23-57-49-090_1773167302165.png";
+import logoImage from "@assets/Picsart_26-03-10_23-57-49-090_1773170426667.png";
 
 export function Payment() {
   const [, setLocation] = useLocation();

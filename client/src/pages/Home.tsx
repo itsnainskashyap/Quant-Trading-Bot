@@ -36,7 +36,7 @@ import {
   CheckCircle2,
   XCircle,
 } from "lucide-react";
-import logoImage from "@assets/Picsart_26-03-10_23-57-49-090_1773167302165.png";
+import logoImage from "@assets/Picsart_26-03-10_23-57-49-090_1773170426667.png";
 
 function BalanceDonut({ tradexPct, walletPct }: { tradexPct: number; walletPct: number }) {
   const size = 120;
