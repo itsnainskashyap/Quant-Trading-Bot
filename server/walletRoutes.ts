@@ -67,12 +67,12 @@ export function setupWalletRoutes(app: Express, verifyAdminSession?: (sessionId:
         return res.status(400).json({ message: "Valid positive amount is required" });
       }
 
-      if (!["crypto", "upi"].includes(type)) {
+      if (!["crypto", "upi", "imps"].includes(type)) {
         return res.status(400).json({ message: "Invalid deposit type" });
       }
 
-      if (type === "upi" && !utr) {
-        return res.status(400).json({ message: "UTR is required for UPI deposits" });
+      if ((type === "upi" || type === "imps") && !utr) {
+        return res.status(400).json({ message: "UTR/Reference number is required" });
       }
 
       if (type === "crypto" && !txHash) {
@@ -114,14 +114,24 @@ export function setupWalletRoutes(app: Express, verifyAdminSession?: (sessionId:
       const userId = getUserIdFromRequest(req);
       if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-      const { type, crypto, chain, toAddress, amountUsdt } = req.body;
+      const { type, crypto, chain, toAddress, amountUsdt, bankName, accountNumber, ifscCode, accountHolderName } = req.body;
 
-      if (!type || !amountUsdt || !toAddress || typeof amountUsdt !== "number" || amountUsdt <= 0 || !isFinite(amountUsdt)) {
-        return res.status(400).json({ message: "Valid positive amount and address are required" });
+      if (!type || !amountUsdt || typeof amountUsdt !== "number" || amountUsdt <= 0 || !isFinite(amountUsdt)) {
+        return res.status(400).json({ message: "Valid positive amount is required" });
       }
 
-      if (!["crypto", "upi"].includes(type)) {
+      if (!["crypto", "upi", "imps"].includes(type)) {
         return res.status(400).json({ message: "Invalid withdrawal type" });
+      }
+
+      if (type === "crypto" && !toAddress) {
+        return res.status(400).json({ message: "Wallet address is required" });
+      }
+      if (type === "upi" && !toAddress) {
+        return res.status(400).json({ message: "UPI ID is required" });
+      }
+      if (type === "imps" && (!accountNumber || !ifscCode || !accountHolderName)) {
+        return res.status(400).json({ message: "Bank details (account number, IFSC, account holder name) are required" });
       }
 
       const balance = await getOrCreateBalance(userId);
@@ -129,7 +139,7 @@ export function setupWalletRoutes(app: Express, verifyAdminSession?: (sessionId:
         return res.status(400).json({ message: "Insufficient balance" });
       }
 
-      const amountInr = type === "upi" ? amountUsdt * INR_TO_USDT : null;
+      const amountInr = (type === "upi" || type === "imps") ? amountUsdt * INR_TO_USDT : null;
 
       const result = await db.transaction(async (tx) => {
         const [updated] = await tx.update(userBalances).set({
@@ -149,9 +159,13 @@ export function setupWalletRoutes(app: Express, verifyAdminSession?: (sessionId:
           type,
           crypto: crypto || null,
           chain: chain || null,
-          toAddress,
+          toAddress: toAddress || null,
           amountUsdt,
           amountInr,
+          bankName: bankName || null,
+          accountNumber: accountNumber || null,
+          ifscCode: ifscCode || null,
+          accountHolderName: accountHolderName || null,
           status: "pending",
         }).returning();
 
@@ -199,8 +213,12 @@ export function setupWalletRoutes(app: Express, verifyAdminSession?: (sessionId:
   app.post("/api/admin/payment-methods", (async (req: Request, res: Response) => {
     try {
       if (!requireAdmin(req, res)) return;
-      const { type, crypto, chain, address, upiId, qrImage } = req.body;
-      if (!type || !["crypto", "upi"].includes(type)) return res.status(400).json({ message: "Valid type is required" });
+      const { type, crypto, chain, address, upiId, qrImage, bankName, accountNumber, ifscCode, accountHolderName } = req.body;
+      if (!type || !["crypto", "upi", "imps"].includes(type)) return res.status(400).json({ message: "Valid type is required" });
+
+      if (type === "crypto" && (!address || !crypto || !chain)) return res.status(400).json({ message: "Crypto, chain, and address are required" });
+      if (type === "upi" && !upiId) return res.status(400).json({ message: "UPI ID is required" });
+      if (type === "imps" && (!accountNumber || !ifscCode || !accountHolderName)) return res.status(400).json({ message: "Account number, IFSC code, and account holder name are required" });
 
       const [method] = await db.insert(adminPaymentMethods).values({
         type,
@@ -209,6 +227,10 @@ export function setupWalletRoutes(app: Express, verifyAdminSession?: (sessionId:
         address: address || null,
         upiId: upiId || null,
         qrImage: qrImage || null,
+        bankName: bankName || null,
+        accountNumber: accountNumber || null,
+        ifscCode: ifscCode || null,
+        accountHolderName: accountHolderName || null,
         isActive: true,
       }).returning();
 

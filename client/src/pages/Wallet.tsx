@@ -26,39 +26,46 @@ import {
   Shield,
   ShieldAlert,
   ShieldCheck,
+  Building2,
+  Landmark,
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
 import upiLogo from "@assets/image_1773144638368.png";
+import impsLogo from "@assets/Picsart_26-03-10_19-32-00-972_1773151372884.png";
 
 const INR_TO_USDT = 92;
 
-const CHAIN_LOGOS: Record<string, string> = {
-  Bitcoin: "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=040",
-  ERC20: "https://cryptologos.cc/logos/ethereum-eth-logo.png?v=040",
-  TRC20: "https://cryptologos.cc/logos/tron-trx-logo.png?v=040",
-  BEP20: "https://cryptologos.cc/logos/bnb-bnb-logo.png?v=040",
-  Litecoin: "https://cryptologos.cc/logos/litecoin-ltc-logo.png?v=040",
-};
-
-const CRYPTO_LOGOS: Record<string, string> = {
-  BTC: "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=040",
-  ETH: "https://cryptologos.cc/logos/ethereum-eth-logo.png?v=040",
-  USDT: "https://cryptologos.cc/logos/tether-usdt-logo.png?v=040",
-  LTC: "https://cryptologos.cc/logos/litecoin-ltc-logo.png?v=040",
-  USDC: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=040",
-};
-
-function ChainLogo({ chain, className = "w-5 h-5" }: { chain: string; className?: string }) {
-  const src = CHAIN_LOGOS[chain];
-  if (!src) return null;
-  return <img src={src} alt={chain} className={`${className} rounded-full`} />;
+function CryptoIcon({ symbol, className = "w-7 h-7" }: { symbol: string; className?: string }) {
+  const icons: Record<string, { bg: string; text: string; label: string }> = {
+    BTC: { bg: "bg-orange-500", text: "text-white", label: "₿" },
+    ETH: { bg: "bg-blue-500", text: "text-white", label: "Ξ" },
+    USDT: { bg: "bg-emerald-500", text: "text-white", label: "₮" },
+    LTC: { bg: "bg-gray-400", text: "text-white", label: "Ł" },
+    USDC: { bg: "bg-blue-400", text: "text-white", label: "$" },
+  };
+  const config = icons[symbol] || { bg: "bg-gray-500", text: "text-white", label: symbol[0] };
+  return (
+    <div className={`${className} ${config.bg} rounded-full flex items-center justify-center font-bold ${config.text} text-xs`}>
+      {config.label}
+    </div>
+  );
 }
 
-function CryptoLogoImg({ crypto, className = "w-5 h-5" }: { crypto: string; className?: string }) {
-  const src = CRYPTO_LOGOS[crypto];
-  if (!src) return null;
-  return <img src={src} alt={crypto} className={`${className} rounded-full`} />;
+function ChainIcon({ chain, className = "w-5 h-5" }: { chain: string; className?: string }) {
+  const icons: Record<string, { bg: string; label: string }> = {
+    Bitcoin: { bg: "bg-orange-500", label: "₿" },
+    ERC20: { bg: "bg-blue-500", label: "Ξ" },
+    TRC20: { bg: "bg-red-500", label: "T" },
+    BEP20: { bg: "bg-yellow-500", label: "B" },
+    Litecoin: { bg: "bg-gray-400", label: "Ł" },
+  };
+  const config = icons[chain] || { bg: "bg-gray-500", label: chain[0] };
+  return (
+    <div className={`${className} ${config.bg} rounded-full flex items-center justify-center font-bold text-white text-[9px]`}>
+      {config.label}
+    </div>
+  );
 }
 
 const CRYPTO_OPTIONS = [
@@ -88,7 +95,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function DepositTab() {
   const { toast } = useToast();
-  const [depositType, setDepositType] = useState<"crypto" | "upi">("crypto");
+  const [depositType, setDepositType] = useState<"crypto" | "upi" | "imps">("crypto");
   const [selectedCrypto, setSelectedCrypto] = useState("USDT");
   const [selectedChain, setSelectedChain] = useState("TRC20");
   const [amount, setAmount] = useState("");
@@ -120,6 +127,7 @@ function DepositTab() {
   )?.address;
 
   const upiMethod = paymentMethods.find(m => m.type === "upi");
+  const impsMethod = paymentMethods.find(m => m.type === "imps");
 
   const handleInrChange = (val: string) => {
     setAmountInr(val);
@@ -141,11 +149,11 @@ function DepositTab() {
     }
   };
 
-  const copyAddress = (addr: string) => {
-    navigator.clipboard.writeText(addr);
+  const copyText = (text: string) => {
+    navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    toast({ title: "Copied!", description: "Address copied to clipboard" });
+    toast({ title: "Copied!", description: "Copied to clipboard" });
   };
 
   const handleSubmit = async () => {
@@ -159,8 +167,8 @@ function DepositTab() {
       toast({ title: "Error", description: "Enter transaction hash", variant: "destructive" });
       return;
     }
-    if (depositType === "upi" && !utr.trim()) {
-      toast({ title: "Error", description: "Enter UTR number", variant: "destructive" });
+    if ((depositType === "upi" || depositType === "imps") && !utr.trim()) {
+      toast({ title: "Error", description: "Enter UTR/Reference number", variant: "destructive" });
       return;
     }
 
@@ -174,11 +182,11 @@ function DepositTab() {
           type: depositType,
           crypto: depositType === "crypto" ? selectedCrypto : null,
           chain: depositType === "crypto" ? selectedChain : null,
-          amountInr: depositType === "upi" ? parseFloat(amountInr) : null,
+          amountInr: (depositType === "upi" || depositType === "imps") ? parseFloat(amountInr) : null,
           amountUsdt,
           txHash: depositType === "crypto" ? txHash : null,
-          utr: depositType === "upi" ? utr : null,
-          toAddress: depositType === "crypto" ? depositAddress : upiMethod?.upiId,
+          utr: (depositType === "upi" || depositType === "imps") ? utr : null,
+          toAddress: depositType === "crypto" ? depositAddress : depositType === "upi" ? upiMethod?.upiId : impsMethod?.accountNumber,
         }),
       });
       if (!res.ok) {
@@ -216,6 +224,14 @@ function DepositTab() {
         >
           <img src={upiLogo} alt="UPI" className="h-4 mr-2" /> UPI
         </Button>
+        <Button
+          variant={depositType === "imps" ? "default" : "outline"}
+          onClick={() => setDepositType("imps")}
+          className="flex-1"
+          data-testid="button-deposit-imps"
+        >
+          <Landmark className="w-4 h-4 mr-2" /> IMPS
+        </Button>
       </div>
 
       {depositType === "crypto" ? (
@@ -234,7 +250,7 @@ function DepositTab() {
                   }`}
                   data-testid={`button-crypto-${c.value}`}
                 >
-                  <CryptoLogoImg crypto={c.value} className="w-7 h-7" />
+                  <CryptoIcon symbol={c.value} className="w-7 h-7" />
                   <span className="text-[10px] font-semibold text-white">{c.value}</span>
                 </button>
               ))}
@@ -256,7 +272,7 @@ function DepositTab() {
                     }`}
                     data-testid={`button-chain-${c.value}`}
                   >
-                    <ChainLogo chain={c.value} className="w-5 h-5" />
+                    <ChainIcon chain={c.value} className="w-5 h-5" />
                     <span className="text-xs text-white">{c.label}</span>
                   </button>
                 ))}
@@ -272,7 +288,7 @@ function DepositTab() {
               </div>
               <div className="flex items-center gap-2">
                 <Input value={depositAddress} readOnly className="bg-white/[0.03] text-xs text-gray-300 font-mono" />
-                <Button size="sm" variant="outline" onClick={() => copyAddress(depositAddress)} data-testid="button-copy-address">
+                <Button size="sm" variant="outline" onClick={() => copyText(depositAddress)} data-testid="button-copy-address">
                   {copied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </Button>
               </div>
@@ -309,7 +325,7 @@ function DepositTab() {
             />
           </div>
         </div>
-      ) : (
+      ) : depositType === "upi" ? (
         <div className="space-y-4">
           <div>
             <Label className="text-gray-300">Amount (INR)</Label>
@@ -346,7 +362,7 @@ function DepositTab() {
               )}
               <div className="flex items-center gap-2">
                 <Input value={upiMethod.upiId} readOnly className="bg-white/[0.03] text-sm text-gray-300" />
-                <Button size="sm" variant="outline" onClick={() => copyAddress(upiMethod.upiId)} data-testid="button-copy-upi">
+                <Button size="sm" variant="outline" onClick={() => copyText(upiMethod.upiId)} data-testid="button-copy-upi">
                   {copied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </Button>
               </div>
@@ -373,6 +389,95 @@ function DepositTab() {
             <p className="text-xs text-gray-500 mt-1">Enter the UTR/Reference number from your UPI app</p>
           </div>
         </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/[0.06]">
+            <img src={impsLogo} alt="IMPS" className="h-6" />
+            <div>
+              <p className="text-white text-sm font-medium">IMPS Bank Transfer</p>
+              <p className="text-gray-500 text-xs">Immediate Payment Service - Instant bank transfer</p>
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-gray-300">Amount (INR)</Label>
+            <Input
+              type="number"
+              placeholder="Enter INR amount"
+              value={amountInr}
+              onChange={e => handleInrChange(e.target.value)}
+              className="bg-black border-white/[0.06] text-white"
+              data-testid="input-imps-inr-amount"
+            />
+          </div>
+          <div className="bg-black border border-white/[0.06] rounded-lg p-3 flex items-center justify-between">
+            <span className="text-gray-400 text-sm">You will receive</span>
+            <span className="text-white font-bold">{amount ? `${amount} USDT` : "0 USDT"}</span>
+          </div>
+          <p className="text-xs text-gray-500">Conversion Rate: ₹{INR_TO_USDT} = 1 USDT</p>
+
+          {impsMethod ? (
+            <div className="bg-black border border-white/[0.06] rounded-lg p-4 space-y-3">
+              <Label className="text-gray-300">Transfer to Bank Account</Label>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-2.5 bg-white/[0.03] rounded-lg">
+                  <span className="text-gray-400 text-xs">Account Holder</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-white text-sm font-medium">{impsMethod.accountHolderName}</span>
+                    <button onClick={() => copyText(impsMethod.accountHolderName)} className="text-gray-400 hover:text-white">
+                      <Copy className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-2.5 bg-white/[0.03] rounded-lg">
+                  <span className="text-gray-400 text-xs">Account Number</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-white text-sm font-mono">{impsMethod.accountNumber}</span>
+                    <button onClick={() => copyText(impsMethod.accountNumber)} className="text-gray-400 hover:text-white">
+                      <Copy className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-2.5 bg-white/[0.03] rounded-lg">
+                  <span className="text-gray-400 text-xs">IFSC Code</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-white text-sm font-mono">{impsMethod.ifscCode}</span>
+                    <button onClick={() => copyText(impsMethod.ifscCode)} className="text-gray-400 hover:text-white">
+                      <Copy className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+                {impsMethod.bankName && (
+                  <div className="flex items-center justify-between p-2.5 bg-white/[0.03] rounded-lg">
+                    <span className="text-gray-400 text-xs">Bank Name</span>
+                    <span className="text-white text-sm">{impsMethod.bankName}</span>
+                  </div>
+                )}
+              </div>
+              {amountInr && parseFloat(amountInr) > 0 && (
+                <p className="text-center text-green-400 font-semibold">Transfer ₹{amountInr} via IMPS</p>
+              )}
+            </div>
+          ) : (
+            <div className="bg-black border border-amber-500/30 rounded-lg p-4 text-center">
+              <AlertCircle className="w-8 h-8 text-amber-400 mx-auto mb-2" />
+              <p className="text-amber-400 text-sm">IMPS payment method not configured</p>
+              <p className="text-gray-500 text-xs mt-1">Contact admin to set up bank details</p>
+            </div>
+          )}
+
+          <div>
+            <Label className="text-gray-300">IMPS Reference Number</Label>
+            <Input
+              placeholder="Enter IMPS reference number after transfer"
+              value={utr}
+              onChange={e => setUtr(e.target.value)}
+              className="bg-black border-white/[0.06] text-white font-mono text-sm"
+              data-testid="input-imps-ref"
+            />
+            <p className="text-xs text-gray-500 mt-1">Enter the IMPS transaction reference from your bank</p>
+          </div>
+        </div>
       )}
 
       <Button
@@ -390,11 +495,16 @@ function DepositTab() {
 
 function WithdrawTab() {
   const { toast } = useToast();
-  const [withdrawType, setWithdrawType] = useState<"crypto" | "upi">("crypto");
+  const [withdrawType, setWithdrawType] = useState<"crypto" | "upi" | "imps">("crypto");
   const [selectedCrypto, setSelectedCrypto] = useState("USDT");
   const [selectedChain, setSelectedChain] = useState("TRC20");
   const [amount, setAmount] = useState("");
   const [address, setAddress] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [confirmAccountNumber, setConfirmAccountNumber] = useState("");
+  const [ifscCode, setIfscCode] = useState("");
+  const [accountHolderName, setAccountHolderName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [balance, setBalance] = useState(0);
 
@@ -415,7 +525,7 @@ function WithdrawTab() {
   }, [selectedCrypto]);
 
   const amountUsdt = parseFloat(amount) || 0;
-  const amountInr = withdrawType === "upi" ? (amountUsdt * INR_TO_USDT).toFixed(2) : null;
+  const amountInr = (withdrawType === "upi" || withdrawType === "imps") ? (amountUsdt * INR_TO_USDT).toFixed(2) : null;
 
   const handleSubmit = async () => {
     if (!amountUsdt || amountUsdt <= 0) {
@@ -426,9 +536,23 @@ function WithdrawTab() {
       toast({ title: "Error", description: "Insufficient balance", variant: "destructive" });
       return;
     }
-    if (!address.trim()) {
-      toast({ title: "Error", description: withdrawType === "upi" ? "Enter UPI ID" : "Enter wallet address", variant: "destructive" });
+    if (withdrawType === "crypto" && !address.trim()) {
+      toast({ title: "Error", description: "Enter wallet address", variant: "destructive" });
       return;
+    }
+    if (withdrawType === "upi" && !address.trim()) {
+      toast({ title: "Error", description: "Enter UPI ID", variant: "destructive" });
+      return;
+    }
+    if (withdrawType === "imps") {
+      if (!accountNumber.trim() || !ifscCode.trim() || !accountHolderName.trim()) {
+        toast({ title: "Error", description: "Fill all bank details", variant: "destructive" });
+        return;
+      }
+      if (accountNumber !== confirmAccountNumber) {
+        toast({ title: "Error", description: "Account numbers do not match", variant: "destructive" });
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -441,8 +565,12 @@ function WithdrawTab() {
           type: withdrawType,
           crypto: withdrawType === "crypto" ? selectedCrypto : null,
           chain: withdrawType === "crypto" ? selectedChain : null,
-          toAddress: address,
+          toAddress: withdrawType !== "imps" ? address : null,
           amountUsdt,
+          bankName: withdrawType === "imps" ? bankName : null,
+          accountNumber: withdrawType === "imps" ? accountNumber : null,
+          ifscCode: withdrawType === "imps" ? ifscCode : null,
+          accountHolderName: withdrawType === "imps" ? accountHolderName : null,
         }),
       });
       if (!res.ok) {
@@ -452,6 +580,11 @@ function WithdrawTab() {
       toast({ title: "Withdrawal Submitted", description: "Your withdrawal request has been submitted." });
       setAmount("");
       setAddress("");
+      setBankName("");
+      setAccountNumber("");
+      setConfirmAccountNumber("");
+      setIfscCode("");
+      setAccountHolderName("");
       setBalance(prev => prev - amountUsdt);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -484,6 +617,14 @@ function WithdrawTab() {
         >
           <img src={upiLogo} alt="UPI" className="h-4 mr-2" /> UPI
         </Button>
+        <Button
+          variant={withdrawType === "imps" ? "default" : "outline"}
+          onClick={() => setWithdrawType("imps")}
+          className="flex-1"
+          data-testid="button-withdraw-imps"
+        >
+          <Landmark className="w-4 h-4 mr-2" /> IMPS
+        </Button>
       </div>
 
       {withdrawType === "crypto" ? (
@@ -502,7 +643,7 @@ function WithdrawTab() {
                   }`}
                   data-testid={`button-wcrypto-${c.value}`}
                 >
-                  <CryptoLogoImg crypto={c.value} className="w-7 h-7" />
+                  <CryptoIcon symbol={c.value} className="w-7 h-7" />
                   <span className="text-[10px] font-semibold text-white">{c.value}</span>
                 </button>
               ))}
@@ -524,7 +665,7 @@ function WithdrawTab() {
                     }`}
                     data-testid={`button-wchain-${c.value}`}
                   >
-                    <ChainLogo chain={c.value} className="w-5 h-5" />
+                    <ChainIcon chain={c.value} className="w-5 h-5" />
                     <span className="text-xs text-white">{c.label}</span>
                   </button>
                 ))}
@@ -543,7 +684,7 @@ function WithdrawTab() {
             />
           </div>
         </div>
-      ) : (
+      ) : withdrawType === "upi" ? (
         <div>
           <Label className="text-gray-300">UPI ID</Label>
           <Input
@@ -553,6 +694,74 @@ function WithdrawTab() {
             className="bg-black border-white/[0.06] text-white"
             data-testid="input-withdraw-upi"
           />
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/[0.06]">
+            <img src={impsLogo} alt="IMPS" className="h-6" />
+            <div>
+              <p className="text-white text-sm font-medium">IMPS Bank Transfer</p>
+              <p className="text-gray-500 text-xs">Enter your bank details to receive funds</p>
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-gray-300">Account Holder Name</Label>
+            <Input
+              placeholder="Full name as per bank account"
+              value={accountHolderName}
+              onChange={e => setAccountHolderName(e.target.value)}
+              className="bg-black border-white/[0.06] text-white"
+              data-testid="input-imps-holder"
+            />
+          </div>
+
+          <div>
+            <Label className="text-gray-300">Account Number</Label>
+            <Input
+              placeholder="Enter bank account number"
+              value={accountNumber}
+              onChange={e => setAccountNumber(e.target.value)}
+              className="bg-black border-white/[0.06] text-white font-mono"
+              data-testid="input-imps-account"
+            />
+          </div>
+
+          <div>
+            <Label className="text-gray-300">Confirm Account Number</Label>
+            <Input
+              placeholder="Re-enter account number"
+              value={confirmAccountNumber}
+              onChange={e => setConfirmAccountNumber(e.target.value)}
+              className={`bg-black border-white/[0.06] text-white font-mono ${confirmAccountNumber && confirmAccountNumber !== accountNumber ? "border-red-500/50" : ""}`}
+              data-testid="input-imps-confirm-account"
+            />
+            {confirmAccountNumber && confirmAccountNumber !== accountNumber && (
+              <p className="text-xs text-red-400 mt-1">Account numbers do not match</p>
+            )}
+          </div>
+
+          <div>
+            <Label className="text-gray-300">IFSC Code</Label>
+            <Input
+              placeholder="e.g., SBIN0001234"
+              value={ifscCode}
+              onChange={e => setIfscCode(e.target.value.toUpperCase())}
+              className="bg-black border-white/[0.06] text-white font-mono uppercase"
+              data-testid="input-imps-ifsc"
+            />
+          </div>
+
+          <div>
+            <Label className="text-gray-300">Bank Name (optional)</Label>
+            <Input
+              placeholder="e.g., State Bank of India"
+              value={bankName}
+              onChange={e => setBankName(e.target.value)}
+              className="bg-black border-white/[0.06] text-white"
+              data-testid="input-imps-bank"
+            />
+          </div>
         </div>
       )}
 
@@ -568,7 +777,7 @@ function WithdrawTab() {
         />
         <div className="flex justify-between mt-1">
           <button onClick={() => setAmount(String(balance))} className="text-xs text-white hover:underline" data-testid="button-max-amount">Max</button>
-          {withdrawType === "upi" && amountUsdt > 0 && (
+          {(withdrawType === "upi" || withdrawType === "imps") && amountUsdt > 0 && (
             <span className="text-xs text-green-400">You will receive ₹{amountInr}</span>
           )}
         </div>
@@ -632,20 +841,25 @@ function HistoryTab() {
                 {tx.txType === "deposit" ? "Deposit" : "Withdrawal"}
               </span>
               <Badge variant="outline" className="text-xs">
-                {tx.type === "upi" ? "UPI" : `${tx.crypto} (${tx.chain})`}
+                {tx.type === "imps" ? "IMPS" : tx.type === "upi" ? "UPI" : `${tx.crypto} (${tx.chain})`}
               </Badge>
             </div>
             <StatusBadge status={tx.status} />
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-400">
-              {tx.type === "upi" && tx.amountInr ? `₹${tx.amountInr.toFixed(2)}` : ""}
+              {(tx.type === "upi" || tx.type === "imps") && tx.amountInr ? `₹${tx.amountInr.toFixed(2)}` : ""}
             </span>
             <span className="text-white font-bold">{tx.amountUsdt.toFixed(2)} USDT</span>
           </div>
           {(tx.txHash || tx.utr) && (
             <p className="text-xs text-gray-500 mt-1 font-mono truncate">
-              {tx.txHash ? `TX: ${tx.txHash}` : `UTR: ${tx.utr}`}
+              {tx.txHash ? `TX: ${tx.txHash}` : `Ref: ${tx.utr}`}
+            </p>
+          )}
+          {tx.type === "imps" && tx.accountNumber && (
+            <p className="text-xs text-gray-500 mt-1">
+              A/C: ****{tx.accountNumber.slice(-4)} | IFSC: {tx.ifscCode}
             </p>
           )}
           <p className="text-xs text-gray-600 mt-1">

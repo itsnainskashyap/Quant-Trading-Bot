@@ -37,6 +37,7 @@ import {
   Bitcoin,
   IndianRupee,
   Upload,
+  Landmark,
 } from "lucide-react";
 import { CryptoLogo } from "@/components/CryptoLogos";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
@@ -114,6 +115,10 @@ export default function Admin() {
   const [newMethodAddress, setNewMethodAddress] = useState("");
   const [newMethodUpiId, setNewMethodUpiId] = useState("");
   const [newMethodQr, setNewMethodQr] = useState("");
+  const [newMethodBankName, setNewMethodBankName] = useState("");
+  const [newMethodAccountNumber, setNewMethodAccountNumber] = useState("");
+  const [newMethodIfsc, setNewMethodIfsc] = useState("");
+  const [newMethodAccountHolder, setNewMethodAccountHolder] = useState("");
   const [processingTxId, setProcessingTxId] = useState<string | null>(null);
 
   const [kycSubmissions, setKycSubmissions] = useState<any[]>([]);
@@ -177,9 +182,14 @@ export default function Admin() {
   const handleAddPaymentMethod = async () => {
     if (!sessionId) return;
     try {
-      const body = newMethodType === "crypto"
-        ? { type: "crypto", crypto: newMethodCrypto, chain: newMethodChain, address: newMethodAddress }
-        : { type: "upi", upiId: newMethodUpiId, qrImage: newMethodQr };
+      let body: any;
+      if (newMethodType === "crypto") {
+        body = { type: "crypto", crypto: newMethodCrypto, chain: newMethodChain, address: newMethodAddress };
+      } else if (newMethodType === "upi") {
+        body = { type: "upi", upiId: newMethodUpiId, qrImage: newMethodQr };
+      } else {
+        body = { type: "imps", bankName: newMethodBankName, accountNumber: newMethodAccountNumber, ifscCode: newMethodIfsc, accountHolderName: newMethodAccountHolder };
+      }
       const res = await fetch("/api/admin/payment-methods", {
         method: "POST", headers: { "Content-Type": "application/json", "x-admin-session": sessionId },
         body: JSON.stringify(body),
@@ -189,6 +199,10 @@ export default function Admin() {
         setNewMethodAddress("");
         setNewMethodUpiId("");
         setNewMethodQr("");
+        setNewMethodBankName("");
+        setNewMethodAccountNumber("");
+        setNewMethodIfsc("");
+        setNewMethodAccountHolder("");
         fetchPaymentMethods();
       }
     } catch (e: any) {
@@ -1118,6 +1132,9 @@ export default function Admin() {
                 <Button size="sm" variant={newMethodType === "upi" ? "default" : "outline"} onClick={() => setNewMethodType("upi")}>
                   <img src={upiLogo} alt="UPI" className="h-3 mr-1" /> UPI
                 </Button>
+                <Button size="sm" variant={newMethodType === "imps" ? "default" : "outline"} onClick={() => setNewMethodType("imps")}>
+                  <Landmark className="w-3 h-3 mr-1" /> IMPS
+                </Button>
               </div>
 
               {newMethodType === "crypto" ? (
@@ -1149,7 +1166,7 @@ export default function Admin() {
                     <Input value={newMethodAddress} onChange={e => setNewMethodAddress(e.target.value)} placeholder="Enter wallet address" className="bg-black border-white/10 font-mono text-sm" data-testid="input-admin-wallet" />
                   </div>
                 </div>
-              ) : (
+              ) : newMethodType === "upi" ? (
                 <div className="space-y-3">
                   <div>
                     <Label className="text-gray-400 text-xs">UPI ID</Label>
@@ -1161,6 +1178,25 @@ export default function Admin() {
                       <Input type="file" accept="image/*" onChange={handleQrUpload} className="bg-black border-white/10 text-sm" data-testid="input-admin-qr" />
                     </div>
                     {newMethodQr && <img src={newMethodQr} alt="QR Preview" className="w-24 h-24 mt-2 rounded border border-white/10" />}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-gray-400 text-xs">Account Holder Name</Label>
+                    <Input value={newMethodAccountHolder} onChange={e => setNewMethodAccountHolder(e.target.value)} placeholder="Full name as per bank" className="bg-black border-white/10 text-sm" data-testid="input-admin-imps-holder" />
+                  </div>
+                  <div>
+                    <Label className="text-gray-400 text-xs">Account Number</Label>
+                    <Input value={newMethodAccountNumber} onChange={e => setNewMethodAccountNumber(e.target.value)} placeholder="Bank account number" className="bg-black border-white/10 font-mono text-sm" data-testid="input-admin-imps-account" />
+                  </div>
+                  <div>
+                    <Label className="text-gray-400 text-xs">IFSC Code</Label>
+                    <Input value={newMethodIfsc} onChange={e => setNewMethodIfsc(e.target.value.toUpperCase())} placeholder="e.g., SBIN0001234" className="bg-black border-white/10 font-mono text-sm uppercase" data-testid="input-admin-imps-ifsc" />
+                  </div>
+                  <div>
+                    <Label className="text-gray-400 text-xs">Bank Name (optional)</Label>
+                    <Input value={newMethodBankName} onChange={e => setNewMethodBankName(e.target.value)} placeholder="e.g., State Bank of India" className="bg-black border-white/10 text-sm" data-testid="input-admin-imps-bank" />
                   </div>
                 </div>
               )}
@@ -1177,6 +1213,8 @@ export default function Admin() {
                       <div className="text-sm">
                         {m.type === "crypto" ? (
                           <span className="text-white">{m.crypto} ({m.chain}): <span className="text-gray-400 font-mono text-xs">{m.address?.slice(0, 16)}...</span></span>
+                        ) : m.type === "imps" ? (
+                          <span className="text-white">IMPS: {m.accountHolderName} | A/C: ****{m.accountNumber?.slice(-4)} | {m.ifscCode}</span>
                         ) : (
                           <span className="text-white">UPI: {m.upiId}</span>
                         )}
@@ -1269,7 +1307,7 @@ export default function Admin() {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold text-white">{w.amountUsdt?.toFixed(2)} USDT</span>
-                          <Badge variant="outline" className="text-xs">{w.type === "upi" ? "UPI" : `${w.crypto} (${w.chain})`}</Badge>
+                          <Badge variant="outline" className="text-xs">{w.type === "imps" ? "IMPS" : w.type === "upi" ? "UPI" : `${w.crypto} (${w.chain})`}</Badge>
                         </div>
                         <Badge className={
                           w.status === "approved" ? "bg-green-500/20 text-green-400" :
@@ -1280,8 +1318,16 @@ export default function Admin() {
                       </div>
                       <div className="text-xs text-gray-500 space-y-1">
                         <p>User: {w.userEmail || w.userName || w.userId?.slice(0, 8)}</p>
-                        <p className="font-mono">To: {w.toAddress}</p>
-                        {w.type === "upi" && w.amountInr && <p>INR: ₹{w.amountInr.toFixed(2)}</p>}
+                        {w.type === "imps" ? (
+                          <>
+                            <p>Name: {w.accountHolderName}</p>
+                            <p className="font-mono">A/C: {w.accountNumber} | IFSC: {w.ifscCode}</p>
+                            {w.bankName && <p>Bank: {w.bankName}</p>}
+                          </>
+                        ) : (
+                          <p className="font-mono">To: {w.toAddress}</p>
+                        )}
+                        {(w.type === "upi" || w.type === "imps") && w.amountInr && <p>INR: ₹{w.amountInr.toFixed(2)}</p>}
                         <p>{new Date(w.createdAt).toLocaleString()}</p>
                       </div>
                       {w.status === "pending" || w.status === "processing" ? (

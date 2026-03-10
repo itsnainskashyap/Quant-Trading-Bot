@@ -185,12 +185,16 @@ export type InsertFindTradeScan = typeof findTradeScans.$inferInsert;
 
 export const adminPaymentMethods = pgTable("admin_payment_methods", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  type: varchar("type").notNull(), // crypto or upi
+  type: varchar("type").notNull(), // crypto, upi, or imps
   crypto: varchar("crypto"), // BTC, ETH, USDT, LTC, USDC
   chain: varchar("chain"), // ERC20, TRC20, BEP20, Bitcoin, Litecoin
   address: varchar("address"), // crypto address
   upiId: varchar("upi_id"), // UPI ID
   qrImage: text("qr_image"), // base64 QR image for UPI
+  bankName: varchar("bank_name"), // IMPS bank name
+  accountNumber: varchar("account_number"), // IMPS account number
+  ifscCode: varchar("ifsc_code"), // IMPS IFSC code
+  accountHolderName: varchar("account_holder_name"), // IMPS account holder
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -199,13 +203,13 @@ export const adminPaymentMethods = pgTable("admin_payment_methods", {
 export const deposits = pgTable("deposits", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
-  type: varchar("type").notNull(), // crypto or upi
+  type: varchar("type").notNull(), // crypto, upi, or imps
   crypto: varchar("crypto"), // BTC, ETH, USDT, LTC, USDC
   chain: varchar("chain"), // ERC20, TRC20, BEP20, Bitcoin, Litecoin
-  amountInr: real("amount_inr"), // INR amount for UPI
+  amountInr: real("amount_inr"), // INR amount for UPI/IMPS
   amountUsdt: real("amount_usdt").notNull(), // USDT equivalent
   txHash: varchar("tx_hash"), // crypto tx hash
-  utr: varchar("utr"), // UPI transaction reference
+  utr: varchar("utr"), // UPI/IMPS transaction reference
   toAddress: varchar("to_address"), // deposit address used
   status: varchar("status").notNull().default("pending"), // pending, processing, approved, rejected
   adminNotes: text("admin_notes"),
@@ -216,12 +220,16 @@ export const deposits = pgTable("deposits", {
 export const withdrawals = pgTable("withdrawals", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
-  type: varchar("type").notNull(), // crypto or upi
+  type: varchar("type").notNull(), // crypto, upi, or imps
   crypto: varchar("crypto"), // BTC, ETH, USDT, LTC, USDC
   chain: varchar("chain"), // ERC20, TRC20, BEP20, Bitcoin, Litecoin
   toAddress: varchar("to_address"), // crypto address or UPI ID
   amountUsdt: real("amount_usdt").notNull(),
-  amountInr: real("amount_inr"), // INR equivalent for UPI
+  amountInr: real("amount_inr"), // INR equivalent for UPI/IMPS
+  bankName: varchar("bank_name"), // IMPS bank name
+  accountNumber: varchar("account_number"), // IMPS account number
+  ifscCode: varchar("ifsc_code"), // IMPS IFSC code
+  accountHolderName: varchar("account_holder_name"), // IMPS account holder
   status: varchar("status").notNull().default("pending"), // pending, processing, approved, rejected
   adminNotes: text("admin_notes"),
   txHash: varchar("tx_hash"), // admin fills after sending
