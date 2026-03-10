@@ -217,6 +217,48 @@ ${isVerified ? `<p style="color:#22c55e;font-size:14px;margin:0;font-weight:500;
   }
 }
 
+export async function sendRegistrationOTP(email: string, otp: string): Promise<void> {
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: "TradeX AI — Verify Your Email",
+      html: baseTemplate("Verify Your Email", `
+<p style="color:#ccc;font-size:14px;line-height:1.6;margin:0 0 16px 0;">
+Welcome to TradeX AI! Please verify your email address using the code below to complete your registration:
+</p>
+${otpBlock(otp)}
+<p style="color:#888;font-size:13px;margin:16px 0 0 0;">
+If you did not create an account, please ignore this email.
+</p>`),
+    });
+    console.log("[Email] Registration OTP sent to", email);
+  } catch (e: any) {
+    console.error("[Email] Failed to send registration OTP:", e.message);
+  }
+}
+
+export async function sendLoginOTP(email: string, otp: string): Promise<void> {
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: "TradeX AI — Login Verification Code",
+      html: baseTemplate("Login Verification", `
+<p style="color:#ccc;font-size:14px;line-height:1.6;margin:0 0 16px 0;">
+A login attempt was detected for your TradeX AI account. Please enter the verification code below to continue:
+</p>
+${otpBlock(otp)}
+<p style="color:#888;font-size:13px;margin:16px 0 0 0;">
+If this wasn't you, please change your password immediately.
+</p>`),
+    });
+    console.log("[Email] Login OTP sent to", email);
+  } catch (e: any) {
+    console.error("[Email] Failed to send login OTP:", e.message);
+  }
+}
+
 export async function sendLoginAlertEmail(email: string): Promise<void> {
   try {
     await resend.emails.send({
