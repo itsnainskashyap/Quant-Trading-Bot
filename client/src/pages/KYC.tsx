@@ -127,35 +127,78 @@ export default function KYC() {
     },
     onError: (error: any) => {
       setVerifyStep("error");
-      setVerifyResult({ message: error.message || "Failed to submit document" });
+      const msg = error.message || "Failed to submit document";
+      const friendlyMsg = msg.includes("entity too large") || msg.includes("413")
+        ? "Image file is too large. Please use a smaller or lower resolution image."
+        : msg;
+      setVerifyResult({ message: friendlyMsg });
     },
   });
 
-  const handleFileSelect = (side: "front" | "back") => (e: React.ChangeEvent<HTMLInputElement>) => {
+  const compressImage = (file: File, maxWidth = 1600, quality = 0.8): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let w = img.width;
+          let h = img.height;
+          if (w > maxWidth) {
+            h = (h * maxWidth) / w;
+            w = maxWidth;
+          }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return reject(new Error("Canvas not supported"));
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        };
+        img.onerror = () => reject(new Error("Failed to load image"));
+        img.src = reader.result as string;
+      };
+      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileSelect = (side: "front" | "back") => async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 10 * 1024 * 1024) {
+    if (file.size > 15 * 1024 * 1024) {
       toast({
         title: "File too large",
-        description: "Maximum file size is 10MB",
+        description: "Maximum file size is 15MB",
         variant: "destructive",
       });
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result as string;
+    try {
+      const compressed = await compressImage(file);
       if (side === "front") {
-        setImagePreview(base64);
-        setImageBase64(base64);
+        setImagePreview(compressed);
+        setImageBase64(compressed);
       } else {
-        setBackImagePreview(base64);
-        setBackImageBase64(base64);
+        setBackImagePreview(compressed);
+        setBackImageBase64(compressed);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        if (side === "front") {
+          setImagePreview(base64);
+          setImageBase64(base64);
+        } else {
+          setBackImagePreview(base64);
+          setBackImageBase64(base64);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = () => {
