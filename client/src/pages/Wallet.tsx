@@ -28,6 +28,7 @@ import {
   ShieldCheck,
   Building2,
   Landmark,
+  RefreshCw,
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import logoImage from "@assets/Picsart_26-03-10_23-57-49-090_1773170426667.png";
@@ -138,6 +139,8 @@ function DepositTab() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
   const [copied, setCopied] = useState(false);
+  const [upiIndex, setUpiIndex] = useState(0);
+  const [impsIndex, setImpsIndex] = useState(0);
 
   useEffect(() => {
     fetch("/api/payment-methods", { credentials: "include" })
@@ -159,8 +162,24 @@ function DepositTab() {
     m => m.type === "crypto" && m.crypto === selectedCrypto && m.chain === selectedChain
   )?.address;
 
-  const upiMethod = paymentMethods.find(m => m.type === "upi");
-  const impsMethod = paymentMethods.find(m => m.type === "imps");
+  const allUpiMethods = paymentMethods.filter(m => m.type === "upi");
+  const allImpsMethods = paymentMethods.filter(m => m.type === "imps");
+  const upiMethod = allUpiMethods.length > 0 ? allUpiMethods[upiIndex % allUpiMethods.length] : null;
+  const impsMethod = allImpsMethods.length > 0 ? allImpsMethods[impsIndex % allImpsMethods.length] : null;
+
+  const handleNewUpi = () => {
+    if (allUpiMethods.length > 1) {
+      setUpiIndex(prev => (prev + 1) % allUpiMethods.length);
+      toast({ title: "New UPI Generated", description: "A different UPI ID has been assigned for your payment." });
+    }
+  };
+
+  const handleNewImps = () => {
+    if (allImpsMethods.length > 1) {
+      setImpsIndex(prev => (prev + 1) % allImpsMethods.length);
+      toast({ title: "New Bank Details", description: "Different bank account details have been assigned." });
+    }
+  };
 
   const handleInrChange = (val: string) => {
     setAmountInr(val);
@@ -430,18 +449,19 @@ function DepositTab() {
 
           {upiMethod ? (
             <div className="bg-black border border-white/[0.06] rounded-lg p-4 space-y-3">
-              <Label className="text-gray-300">Pay to UPI</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-gray-300">Pay to UPI</Label>
+                {allUpiMethods.length > 1 && (
+                  <span className="text-[10px] text-gray-500">{(upiIndex % allUpiMethods.length) + 1}/{allUpiMethods.length}</span>
+                )}
+              </div>
               {amountInr && parseFloat(amountInr) > 0 ? (
                 <div className="flex items-center justify-center p-4 bg-white rounded-lg">
-                  <QRCode value={`upi://pay?pa=${upiMethod.upiId}&am=${amountInr}&cu=INR&tn=TradeX+Deposit`} size={180} />
-                </div>
-              ) : upiMethod.qrImage ? (
-                <div className="flex items-center justify-center p-4 bg-white rounded-lg">
-                  <img src={upiMethod.qrImage} alt="UPI QR" className="max-w-[180px]" />
+                  <QRCode value={`upi://pay?pa=${upiMethod.upiId}&pn=TradeX&am=${amountInr}&cu=INR&tn=TradeX+Deposit`} size={180} />
                 </div>
               ) : (
                 <div className="flex items-center justify-center p-4 bg-white rounded-lg">
-                  <QRCode value={`upi://pay?pa=${upiMethod.upiId}&cu=INR&tn=TradeX+Deposit`} size={180} />
+                  <QRCode value={`upi://pay?pa=${upiMethod.upiId}&pn=TradeX&cu=INR&tn=TradeX+Deposit`} size={180} />
                 </div>
               )}
               <div className="flex items-center gap-2">
@@ -452,6 +472,18 @@ function DepositTab() {
               </div>
               {amountInr && parseFloat(amountInr) > 0 && (
                 <p className="text-center text-green-400 font-semibold">Pay ₹{amountInr}</p>
+              )}
+              {allUpiMethods.length > 1 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNewUpi}
+                  className="w-full border-amber-500/30 text-amber-400 hover:bg-amber-500/10 mt-2"
+                  data-testid="button-try-another-upi"
+                >
+                  <RefreshCw className="w-3 h-3 mr-2" />
+                  Payment Failed? Try Another UPI
+                </Button>
               )}
             </div>
           ) : (
@@ -505,7 +537,12 @@ function DepositTab() {
 
           {impsMethod ? (
             <div className="bg-black border border-white/[0.06] rounded-lg p-4 space-y-3">
-              <Label className="text-gray-300">Transfer to Bank Account</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-gray-300">Transfer to Bank Account</Label>
+                {allImpsMethods.length > 1 && (
+                  <span className="text-[10px] text-gray-500">{(impsIndex % allImpsMethods.length) + 1}/{allImpsMethods.length}</span>
+                )}
+              </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between p-2.5 bg-white/[0.03] rounded-lg">
                   <span className="text-gray-400 text-xs">Account Holder</span>
@@ -543,6 +580,18 @@ function DepositTab() {
               </div>
               {amountInr && parseFloat(amountInr) > 0 && (
                 <p className="text-center text-green-400 font-semibold">Transfer ₹{amountInr} via IMPS</p>
+              )}
+              {allImpsMethods.length > 1 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNewImps}
+                  className="w-full border-amber-500/30 text-amber-400 hover:bg-amber-500/10 mt-2"
+                  data-testid="button-try-another-imps"
+                >
+                  <RefreshCw className="w-3 h-3 mr-2" />
+                  Payment Failed? Try Another Bank
+                </Button>
               )}
             </div>
           ) : (

@@ -392,6 +392,19 @@ export function setupWalletRoutes(app: Express, verifyAdminSession?: (sessionId:
     }
   }) as RequestHandler);
 
+  app.patch("/api/admin/payment-methods/:id/toggle", (async (req: Request, res: Response) => {
+    try {
+      if (!requireAdmin(req, res)) return;
+      const { id } = req.params;
+      const [method] = await db.select().from(adminPaymentMethods).where(eq(adminPaymentMethods.id, id));
+      if (!method) return res.status(404).json({ message: "Method not found" });
+      const [updated] = await db.update(adminPaymentMethods).set({ isActive: !method.isActive }).where(eq(adminPaymentMethods.id, id)).returning();
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  }) as RequestHandler);
+
   app.delete("/api/admin/payment-methods/:id", (async (req: Request, res: Response) => {
     try {
       if (!requireAdmin(req, res)) return;

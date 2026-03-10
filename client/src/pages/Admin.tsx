@@ -42,6 +42,7 @@ import {
   Settings,
   FileText,
   Eye,
+  EyeOff,
   Copy,
   RefreshCw,
   DollarSign,
@@ -226,6 +227,14 @@ export default function Admin() {
     if (!sessionId) return;
     try {
       await fetch(`/api/admin/payment-methods/${id}`, { method: "DELETE", headers: { "x-admin-session": sessionId } });
+      fetchPaymentMethods();
+    } catch {}
+  };
+
+  const handleTogglePaymentMethod = async (id: string) => {
+    if (!sessionId) return;
+    try {
+      await fetch(`/api/admin/payment-methods/${id}/toggle`, { method: "PATCH", headers: { "x-admin-session": sessionId } });
       fetchPaymentMethods();
     } catch {}
   };
@@ -1892,21 +1901,29 @@ export default function Admin() {
 
                     {paymentMethods.length > 0 && (
                       <div className="space-y-2 mt-4">
-                        <h3 className="text-sm font-semibold text-gray-400">Active Methods ({paymentMethods.length})</h3>
+                        <h3 className="text-sm font-semibold text-gray-400">Payment Methods ({paymentMethods.length})</h3>
                         {paymentMethods.map(m => (
-                          <div key={m.id} className="flex items-center justify-between p-2.5 bg-white/[0.02] rounded-lg border border-white/5" data-testid={`card-method-${m.id}`}>
-                            <div className="text-sm">
-                              {m.type === "crypto" ? (
-                                <span className="text-white">{m.crypto} ({m.chain}): <span className="text-gray-400 font-mono text-xs">{m.address?.slice(0, 16)}...</span></span>
-                              ) : m.type === "imps" ? (
-                                <span className="text-white">IMPS: {m.accountHolderName} | A/C: ****{m.accountNumber?.slice(-4)} | {m.ifscCode}</span>
-                              ) : (
-                                <span className="text-white">UPI: {m.upiId}</span>
-                              )}
+                          <div key={m.id} className={`flex items-center justify-between p-2.5 rounded-lg border ${m.isActive ? 'bg-white/[0.02] border-white/5' : 'bg-red-500/5 border-red-500/10 opacity-60'}`} data-testid={`card-method-${m.id}`}>
+                            <div className="text-sm flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${m.isActive ? 'bg-emerald-500' : 'bg-red-400'}`} />
+                                {m.type === "crypto" ? (
+                                  <span className="text-white truncate">{m.crypto} ({m.chain}): <span className="text-gray-400 font-mono text-xs">{m.address?.slice(0, 16)}...</span></span>
+                                ) : m.type === "imps" ? (
+                                  <span className="text-white truncate">IMPS: {m.accountHolderName} | ****{m.accountNumber?.slice(-4)} | {m.ifscCode}</span>
+                                ) : (
+                                  <span className="text-white truncate">UPI: {m.upiId}</span>
+                                )}
+                              </div>
                             </div>
-                            <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 h-7" onClick={() => handleDeletePaymentMethod(m.id)}>
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
+                            <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                              <Button size="sm" variant="ghost" className={`h-7 px-2 ${m.isActive ? 'text-amber-400 hover:text-amber-300' : 'text-emerald-400 hover:text-emerald-300'}`} onClick={() => handleTogglePaymentMethod(m.id)} data-testid={`button-toggle-method-${m.id}`}>
+                                {m.isActive ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                              </Button>
+                              <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 h-7 px-2" onClick={() => handleDeletePaymentMethod(m.id)}>
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
                           </div>
                         ))}
                       </div>
