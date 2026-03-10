@@ -13,6 +13,7 @@ import Login from "@/pages/Login";
 import Personalize from "@/pages/Personalize";
 import Plans from "@/pages/Plans";
 import Payment from "@/pages/Payment";
+import Wallet from "@/pages/Wallet";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 
@@ -66,6 +67,11 @@ function AuthenticatedRoutes() {
       </Route>
       <Route path="/payment">
         <Payment />
+      </Route>
+      <Route path="/wallet">
+        <OnboardingGuard>
+          <Wallet />
+        </OnboardingGuard>
       </Route>
       <Route component={NotFound} />
     </Switch>

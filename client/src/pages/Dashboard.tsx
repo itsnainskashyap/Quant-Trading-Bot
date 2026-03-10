@@ -179,6 +179,13 @@ export default function Dashboard() {
   });
   const capital = tradexBalanceData?.balance || 0;
 
+  const { data: usdtBalanceData } = useQuery<{ balance: number }>({
+    queryKey: ['/api/user/balance'],
+    enabled: !!user,
+    refetchInterval: 10000,
+  });
+  const usdtBalance = usdtBalanceData?.balance || 0;
+
   // Fetch subscription status
   const { data: subscription } = useQuery<{ 
     plan: string; 
@@ -397,6 +404,14 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="w-px h-8 bg-white/10" />
+              <a href="/wallet" className="flex items-center gap-2 hover:opacity-80 transition-opacity" data-testid="link-wallet-balance">
+                <Coins className="w-4 h-4 text-emerald-400" />
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-gray-500 uppercase">USDT Wallet</span>
+                  <span className="text-sm font-semibold text-emerald-400 font-mono">{usdtBalance.toFixed(2)} USDT</span>
+                </div>
+              </a>
+              <div className="w-px h-8 bg-white/10" />
               <div className="flex items-center gap-2">
                 <Cpu className="w-4 h-4 text-purple-400" />
                 <div className="flex flex-col">
@@ -419,6 +434,12 @@ export default function Dashboard() {
               </Badge>
             )}
             
+            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-emerald-400" asChild>
+              <a href="/wallet" data-testid="link-wallet">
+                <Wallet className="w-4 h-4" />
+              </a>
+            </Button>
+
             <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white" asChild>
               <a href="/profile" data-testid="link-profile">
                 <User className="w-4 h-4" />

@@ -182,3 +182,66 @@ export const findTradeScans = pgTable("find_trade_scans", {
 
 export type FindTradeScan = typeof findTradeScans.$inferSelect;
 export type InsertFindTradeScan = typeof findTradeScans.$inferInsert;
+
+export const adminPaymentMethods = pgTable("admin_payment_methods", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: varchar("type").notNull(), // crypto or upi
+  crypto: varchar("crypto"), // BTC, ETH, USDT, LTC, USDC
+  chain: varchar("chain"), // ERC20, TRC20, BEP20, Bitcoin, Litecoin
+  address: varchar("address"), // crypto address
+  upiId: varchar("upi_id"), // UPI ID
+  qrImage: text("qr_image"), // base64 QR image for UPI
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const deposits = pgTable("deposits", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: varchar("type").notNull(), // crypto or upi
+  crypto: varchar("crypto"), // BTC, ETH, USDT, LTC, USDC
+  chain: varchar("chain"), // ERC20, TRC20, BEP20, Bitcoin, Litecoin
+  amountInr: real("amount_inr"), // INR amount for UPI
+  amountUsdt: real("amount_usdt").notNull(), // USDT equivalent
+  txHash: varchar("tx_hash"), // crypto tx hash
+  utr: varchar("utr"), // UPI transaction reference
+  toAddress: varchar("to_address"), // deposit address used
+  status: varchar("status").notNull().default("pending"), // pending, processing, approved, rejected
+  adminNotes: text("admin_notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  processedAt: timestamp("processed_at"),
+});
+
+export const withdrawals = pgTable("withdrawals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: varchar("type").notNull(), // crypto or upi
+  crypto: varchar("crypto"), // BTC, ETH, USDT, LTC, USDC
+  chain: varchar("chain"), // ERC20, TRC20, BEP20, Bitcoin, Litecoin
+  toAddress: varchar("to_address"), // crypto address or UPI ID
+  amountUsdt: real("amount_usdt").notNull(),
+  amountInr: real("amount_inr"), // INR equivalent for UPI
+  status: varchar("status").notNull().default("pending"), // pending, processing, approved, rejected
+  adminNotes: text("admin_notes"),
+  txHash: varchar("tx_hash"), // admin fills after sending
+  createdAt: timestamp("created_at").defaultNow(),
+  processedAt: timestamp("processed_at"),
+});
+
+export const userBalances = pgTable("user_balances", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id).unique(),
+  balance: real("balance").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type AdminPaymentMethod = typeof adminPaymentMethods.$inferSelect;
+export type InsertAdminPaymentMethod = typeof adminPaymentMethods.$inferInsert;
+export type Deposit = typeof deposits.$inferSelect;
+export type InsertDeposit = typeof deposits.$inferInsert;
+export type Withdrawal = typeof withdrawals.$inferSelect;
+export type InsertWithdrawal = typeof withdrawals.$inferInsert;
+export type UserBalance = typeof userBalances.$inferSelect;
+export type InsertUserBalance = typeof userBalances.$inferInsert;

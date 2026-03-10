@@ -29,7 +29,14 @@ import {
   Tag,
   Plus,
   Trash2,
-  Percent
+  Percent,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Clock,
+  XCircle,
+  Bitcoin,
+  IndianRupee,
+  Upload,
 } from "lucide-react";
 import { CryptoLogo } from "@/components/CryptoLogos";
 import logoImage from "@assets/file_00000000efdc71fababc3d71e2096aaf_(1)_1769100459834.png";
@@ -97,11 +104,126 @@ export default function Admin() {
   } | null>(null);
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
 
+  const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
+  const [adminDeposits, setAdminDeposits] = useState<any[]>([]);
+  const [adminWithdrawals, setAdminWithdrawals] = useState<any[]>([]);
+  const [newMethodType, setNewMethodType] = useState("crypto");
+  const [newMethodCrypto, setNewMethodCrypto] = useState("USDT");
+  const [newMethodChain, setNewMethodChain] = useState("TRC20");
+  const [newMethodAddress, setNewMethodAddress] = useState("");
+  const [newMethodUpiId, setNewMethodUpiId] = useState("");
+  const [newMethodQr, setNewMethodQr] = useState("");
+  const [processingTxId, setProcessingTxId] = useState<string | null>(null);
+
+  const fetchPaymentMethods = async () => {
+    if (!sessionId) return;
+    try {
+      const res = await fetch("/api/admin/payment-methods", { headers: { "x-admin-session": sessionId } });
+      if (res.ok) setPaymentMethods(await res.json());
+    } catch {}
+  };
+
+  const fetchAdminDeposits = async () => {
+    if (!sessionId) return;
+    try {
+      const res = await fetch("/api/admin/deposits", { headers: { "x-admin-session": sessionId } });
+      if (res.ok) setAdminDeposits(await res.json());
+    } catch {}
+  };
+
+  const fetchAdminWithdrawals = async () => {
+    if (!sessionId) return;
+    try {
+      const res = await fetch("/api/admin/withdrawals", { headers: { "x-admin-session": sessionId } });
+      if (res.ok) setAdminWithdrawals(await res.json());
+    } catch {}
+  };
+
+  const handleAddPaymentMethod = async () => {
+    if (!sessionId) return;
+    try {
+      const body = newMethodType === "crypto"
+        ? { type: "crypto", crypto: newMethodCrypto, chain: newMethodChain, address: newMethodAddress }
+        : { type: "upi", upiId: newMethodUpiId, qrImage: newMethodQr };
+      const res = await fetch("/api/admin/payment-methods", {
+        method: "POST", headers: { "Content-Type": "application/json", "x-admin-session": sessionId },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        toast({ title: "Payment method added" });
+        setNewMethodAddress("");
+        setNewMethodUpiId("");
+        setNewMethodQr("");
+        fetchPaymentMethods();
+      }
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeletePaymentMethod = async (id: string) => {
+    if (!sessionId) return;
+    try {
+      await fetch(`/api/admin/payment-methods/${id}`, { method: "DELETE", headers: { "x-admin-session": sessionId } });
+      fetchPaymentMethods();
+    } catch {}
+  };
+
+  const handleDepositAction = async (id: string, action: string) => {
+    if (!sessionId) return;
+    setProcessingTxId(id);
+    try {
+      const res = await fetch(`/api/admin/deposits/${id}/action`, {
+        method: "POST", headers: { "Content-Type": "application/json", "x-admin-session": sessionId },
+        body: JSON.stringify({ action }),
+      });
+      if (res.ok) {
+        toast({ title: `Deposit ${action}` });
+        fetchAdminDeposits();
+      }
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setProcessingTxId(null);
+    }
+  };
+
+  const handleWithdrawalAction = async (id: string, action: string) => {
+    if (!sessionId) return;
+    setProcessingTxId(id);
+    try {
+      const res = await fetch(`/api/admin/withdrawals/${id}/action`, {
+        method: "POST", headers: { "Content-Type": "application/json", "x-admin-session": sessionId },
+        body: JSON.stringify({ action }),
+      });
+      if (res.ok) {
+        toast({ title: `Withdrawal ${action}` });
+        fetchAdminWithdrawals();
+      }
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setProcessingTxId(null);
+    }
+  };
+
+  const handleQrUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => setNewMethodQr(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
   useEffect(() => {
     if (isLoggedIn) {
       fetchSettings();
       fetchPromoCodes();
       fetchAnalytics();
+      fetchPaymentMethods();
+      fetchAdminDeposits();
+      fetchAdminWithdrawals();
     }
   }, [isLoggedIn]);
 
@@ -944,6 +1066,208 @@ export default function Admin() {
             </CardContent>
           </Card>
           
+          {/* Payment Methods Management */}
+          <Card className="bg-[#12121a] border-white/5">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Wallet className="w-5 h-5 text-cyan-400" />
+                Deposit Payment Methods
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2 mb-3">
+                <Button size="sm" variant={newMethodType === "crypto" ? "default" : "outline"} onClick={() => setNewMethodType("crypto")}>
+                  <Bitcoin className="w-3 h-3 mr-1" /> Crypto
+                </Button>
+                <Button size="sm" variant={newMethodType === "upi" ? "default" : "outline"} onClick={() => setNewMethodType("upi")}>
+                  <IndianRupee className="w-3 h-3 mr-1" /> UPI
+                </Button>
+              </div>
+
+              {newMethodType === "crypto" ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-gray-400 text-xs">Crypto</Label>
+                      <select value={newMethodCrypto} onChange={e => setNewMethodCrypto(e.target.value)} className="w-full bg-[#0a0a0f] border border-white/10 text-white rounded-md p-2 text-sm" data-testid="select-admin-crypto">
+                        <option value="BTC">Bitcoin (BTC)</option>
+                        <option value="ETH">Ethereum (ETH)</option>
+                        <option value="USDT">Tether (USDT)</option>
+                        <option value="LTC">Litecoin (LTC)</option>
+                        <option value="USDC">USD Coin (USDC)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label className="text-gray-400 text-xs">Chain</Label>
+                      <select value={newMethodChain} onChange={e => setNewMethodChain(e.target.value)} className="w-full bg-[#0a0a0f] border border-white/10 text-white rounded-md p-2 text-sm" data-testid="select-admin-chain">
+                        <option value="Bitcoin">Bitcoin</option>
+                        <option value="ERC20">ERC20</option>
+                        <option value="TRC20">TRC20 (TRON)</option>
+                        <option value="BEP20">BEP20 (BSC)</option>
+                        <option value="Litecoin">Litecoin</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-gray-400 text-xs">Wallet Address</Label>
+                    <Input value={newMethodAddress} onChange={e => setNewMethodAddress(e.target.value)} placeholder="Enter wallet address" className="bg-[#0a0a0f] border-white/10 font-mono text-sm" data-testid="input-admin-wallet" />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-gray-400 text-xs">UPI ID</Label>
+                    <Input value={newMethodUpiId} onChange={e => setNewMethodUpiId(e.target.value)} placeholder="Enter UPI ID" className="bg-[#0a0a0f] border-white/10 text-sm" data-testid="input-admin-upi" />
+                  </div>
+                  <div>
+                    <Label className="text-gray-400 text-xs">QR Image (optional)</Label>
+                    <div className="flex gap-2">
+                      <Input type="file" accept="image/*" onChange={handleQrUpload} className="bg-[#0a0a0f] border-white/10 text-sm" data-testid="input-admin-qr" />
+                    </div>
+                    {newMethodQr && <img src={newMethodQr} alt="QR Preview" className="w-24 h-24 mt-2 rounded border border-white/10" />}
+                  </div>
+                </div>
+              )}
+
+              <Button onClick={handleAddPaymentMethod} className="w-full bg-cyan-600 hover:bg-cyan-700" size="sm" data-testid="button-add-method">
+                <Plus className="w-3 h-3 mr-1" /> Add Payment Method
+              </Button>
+
+              {paymentMethods.length > 0 && (
+                <div className="space-y-2 mt-4">
+                  <h3 className="text-sm font-semibold text-gray-400">Active Methods</h3>
+                  {paymentMethods.map(m => (
+                    <div key={m.id} className="flex items-center justify-between p-2 bg-white/[0.02] rounded-lg" data-testid={`card-method-${m.id}`}>
+                      <div className="text-sm">
+                        {m.type === "crypto" ? (
+                          <span className="text-white">{m.crypto} ({m.chain}): <span className="text-gray-400 font-mono text-xs">{m.address?.slice(0, 16)}...</span></span>
+                        ) : (
+                          <span className="text-white">UPI: {m.upiId}</span>
+                        )}
+                      </div>
+                      <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 h-7" onClick={() => handleDeletePaymentMethod(m.id)}>
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Deposit Requests */}
+          <Card className="bg-[#12121a] border-white/5">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <ArrowDownToLine className="w-5 h-5 text-green-400" />
+                Deposit Requests
+                {adminDeposits.filter(d => d.status === "pending").length > 0 && (
+                  <Badge className="bg-amber-500/20 text-amber-400 ml-2">{adminDeposits.filter(d => d.status === "pending").length} pending</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {adminDeposits.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center py-4">No deposit requests</p>
+              ) : (
+                <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                  {adminDeposits.map(d => (
+                    <div key={d.id} className="p-3 bg-white/[0.02] rounded-lg border border-white/5" data-testid={`card-admin-deposit-${d.id}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-white">{d.amountUsdt?.toFixed(2)} USDT</span>
+                          <Badge variant="outline" className="text-xs">{d.type === "upi" ? "UPI" : `${d.crypto} (${d.chain})`}</Badge>
+                        </div>
+                        <Badge className={
+                          d.status === "approved" ? "bg-green-500/20 text-green-400" :
+                          d.status === "rejected" ? "bg-red-500/20 text-red-400" :
+                          d.status === "processing" ? "bg-blue-500/20 text-blue-400" :
+                          "bg-amber-500/20 text-amber-400"
+                        }>{d.status}</Badge>
+                      </div>
+                      <div className="text-xs text-gray-500 space-y-1">
+                        <p>User: {d.userEmail || d.userName || d.userId?.slice(0, 8)}</p>
+                        {d.type === "upi" && d.amountInr && <p>INR: ₹{d.amountInr.toFixed(2)}</p>}
+                        {d.txHash && <p className="font-mono">TX: {d.txHash.slice(0, 20)}...</p>}
+                        {d.utr && <p className="font-mono">UTR: {d.utr}</p>}
+                        <p>{new Date(d.createdAt).toLocaleString()}</p>
+                      </div>
+                      {d.status === "pending" || d.status === "processing" ? (
+                        <div className="flex gap-2 mt-2">
+                          <Button size="sm" className="bg-green-600 hover:bg-green-700 h-7 text-xs" onClick={() => handleDepositAction(d.id, "approved")} disabled={processingTxId === d.id}>
+                            <CheckCircle className="w-3 h-3 mr-1" /> Approve
+                          </Button>
+                          <Button size="sm" className="bg-blue-600 hover:bg-blue-700 h-7 text-xs" onClick={() => handleDepositAction(d.id, "processing")} disabled={processingTxId === d.id}>
+                            <Clock className="w-3 h-3 mr-1" /> Processing
+                          </Button>
+                          <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => handleDepositAction(d.id, "rejected")} disabled={processingTxId === d.id}>
+                            <XCircle className="w-3 h-3 mr-1" /> Reject
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Withdrawal Requests */}
+          <Card className="bg-[#12121a] border-white/5">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <ArrowUpFromLine className="w-5 h-5 text-red-400" />
+                Withdrawal Requests
+                {adminWithdrawals.filter(w => w.status === "pending").length > 0 && (
+                  <Badge className="bg-amber-500/20 text-amber-400 ml-2">{adminWithdrawals.filter(w => w.status === "pending").length} pending</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {adminWithdrawals.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center py-4">No withdrawal requests</p>
+              ) : (
+                <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                  {adminWithdrawals.map(w => (
+                    <div key={w.id} className="p-3 bg-white/[0.02] rounded-lg border border-white/5" data-testid={`card-admin-withdrawal-${w.id}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-white">{w.amountUsdt?.toFixed(2)} USDT</span>
+                          <Badge variant="outline" className="text-xs">{w.type === "upi" ? "UPI" : `${w.crypto} (${w.chain})`}</Badge>
+                        </div>
+                        <Badge className={
+                          w.status === "approved" ? "bg-green-500/20 text-green-400" :
+                          w.status === "rejected" ? "bg-red-500/20 text-red-400" :
+                          w.status === "processing" ? "bg-blue-500/20 text-blue-400" :
+                          "bg-amber-500/20 text-amber-400"
+                        }>{w.status}</Badge>
+                      </div>
+                      <div className="text-xs text-gray-500 space-y-1">
+                        <p>User: {w.userEmail || w.userName || w.userId?.slice(0, 8)}</p>
+                        <p className="font-mono">To: {w.toAddress}</p>
+                        {w.type === "upi" && w.amountInr && <p>INR: ₹{w.amountInr.toFixed(2)}</p>}
+                        <p>{new Date(w.createdAt).toLocaleString()}</p>
+                      </div>
+                      {w.status === "pending" || w.status === "processing" ? (
+                        <div className="flex gap-2 mt-2">
+                          <Button size="sm" className="bg-green-600 hover:bg-green-700 h-7 text-xs" onClick={() => handleWithdrawalAction(w.id, "approved")} disabled={processingTxId === w.id}>
+                            <CheckCircle className="w-3 h-3 mr-1" /> Approve
+                          </Button>
+                          <Button size="sm" className="bg-blue-600 hover:bg-blue-700 h-7 text-xs" onClick={() => handleWithdrawalAction(w.id, "processing")} disabled={processingTxId === w.id}>
+                            <Clock className="w-3 h-3 mr-1" /> Processing
+                          </Button>
+                          <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => handleWithdrawalAction(w.id, "rejected")} disabled={processingTxId === w.id}>
+                            <XCircle className="w-3 h-3 mr-1" /> Reject
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card className="bg-[#12121a] border-white/5">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
