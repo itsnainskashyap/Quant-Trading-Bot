@@ -11,6 +11,7 @@ import Profile from "@/pages/Profile";
 import Admin from "@/pages/Admin";
 import Register from "@/pages/Register";
 import Login from "@/pages/Login";
+import ForgotPassword from "@/pages/ForgotPassword";
 import Personalize from "@/pages/Personalize";
 import Plans from "@/pages/Plans";
 import Payment from "@/pages/Payment";
@@ -96,6 +97,7 @@ function UnauthenticatedRoutes() {
       <Route path="/" component={Landing} />
       <Route path="/register" component={Register} />
       <Route path="/login" component={Login} />
+      <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/personalize">
         <Redirect to="/login" />
       </Route>

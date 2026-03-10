@@ -4,6 +4,7 @@ import { kycDocuments } from "@shared/models/trading";
 import { users } from "@shared/models/auth";
 import { eq, desc, and, ne } from "drizzle-orm";
 import OpenAI from "openai";
+import { sendKycStatusEmail } from "./emailService";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -294,6 +295,11 @@ export function setupKycRoutes(app: Express, verifyAdminSession?: (sessionId: st
             updatedAt: new Date(),
           }).where(eq(users.id, doc.userId));
         }
+      }
+
+      const [kycUser] = await db.select().from(users).where(eq(users.id, doc.userId));
+      if (kycUser?.email) {
+        sendKycStatusEmail(kycUser.email, action as "verified" | "rejected", notes);
       }
 
       res.json({ success: true });

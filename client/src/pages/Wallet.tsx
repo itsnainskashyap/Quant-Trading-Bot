@@ -507,6 +507,10 @@ function WithdrawTab() {
   const [accountHolderName, setAccountHolderName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [balance, setBalance] = useState(0);
+  const [otpStep, setOtpStep] = useState<"form" | "otp">("form");
+  const [withdrawOtp, setWithdrawOtp] = useState("");
+  const [withdrawalToken, setWithdrawalToken] = useState("");
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
 
   useEffect(() => {
     fetch("/api/user/balance", { credentials: "include" })
@@ -527,36 +531,74 @@ function WithdrawTab() {
   const amountUsdt = parseFloat(amount) || 0;
   const amountInr = (withdrawType === "upi" || withdrawType === "imps") ? (amountUsdt * INR_TO_USDT).toFixed(2) : null;
 
-  const handleSubmit = async () => {
+  const validateForm = (): boolean => {
     if (!amountUsdt || amountUsdt <= 0) {
       toast({ title: "Error", description: "Enter a valid amount", variant: "destructive" });
-      return;
+      return false;
     }
     if (amountUsdt > balance) {
       toast({ title: "Error", description: "Insufficient balance", variant: "destructive" });
-      return;
+      return false;
     }
     if (withdrawType === "crypto" && !address.trim()) {
       toast({ title: "Error", description: "Enter wallet address", variant: "destructive" });
-      return;
+      return false;
     }
     if (withdrawType === "upi" && !address.trim()) {
       toast({ title: "Error", description: "Enter UPI ID", variant: "destructive" });
-      return;
+      return false;
     }
     if (withdrawType === "imps") {
       if (!accountNumber.trim() || !ifscCode.trim() || !accountHolderName.trim()) {
         toast({ title: "Error", description: "Fill all bank details", variant: "destructive" });
-        return;
+        return false;
       }
       if (accountNumber !== confirmAccountNumber) {
         toast({ title: "Error", description: "Account numbers do not match", variant: "destructive" });
-        return;
+        return false;
       }
+    }
+    return true;
+  };
+
+  const handleSendOtp = async () => {
+    if (!validateForm()) return;
+    setIsSendingOtp(true);
+    try {
+      const res = await fetch("/api/withdrawal/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ amountUsdt, type: withdrawType }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      toast({ title: "OTP Sent", description: "Check your email for the verification code" });
+      setOtpStep("otp");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyAndSubmit = async () => {
+    if (withdrawOtp.length !== 6) {
+      toast({ title: "Error", description: "Enter the 6-digit code", variant: "destructive" });
+      return;
     }
 
     setIsSubmitting(true);
     try {
+      const verifyRes = await fetch("/api/withdrawal/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ otp: withdrawOtp }),
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok) throw new Error(verifyData.message);
+
       const res = await fetch("/api/withdrawals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -571,6 +613,7 @@ function WithdrawTab() {
           accountNumber: withdrawType === "imps" ? accountNumber : null,
           ifscCode: withdrawType === "imps" ? ifscCode : null,
           accountHolderName: withdrawType === "imps" ? accountHolderName : null,
+          withdrawalToken: verifyData.withdrawalToken,
         }),
       });
       if (!res.ok) {
@@ -586,6 +629,9 @@ function WithdrawTab() {
       setIfscCode("");
       setAccountHolderName("");
       setBalance(prev => prev - amountUsdt);
+      setOtpStep("form");
+      setWithdrawOtp("");
+      setWithdrawalToken("");
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -783,15 +829,59 @@ function WithdrawTab() {
         </div>
       </div>
 
-      <Button
-        onClick={handleSubmit}
-        disabled={isSubmitting}
-        className="w-full bg-gradient-to-r from-red-500 to-orange-600"
-        data-testid="button-submit-withdraw"
-      >
-        {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ArrowUpFromLine className="w-4 h-4 mr-2" />}
-        Submit Withdrawal
-      </Button>
+      {otpStep === "form" ? (
+        <Button
+          onClick={handleSendOtp}
+          disabled={isSendingOtp}
+          className="w-full bg-gradient-to-r from-red-500 to-orange-600"
+          data-testid="button-submit-withdraw"
+        >
+          {isSendingOtp ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ArrowUpFromLine className="w-4 h-4 mr-2" />}
+          Continue Withdrawal
+        </Button>
+      ) : (
+        <div className="space-y-3">
+          <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4 space-y-3">
+            <p className="text-sm text-gray-400 text-center">Enter the 6-digit code sent to your email</p>
+            <Input
+              type="text"
+              placeholder="Enter 6-digit code"
+              value={withdrawOtp}
+              onChange={e => setWithdrawOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              className="bg-black border-white/[0.06] text-white text-center font-mono text-lg tracking-[0.5em]"
+              maxLength={6}
+              data-testid="input-withdraw-otp"
+            />
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => { setOtpStep("form"); setWithdrawOtp(""); }}
+                className="flex-1 border-white/[0.06]"
+                data-testid="button-cancel-otp"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleVerifyAndSubmit}
+                disabled={isSubmitting || withdrawOtp.length !== 6}
+                className="flex-1 bg-gradient-to-r from-red-500 to-orange-600"
+                data-testid="button-confirm-withdraw"
+              >
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Confirm
+              </Button>
+            </div>
+            <button
+              onClick={handleSendOtp}
+              disabled={isSendingOtp}
+              className="text-xs text-neutral-500 hover:text-white transition w-full text-center"
+              data-testid="button-resend-withdraw-otp"
+            >
+              Didn't receive? Resend code
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

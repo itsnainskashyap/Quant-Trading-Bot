@@ -102,6 +102,12 @@ export function Login() {
             </div>
           </div>
 
+          <div className="text-right">
+            <Link href="/forgot-password" className="text-neutral-500 text-xs hover:text-white transition" data-testid="link-forgot-password">
+              Forgot password?
+            </Link>
+          </div>
+
           <Button
             type="submit"
             disabled={isLoading}

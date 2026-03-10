@@ -1,8 +1,11 @@
 import type { Express, Request, Response, RequestHandler } from "express";
 import { db } from "./db";
 import { deposits, withdrawals, userBalances, adminPaymentMethods, kycDocuments } from "@shared/models/trading";
-import { users } from "@shared/models/auth";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { users, emailOtpCodes } from "@shared/models/auth";
+import { eq, desc, and, sql, gte } from "drizzle-orm";
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
+import { sendWithdrawalOTP, sendDepositStatusEmail, sendWithdrawalStatusEmail } from "./emailService";
 
 const INR_TO_USDT = 92;
 
@@ -109,12 +112,98 @@ export function setupWalletRoutes(app: Express, verifyAdminSession?: (sessionId:
     }
   }) as RequestHandler);
 
+  app.post("/api/withdrawal/send-otp", (async (req: Request, res: Response) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user?.email) return res.status(400).json({ message: "No email associated with account" });
+
+      const { amountUsdt, type } = req.body;
+      if (!amountUsdt || !type) return res.status(400).json({ message: "Amount and type are required" });
+
+      const otp = crypto.randomInt(100000, 999999).toString();
+      const hashedOtp = await bcrypt.hash(otp, 10);
+
+      await db.insert(emailOtpCodes).values({
+        email: user.email,
+        code: hashedOtp,
+        purpose: "withdrawal",
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      });
+
+      await sendWithdrawalOTP(user.email, otp, String(amountUsdt), type);
+      res.json({ success: true, message: "Verification code sent to your email" });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  }) as RequestHandler);
+
+  app.post("/api/withdrawal/verify-otp", (async (req: Request, res: Response) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user?.email) return res.status(400).json({ message: "No email associated with account" });
+
+      const { otp } = req.body;
+      if (!otp) return res.status(400).json({ message: "OTP is required" });
+
+      const codes = await db.select().from(emailOtpCodes)
+        .where(and(eq(emailOtpCodes.email, user.email), eq(emailOtpCodes.purpose, "withdrawal"), eq(emailOtpCodes.verified, false)))
+        .orderBy(desc(emailOtpCodes.createdAt));
+
+      const latestCode = codes[0];
+      if (!latestCode) return res.status(400).json({ message: "No withdrawal OTP found. Please request a new one." });
+
+      if (new Date() > latestCode.expiresAt) {
+        return res.status(400).json({ message: "Code has expired. Please request a new one." });
+      }
+
+      if ((latestCode.attempts || 0) >= 5) {
+        return res.status(400).json({ message: "Too many attempts. Please request a new code." });
+      }
+
+      await db.update(emailOtpCodes).set({ attempts: (latestCode.attempts || 0) + 1 }).where(eq(emailOtpCodes.id, latestCode.id));
+
+      const isValid = await bcrypt.compare(otp, latestCode.code);
+      if (!isValid) return res.status(400).json({ message: "Invalid code" });
+
+      await db.update(emailOtpCodes).set({ verified: true }).where(eq(emailOtpCodes.id, latestCode.id));
+      res.json({ success: true, message: "OTP verified", withdrawalToken: latestCode.id });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  }) as RequestHandler);
+
   app.post("/api/withdrawals", (async (req: Request, res: Response) => {
     try {
       const userId = getUserIdFromRequest(req);
       if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-      const { type, crypto, chain, toAddress, amountUsdt, bankName, accountNumber, ifscCode, accountHolderName } = req.body;
+      const { type, crypto, chain, toAddress, amountUsdt, bankName, accountNumber, ifscCode, accountHolderName, withdrawalToken } = req.body;
+
+      if (!withdrawalToken) {
+        return res.status(400).json({ message: "Withdrawal OTP verification required" });
+      }
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (user?.email) {
+        const [otpRecord] = await db.select().from(emailOtpCodes)
+          .where(and(
+            eq(emailOtpCodes.id, withdrawalToken),
+            eq(emailOtpCodes.email, user.email),
+            eq(emailOtpCodes.verified, true),
+            eq(emailOtpCodes.purpose, "withdrawal"),
+            gte(emailOtpCodes.expiresAt, new Date())
+          ));
+        if (!otpRecord) {
+          return res.status(400).json({ message: "Invalid or expired withdrawal verification. Please verify OTP again." });
+        }
+        await db.delete(emailOtpCodes).where(eq(emailOtpCodes.id, withdrawalToken));
+      }
 
       if (!type || !amountUsdt || typeof amountUsdt !== "number" || amountUsdt <= 0 || !isFinite(amountUsdt)) {
         return res.status(400).json({ message: "Valid positive amount is required" });
@@ -323,6 +412,17 @@ export function setupWalletRoutes(app: Express, verifyAdminSession?: (sessionId:
         }
       }
 
+      const [depositUser] = await db.select().from(users).where(eq(users.id, deposit.userId));
+      if (depositUser?.email) {
+        sendDepositStatusEmail(
+          depositUser.email,
+          action as "approved" | "rejected" | "processing",
+          String(deposit.amountUsdt),
+          deposit.type,
+          notes
+        );
+      }
+
       res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -386,6 +486,17 @@ export function setupWalletRoutes(app: Express, verifyAdminSession?: (sessionId:
         txHash: txHash || withdrawal.txHash,
         processedAt: action !== "processing" ? new Date() : null,
       }).where(eq(withdrawals.id, id));
+
+      const [withdrawalUser] = await db.select().from(users).where(eq(users.id, withdrawal.userId));
+      if (withdrawalUser?.email) {
+        sendWithdrawalStatusEmail(
+          withdrawalUser.email,
+          action as "approved" | "rejected" | "processing",
+          String(withdrawal.amountUsdt),
+          withdrawal.type,
+          notes
+        );
+      }
 
       res.json({ success: true });
     } catch (e: any) {
