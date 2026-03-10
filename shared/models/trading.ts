@@ -249,7 +249,8 @@ export const kycDocuments = pgTable("kyc_documents", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
   documentType: varchar("document_type").notNull(), // aadhaar, pancard, voter_id, id_card
-  documentImage: text("document_image").notNull(), // base64 image
+  documentImage: text("document_image").notNull(), // base64 front image
+  documentImageBack: text("document_image_back"), // base64 back image
   extractedName: varchar("extracted_name"),
   extractedDob: varchar("extracted_dob"),
   extractedDocNumber: varchar("extracted_doc_number"),

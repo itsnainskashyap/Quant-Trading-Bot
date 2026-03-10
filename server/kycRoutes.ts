@@ -2,7 +2,7 @@ import type { Express, Request, Response, RequestHandler } from "express";
 import { db } from "./db";
 import { kycDocuments } from "@shared/models/trading";
 import { users } from "@shared/models/auth";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, ne } from "drizzle-orm";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
@@ -134,24 +134,35 @@ export function setupKycRoutes(app: Express, verifyAdminSession?: (sessionId: st
       const userId = getUserIdFromRequest(req);
       if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-      const { documentType, documentImage } = req.body;
+      const { documentType, documentImage, documentImageBack } = req.body;
 
       if (!documentType || !["aadhaar", "pancard", "voter_id", "id_card"].includes(documentType)) {
         return res.status(400).json({ message: "Valid document type is required" });
       }
 
       if (!documentImage || typeof documentImage !== "string") {
-        return res.status(400).json({ message: "Document image is required" });
+        return res.status(400).json({ message: "Front side document image is required" });
       }
 
       if (!documentImage.startsWith("data:image/")) {
-        return res.status(400).json({ message: "Invalid image format. Please upload a valid image file." });
+        return res.status(400).json({ message: "Invalid image format for front side. Please upload a valid image file." });
       }
 
       const base64Part = documentImage.split(",")[1] || "";
       const imageSizeBytes = Math.ceil(base64Part.length * 0.75);
       if (imageSizeBytes > 10 * 1024 * 1024) {
-        return res.status(400).json({ message: "Image is too large. Maximum size is 10MB." });
+        return res.status(400).json({ message: "Front image is too large. Maximum size is 10MB." });
+      }
+
+      if (documentImageBack) {
+        if (typeof documentImageBack !== "string" || !documentImageBack.startsWith("data:image/")) {
+          return res.status(400).json({ message: "Invalid image format for back side." });
+        }
+        const backBase64Part = documentImageBack.split(",")[1] || "";
+        const backSizeBytes = Math.ceil(backBase64Part.length * 0.75);
+        if (backSizeBytes > 10 * 1024 * 1024) {
+          return res.status(400).json({ message: "Back image is too large. Maximum size is 10MB." });
+        }
       }
 
       const existingVerified = await db
@@ -173,12 +184,31 @@ export function setupKycRoutes(app: Express, verifyAdminSession?: (sessionId: st
         extracted = { name: null, dob: null, docNumber: null, isValid: false, confidence: 0 };
       }
 
+      if (extracted.docNumber) {
+        const normalizedDocNumber = extracted.docNumber.replace(/[\s\-]/g, "").toUpperCase();
+        const allDocsWithNumber = await db
+          .select()
+          .from(kycDocuments)
+          .where(ne(kycDocuments.userId, userId));
+        const alreadyUsed = allDocsWithNumber.some((d) => {
+          if (!d.extractedDocNumber) return false;
+          const normalizedExisting = d.extractedDocNumber.replace(/[\s\-]/g, "").toUpperCase();
+          return normalizedExisting === normalizedDocNumber;
+        });
+        if (alreadyUsed) {
+          return res.status(400).json({
+            message: "This document has already been used for verification by another account. Each document can only be linked to one account.",
+          });
+        }
+      }
+
       const [doc] = await db
         .insert(kycDocuments)
         .values({
           userId,
           documentType,
           documentImage,
+          documentImageBack: documentImageBack || null,
           extractedName: extracted.name || null,
           extractedDob: extracted.dob || null,
           extractedDocNumber: extracted.docNumber || null,
@@ -191,14 +221,12 @@ export function setupKycRoutes(app: Express, verifyAdminSession?: (sessionId: st
 
       res.json({
         id: doc.id,
-        status: doc.status,
+        status: "pending",
         extractedName: doc.extractedName,
         extractedDob: doc.extractedDob,
         extractedDocNumber: doc.extractedDocNumber,
         extractedGender: doc.extractedGender,
-        confidence: extracted.confidence || 0,
-        isValid: extracted.isValid || false,
-        message: "Document submitted for review. Our team will verify it shortly.",
+        message: "Document submitted successfully. Our team will review and verify it shortly.",
       });
     } catch (e: any) {
       console.error("KYC submit error:", e.message);

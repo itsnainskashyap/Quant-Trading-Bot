@@ -1385,9 +1385,20 @@ export default function Admin() {
                         {k.extractedGender && <p>Gender: <span className="text-white">{k.extractedGender}</span></p>}
                         <p>Submitted: {new Date(k.createdAt).toLocaleString()}</p>
                       </div>
-                      {k.documentImage && (
-                        <div className="mb-2">
-                          <img src={k.documentImage} alt="Document" className="max-h-32 rounded border border-white/10" />
+                      {(k.documentImage || k.documentImageBack) && (
+                        <div className="mb-2 flex gap-2 flex-wrap">
+                          {k.documentImage && (
+                            <div>
+                              <p className="text-[10px] text-gray-500 mb-1">Front</p>
+                              <img src={k.documentImage} alt="Front" className="max-h-32 rounded border border-white/10" data-testid={`img-kyc-front-${k.id}`} />
+                            </div>
+                          )}
+                          {k.documentImageBack && (
+                            <div>
+                              <p className="text-[10px] text-gray-500 mb-1">Back</p>
+                              <img src={k.documentImageBack} alt="Back" className="max-h-32 rounded border border-white/10" data-testid={`img-kyc-back-${k.id}`} />
+                            </div>
+                          )}
                         </div>
                       )}
                       {k.status === "pending" && (

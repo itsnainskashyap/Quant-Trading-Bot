@@ -80,16 +80,19 @@ export default function KYC() {
   const { user } = useAuth();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const backFileInputRef = useRef<HTMLInputElement>(null);
   const [selectedDocType, setSelectedDocType] = useState<string>("");
   const [imagePreview, setImagePreview] = useState<string>("");
   const [imageBase64, setImageBase64] = useState<string>("");
+  const [backImagePreview, setBackImagePreview] = useState<string>("");
+  const [backImageBase64, setBackImageBase64] = useState<string>("");
 
   const { data: kycStatus, isLoading } = useQuery<KycStatus>({
     queryKey: ["/api/kyc/status"],
   });
 
   const submitMutation = useMutation({
-    mutationFn: async (data: { documentType: string; documentImage: string }) => {
+    mutationFn: async (data: { documentType: string; documentImage: string; documentImageBack?: string }) => {
       const res = await apiRequest("POST", "/api/kyc/submit", data);
       return res.json();
     },
@@ -98,8 +101,10 @@ export default function KYC() {
       setSelectedDocType("");
       setImagePreview("");
       setImageBase64("");
+      setBackImagePreview("");
+      setBackImageBase64("");
       toast({
-        title: data.status === "verified" ? "KYC Verified!" : "Document Submitted",
+        title: "Document Submitted",
         description: data.message,
       });
     },
@@ -112,7 +117,7 @@ export default function KYC() {
     },
   });
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (side: "front" | "back") => (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -128,8 +133,13 @@ export default function KYC() {
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = reader.result as string;
-      setImagePreview(base64);
-      setImageBase64(base64);
+      if (side === "front") {
+        setImagePreview(base64);
+        setImageBase64(base64);
+      } else {
+        setBackImagePreview(base64);
+        setBackImageBase64(base64);
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -138,12 +148,16 @@ export default function KYC() {
     if (!selectedDocType || !imageBase64) {
       toast({
         title: "Missing information",
-        description: "Please select a document type and upload an image",
+        description: "Please select a document type and upload front side image",
         variant: "destructive",
       });
       return;
     }
-    submitMutation.mutate({ documentType: selectedDocType, documentImage: imageBase64 });
+    submitMutation.mutate({
+      documentType: selectedDocType,
+      documentImage: imageBase64,
+      ...(backImageBase64 ? { documentImageBack: backImageBase64 } : {}),
+    });
   };
 
   const status = kycStatus?.status || "not_submitted";
@@ -304,7 +318,7 @@ export default function KYC() {
                 <div>
                   <h2 className="text-xl font-light mb-2">Verify Your Identity</h2>
                   <p className="text-sm text-neutral-400">
-                    KYC verification is required before you can make deposits. Upload a government-issued ID document and our AI will verify your details instantly.
+                    KYC verification is required before you can make deposits. Upload both sides of your government-issued ID document and our team will verify your details.
                   </p>
                 </div>
 
@@ -342,38 +356,101 @@ export default function KYC() {
 
                 {selectedDocType && (
                   <div>
-                    <h3 className="text-sm font-medium text-neutral-300 mb-4">Upload Document</h3>
+                    <h3 className="text-sm font-medium text-neutral-300 mb-4">Upload Document (Front & Back)</h3>
                     <input
                       type="file"
                       ref={fileInputRef}
-                      onChange={handleFileSelect}
+                      onChange={handleFileSelect("front")}
                       accept="image/*"
                       className="hidden"
-                      data-testid="input-document-file"
+                      data-testid="input-document-file-front"
+                    />
+                    <input
+                      type="file"
+                      ref={backFileInputRef}
+                      onChange={handleFileSelect("back")}
+                      accept="image/*"
+                      className="hidden"
+                      data-testid="input-document-file-back"
                     />
 
-                    {imagePreview ? (
-                      <div className="space-y-4">
-                        <div className="relative rounded-xl overflow-hidden border border-white/[0.06] bg-white/[0.02]">
-                          <img src={imagePreview} alt="Document preview" className="w-full max-h-80 object-contain p-4" data-testid="img-document-preview" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-neutral-400 mb-2 font-medium">Front Side *</p>
+                        {imagePreview ? (
+                          <div className="relative rounded-xl overflow-hidden border border-white/[0.06] bg-white/[0.02]">
+                            <img src={imagePreview} alt="Front side preview" className="w-full h-48 object-contain p-3" data-testid="img-document-preview-front" />
+                            <button
+                              onClick={() => {
+                                setImagePreview("");
+                                setImageBase64("");
+                                if (fileInputRef.current) fileInputRef.current.value = "";
+                              }}
+                              className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-neutral-300 hover:text-white transition"
+                              data-testid="button-remove-front"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
                           <button
-                            onClick={() => {
-                              setImagePreview("");
-                              setImageBase64("");
-                              if (fileInputRef.current) fileInputRef.current.value = "";
-                            }}
-                            className="absolute top-3 right-3 p-2 rounded-lg bg-black/60 hover:bg-black/80 text-neutral-300 hover:text-white transition"
-                            data-testid="button-remove-image"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-full h-48 rounded-xl border-2 border-dashed border-white/[0.08] hover:border-white/[0.16] bg-white/[0.01] hover:bg-white/[0.02] transition-all flex flex-col items-center justify-center gap-3"
+                            data-testid="button-upload-front"
                           >
-                            <XCircle className="w-5 h-5" />
+                            <div className="w-12 h-12 rounded-full bg-white/[0.04] flex items-center justify-center">
+                              <Camera className="w-6 h-6 text-neutral-500" />
+                            </div>
+                            <div className="text-center">
+                              <p className="text-neutral-300 text-sm font-medium">Upload Front Side</p>
+                              <p className="text-xs text-neutral-500 mt-1">Max 10MB</p>
+                            </div>
                           </button>
-                        </div>
+                        )}
+                      </div>
 
+                      <div>
+                        <p className="text-xs text-neutral-400 mb-2 font-medium">Back Side (optional)</p>
+                        {backImagePreview ? (
+                          <div className="relative rounded-xl overflow-hidden border border-white/[0.06] bg-white/[0.02]">
+                            <img src={backImagePreview} alt="Back side preview" className="w-full h-48 object-contain p-3" data-testid="img-document-preview-back" />
+                            <button
+                              onClick={() => {
+                                setBackImagePreview("");
+                                setBackImageBase64("");
+                                if (backFileInputRef.current) backFileInputRef.current.value = "";
+                              }}
+                              className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-neutral-300 hover:text-white transition"
+                              data-testid="button-remove-back"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => backFileInputRef.current?.click()}
+                            className="w-full h-48 rounded-xl border-2 border-dashed border-white/[0.08] hover:border-white/[0.16] bg-white/[0.01] hover:bg-white/[0.02] transition-all flex flex-col items-center justify-center gap-3"
+                            data-testid="button-upload-back"
+                          >
+                            <div className="w-12 h-12 rounded-full bg-white/[0.04] flex items-center justify-center">
+                              <Camera className="w-6 h-6 text-neutral-500" />
+                            </div>
+                            <div className="text-center">
+                              <p className="text-neutral-300 text-sm font-medium">Upload Back Side</p>
+                              <p className="text-xs text-neutral-500 mt-1">Max 10MB</p>
+                            </div>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {imagePreview && (
+                      <div className="space-y-4 mt-4">
                         <div className="flex items-start gap-3 p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
                           <AlertCircle className="w-5 h-5 text-neutral-500 flex-shrink-0 mt-0.5" />
                           <div className="text-xs text-neutral-400 space-y-1">
-                            <p>Make sure the document image is clear, well-lit, and all text is readable.</p>
-                            <p>Our AI will extract your name, date of birth, and document number automatically.</p>
+                            <p>Make sure both sides of the document are clear, well-lit, and all text is readable.</p>
+                            <p>Our team will review your submission and verify your identity.</p>
                           </div>
                         </div>
 
@@ -386,7 +463,7 @@ export default function KYC() {
                           {submitMutation.isPending ? (
                             <span className="flex items-center gap-2">
                               <Loader2 className="w-5 h-5 animate-spin" />
-                              AI is analyzing your document...
+                              Submitting your document...
                             </span>
                           ) : (
                             <span className="flex items-center gap-2">
@@ -396,21 +473,6 @@ export default function KYC() {
                           )}
                         </Button>
                       </div>
-                    ) : (
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-full p-12 rounded-xl border-2 border-dashed border-white/[0.08] hover:border-white/[0.16] bg-white/[0.01] hover:bg-white/[0.02] transition-all flex flex-col items-center gap-4"
-                        data-testid="button-upload-area"
-                      >
-                        <div className="w-16 h-16 rounded-full bg-white/[0.04] flex items-center justify-center">
-                          <Camera className="w-8 h-8 text-neutral-500" />
-                        </div>
-                        <div className="text-center">
-                          <p className="text-neutral-300 font-medium">Upload Document Photo</p>
-                          <p className="text-xs text-neutral-500 mt-1">Click to browse or take a photo. Max 10MB.</p>
-                          <p className="text-xs text-neutral-600 mt-1">JPG, PNG, or HEIC supported</p>
-                        </div>
-                      </button>
                     )}
                   </div>
                 )}
