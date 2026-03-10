@@ -196,12 +196,25 @@ function DepositTab() {
       return;
     }
 
+    if (depositType === "crypto" && amountUsdt < 20) {
+      toast({ title: "Error", description: "Minimum crypto deposit is $20 USD", variant: "destructive" });
+      return;
+    }
+    if ((depositType === "upi" || depositType === "imps") && parseFloat(amountInr) < 2000) {
+      toast({ title: "Error", description: "Minimum UPI/IMPS deposit is ₹2,000 INR", variant: "destructive" });
+      return;
+    }
+
     if (depositType === "crypto" && !txHash.trim()) {
       toast({ title: "Error", description: "Enter transaction hash", variant: "destructive" });
       return;
     }
     if ((depositType === "upi" || depositType === "imps") && !utr.trim()) {
       toast({ title: "Error", description: "Enter UTR/Reference number", variant: "destructive" });
+      return;
+    }
+    if ((depositType === "skrill" || depositType === "volet") && amountUsdt < 20) {
+      toast({ title: "Error", description: "Minimum deposit is $20 USD", variant: "destructive" });
       return;
     }
     if (depositType === "skrill" && !skrillEmail.trim()) {
@@ -373,12 +386,13 @@ function DepositTab() {
             <Label className="text-gray-300">Amount (USD)</Label>
             <Input
               type="number"
-              placeholder="Enter USD amount"
+              placeholder="Min $20 USD"
               value={amount}
               onChange={e => setAmount(e.target.value)}
               className="bg-black border-white/[0.06] text-white"
               data-testid="input-deposit-amount"
             />
+            <p className="text-[11px] text-amber-400/70 mt-1">Minimum deposit: $20 USD</p>
           </div>
 
           <div>
@@ -400,12 +414,13 @@ function DepositTab() {
             <Label className="text-gray-300">Amount (INR)</Label>
             <Input
               type="number"
-              placeholder="Enter INR amount"
+              placeholder="Min ₹2,000"
               value={amountInr}
               onChange={e => handleInrChange(e.target.value)}
               className="bg-black border-white/[0.06] text-white"
               data-testid="input-inr-amount"
             />
+            <p className="text-[11px] text-amber-400/70 mt-1">Minimum deposit: ₹2,000 INR</p>
           </div>
           <div className="bg-black border border-white/[0.06] rounded-lg p-3 flex items-center justify-between">
             <span className="text-gray-400 text-sm">You will receive</span>
@@ -474,12 +489,13 @@ function DepositTab() {
             <Label className="text-gray-300">Amount (INR)</Label>
             <Input
               type="number"
-              placeholder="Enter INR amount"
+              placeholder="Min ₹2,000"
               value={amountInr}
               onChange={e => handleInrChange(e.target.value)}
               className="bg-black border-white/[0.06] text-white"
               data-testid="input-imps-inr-amount"
             />
+            <p className="text-[11px] text-amber-400/70 mt-1">Minimum deposit: ₹2,000 INR</p>
           </div>
           <div className="bg-black border border-white/[0.06] rounded-lg p-3 flex items-center justify-between">
             <span className="text-gray-400 text-sm">You will receive</span>
@@ -704,7 +720,10 @@ function WithdrawTab() {
   }, [selectedCrypto]);
 
   const amountUsdt = parseFloat(amount) || 0;
-  const amountInr = (withdrawType === "upi" || withdrawType === "imps") ? (amountUsdt * INR_TO_USD).toFixed(2) : null;
+  const withdrawFeePercent = (withdrawType === "imps" || withdrawType === "upi") ? 4 : (withdrawType === "binance_pay" || withdrawType === "crypto") ? 1 : 2;
+  const withdrawFee = amountUsdt * (withdrawFeePercent / 100);
+  const amountAfterFee = amountUsdt - withdrawFee;
+  const amountInr = (withdrawType === "upi" || withdrawType === "imps") ? (amountAfterFee * INR_TO_USD).toFixed(2) : null;
 
   const validateForm = (): boolean => {
     if (!amountUsdt || amountUsdt <= 0) {
@@ -1124,10 +1143,29 @@ function WithdrawTab() {
         />
         <div className="flex justify-between mt-1">
           <button onClick={() => setAmount(String(balance))} className="text-xs text-white hover:underline" data-testid="button-max-amount">Max</button>
-          {(withdrawType === "upi" || withdrawType === "imps") && amountUsdt > 0 && (
-            <span className="text-xs text-green-400">You will receive ₹{amountInr}</span>
-          )}
         </div>
+        {amountUsdt > 0 && (
+          <div className="mt-2 p-3 bg-white/[0.03] border border-white/[0.06] rounded-lg space-y-1.5">
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-500">Withdrawal Amount</span>
+              <span className="text-white">${amountUsdt.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-500">Fee ({withdrawFeePercent}%)</span>
+              <span className="text-red-400">-${withdrawFee.toFixed(2)}</span>
+            </div>
+            <div className="border-t border-white/[0.06] pt-1.5 flex justify-between text-sm">
+              <span className="text-gray-400 font-medium">You will receive</span>
+              <span className="text-green-400 font-bold">${amountAfterFee.toFixed(2)}</span>
+            </div>
+            {(withdrawType === "upi" || withdrawType === "imps") && (
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-500">In INR</span>
+                <span className="text-green-400">₹{amountInr}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {otpStep === "form" ? (
