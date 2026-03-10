@@ -75,6 +75,10 @@ const COUNTRIES = [
   { code: "VN", name: "Vietnam", dial: "+84" },
 ];
 
+function countryFlag(code: string) {
+  return code.toUpperCase().replace(/./g, (c) => String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65));
+}
+
 export function Register() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -85,6 +89,7 @@ export function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [notUsTaxpayer, setNotUsTaxpayer] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [step, setStep] = useState<"register" | "verify">("register");
   const [otp, setOtp] = useState("");
@@ -249,12 +254,14 @@ export function Register() {
               <label className="text-xs text-neutral-400 font-medium">Country</label>
               <Select value={selectedCountry} onValueChange={setSelectedCountry}>
                 <SelectTrigger className="bg-white/[0.04] border-white/[0.08] text-white h-10 rounded-lg" data-testid="select-country">
-                  <SelectValue placeholder="Select your country" />
+                  <SelectValue placeholder="Select your country">
+                    {countryObj && <span>{countryFlag(countryObj.code)} {countryObj.name} ({countryObj.dial})</span>}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="bg-neutral-950 border-white/[0.08] max-h-[240px]">
                   {COUNTRIES.map(c => (
                     <SelectItem key={c.code} value={c.code} className="text-white hover:bg-white/[0.05]">
-                      {c.name} ({c.dial})
+                      <span className="mr-2">{countryFlag(c.code)}</span>{c.name} ({c.dial})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -264,9 +271,9 @@ export function Register() {
             <div className="space-y-1.5">
               <label className="text-xs text-neutral-400 font-medium">Mobile Number <span className="text-neutral-600">(optional)</span></label>
               <div className="flex gap-2">
-                <div className="flex-shrink-0 w-[72px]">
+                <div className="flex-shrink-0 w-[90px]">
                   <Input
-                    value={dialCode}
+                    value={countryObj ? `${countryFlag(countryObj.code)} ${dialCode}` : dialCode}
                     readOnly
                     className="bg-white/[0.03] border-white/[0.08] text-neutral-400 h-10 rounded-lg text-center text-sm cursor-default"
                     tabIndex={-1}
@@ -329,6 +336,19 @@ export function Register() {
 
             <div className="flex items-start gap-2.5 pt-1">
               <Checkbox
+                id="notUsTaxpayer"
+                checked={notUsTaxpayer}
+                onCheckedChange={(checked) => setNotUsTaxpayer(checked === true)}
+                className="mt-0.5 border-neutral-700 data-[state=checked]:bg-white data-[state=checked]:border-white data-[state=checked]:text-black"
+                data-testid="checkbox-us-taxpayer"
+              />
+              <label htmlFor="notUsTaxpayer" className="text-xs text-neutral-500 leading-relaxed cursor-pointer">
+                I certify that I am <span className="text-white font-medium">not a US citizen or US tax resident</span> (W-8BEN declaration)
+              </label>
+            </div>
+
+            <div className="flex items-start gap-2.5 pt-1">
+              <Checkbox
                 id="terms"
                 checked={agreedToTerms}
                 onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
@@ -350,7 +370,7 @@ export function Register() {
 
             <Button
               type="submit"
-              disabled={isLoading || !agreedToTerms}
+              disabled={isLoading || !agreedToTerms || !notUsTaxpayer}
               className="w-full bg-white text-black hover:bg-neutral-200 h-10 rounded-lg font-medium text-sm mt-2 disabled:opacity-40"
               data-testid="button-register"
             >
