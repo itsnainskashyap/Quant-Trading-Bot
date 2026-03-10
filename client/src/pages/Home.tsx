@@ -120,9 +120,10 @@ export default function Home() {
   const tradexPct = totalFunds > 0 ? (tradexBalance / totalFunds) * 100 : 50;
   const walletPct = totalFunds > 0 ? (walletBalance / totalFunds) * 100 : 50;
   const stats = predictionsData?.stats || {};
-  const activeTrades = tradexTrades || [];
-  const completedTrades = tradeHistory?.slice(0, 5) || [];
-  const predictions = predictionsData?.predictions?.filter((p: any) => p.outcome === 'PENDING') || [];
+  const activeTrades = Array.isArray(tradexTrades) ? tradexTrades : [];
+  const completedTrades = Array.isArray(tradeHistory) ? tradeHistory.slice(0, 5) : [];
+  const rawPredictions = predictionsData?.predictions;
+  const predictions = Array.isArray(rawPredictions) ? rawPredictions.filter((p: any) => p.outcome === 'PENDING') : [];
 
   const formatBalance = (val: number) => balanceHidden ? '••••••' : `${val.toFixed(2)}`;
 
@@ -527,7 +528,7 @@ export default function Home() {
           </div>
         </div>
 
-        {pricesData?.prices && (
+        {Array.isArray(pricesData?.prices) && pricesData.prices.length > 0 && (
           <div className="mt-6 rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
             <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
               <h2 className="text-sm font-medium flex items-center gap-2">
